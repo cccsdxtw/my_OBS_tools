@@ -691,9 +691,7 @@
           themeToggle.textContent = isDark ? "白天模式" : "黑夜模式";
           themeToggle.setAttribute("aria-pressed", isDark ? "true" : "false");
         }
-        const savedTheme =
-          localStorage.getItem(themeKey) ||
-          (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        const savedTheme = localStorage.getItem(themeKey) === "light" ? "light" : "dark";
         applyTheme(savedTheme);
         themeToggle.addEventListener("click", () => {
           const cur = document.documentElement.getAttribute("data-theme");

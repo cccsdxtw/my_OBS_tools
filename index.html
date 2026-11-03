@@ -87,6 +87,21 @@
         letter-spacing: 0.02em;
       }
 
+      .brand-title {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 0.4em;
+      }
+
+      .brand-version {
+        font-size: 0.33em;
+        font-weight: 600;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+
       header p {
         margin: 0 0 28px;
         color: var(--muted);
@@ -608,7 +623,10 @@
             黑夜模式
           </button>
         </div>
-        <h1>拉基的OBS工具箱</h1>
+        <h1 class="brand-title">
+          拉基的OBS工具箱
+          <span class="brand-version" id="brandVersion">v0.1.38</span>
+        </h1>
         <p>
           先填最上方的 Twitch／YouTube 帳號，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室可分開放來源。
         </p>
@@ -1452,12 +1470,14 @@
         const applyBtn = $("applyBtn");
         const checkUpdateBtn = $("checkUpdateBtn");
         const versionStatus = $("versionStatus");
+        const brandVersion = $("brandVersion");
         const updateModeAutoBtn = $("updateModeAuto");
         const updateModeManualBtn = $("updateModeManual");
         let versionMode = localStorage.getItem(versionModeKey) === "manual" ? "manual" : "auto";
         let applyTimer = 0;
         let versionMsg = `本機 ${APP_VERSION}`;
         let versionKind = null;
+        if (brandVersion) brandVersion.textContent = APP_VERSION;
 
         function applyTheme(theme) {
           const next = theme === "dark" ? "dark" : "light";

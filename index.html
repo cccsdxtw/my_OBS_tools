@@ -3,7 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>my_OBS_tools · 設定</title>
+    <title>拉基的OBS工具箱 · 設定</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("laji_obs_toolbox_theme");
+          if (
+            t === "dark" ||
+            (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)
+          ) {
+            document.documentElement.setAttribute("data-theme", "dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,6 +33,37 @@
         --accent-2: #c45c26;
         --muted: #5b6b63;
         --shadow: 0 18px 50px rgba(20, 32, 28, 0.08);
+        --input-bg: #fbfcfb;
+        --badge-bg: rgba(255, 255, 255, 0.7);
+        --steps-bg: #f7faf7;
+        --note-bg: rgba(196, 92, 38, 0.08);
+        --url-bg: #0f1714;
+        --url-fg: #d7f5ea;
+        --body-bg:
+          radial-gradient(900px 420px at 10% -10%, #d9efe6 0%, transparent 55%),
+          radial-gradient(700px 380px at 100% 0%, #f7e2d4 0%, transparent 50%),
+          linear-gradient(180deg, #eef3ee, var(--paper));
+      }
+
+      html[data-theme="dark"] {
+        --ink: #e7eee9;
+        --paper: #101612;
+        --panel: #171e1a;
+        --line: #2d3a33;
+        --accent: #3ecf9a;
+        --accent-2: #e08a4f;
+        --muted: #9aaca2;
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+        --input-bg: #101612;
+        --badge-bg: rgba(23, 30, 26, 0.9);
+        --steps-bg: #121916;
+        --note-bg: rgba(224, 138, 79, 0.12);
+        --url-bg: #0a0f0c;
+        --url-fg: #c8f0df;
+        --body-bg:
+          radial-gradient(900px 420px at 10% -10%, #1a3329 0%, transparent 55%),
+          radial-gradient(700px 380px at 100% 0%, #33241a 0%, transparent 50%),
+          linear-gradient(180deg, #121916, var(--paper));
       }
 
       * {
@@ -31,10 +75,7 @@
         min-height: 100vh;
         font-family: "IBM Plex Sans TC", sans-serif;
         color: var(--ink);
-        background:
-          radial-gradient(900px 420px at 10% -10%, #d9efe6 0%, transparent 55%),
-          radial-gradient(700px 380px at 100% 0%, #f7e2d4 0%, transparent 50%),
-          linear-gradient(180deg, #eef3ee, var(--paper));
+        background: var(--body-bg);
       }
 
       main {
@@ -55,15 +96,27 @@
         line-height: 1.6;
       }
 
+      .header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
       .badge {
         display: inline-block;
-        margin-bottom: 12px;
+        margin: 0;
         padding: 4px 10px;
         border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.7);
+        background: var(--badge-bg);
         color: var(--accent);
         font-size: 0.85rem;
         font-weight: 600;
+      }
+
+      #themeToggle {
+        flex: 0 0 auto;
       }
 
       .bands {
@@ -147,10 +200,14 @@
         width: 100%;
         padding: 10px 12px;
         border: 1px solid var(--line);
-        background: #fbfcfb;
+        background: var(--input-bg);
         font: inherit;
         color: var(--ink);
         line-height: 1.2;
+      }
+
+      input:disabled {
+        opacity: 0.55;
       }
 
       .field {
@@ -258,7 +315,7 @@
         margin-top: 12px;
         padding: 14px 16px;
         border: 1px solid var(--line);
-        background: #f7faf7;
+        background: var(--steps-bg);
       }
 
       .steps h3 {
@@ -288,8 +345,8 @@
         margin-top: 0;
         padding: 12px;
         border: 1px solid var(--line);
-        background: #0f1714;
-        color: #d7f5ea;
+        background: var(--url-bg);
+        color: var(--url-fg);
         font-family: "IBM Plex Mono", monospace;
         font-size: 0.82rem;
         line-height: 1.5;
@@ -319,7 +376,7 @@
         margin-top: 18px;
         padding: 14px 16px;
         border-left: 3px solid var(--accent-2);
-        background: rgba(196, 92, 38, 0.08);
+        background: var(--note-bg);
         line-height: 1.55;
       }
 
@@ -337,8 +394,13 @@
   <body>
     <main>
       <header>
-        <div class="badge">免 Twitch OAuth · 少驗證</div>
-        <h1>my_OBS_tools</h1>
+        <div class="header-top">
+          <div class="badge">免 Twitch OAuth · 少驗證</div>
+          <button type="button" class="secondary" id="themeToggle" aria-pressed="false">
+            黑夜模式
+          </button>
+        </div>
+        <h1>拉基的OBS工具箱</h1>
         <p>
           左欄填設定、右欄複製對應 OBS 網址。資訊條／觀眾人數／倒計時各一橫列，方便分開放來源。
         </p>
@@ -613,13 +675,33 @@
       </div>
 
       <footer>
-        Repo：cccsdxtw/my_OBS_tools · Overlay 為透明背景，適合 OBS 瀏覽器來源。
+        拉基的OBS工具箱 · Repo：cccsdxtw/my_OBS_tools · Overlay 為透明背景，適合 OBS 瀏覽器來源。
       </footer>
     </main>
 
     <script>
       (() => {
         const $ = (id) => document.getElementById(id);
+
+        const themeKey = "laji_obs_toolbox_theme";
+        const themeToggle = $("themeToggle");
+        function applyTheme(theme) {
+          const next = theme === "dark" ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", next);
+          localStorage.setItem(themeKey, next);
+          const isDark = next === "dark";
+          themeToggle.textContent = isDark ? "白天模式" : "黑夜模式";
+          themeToggle.setAttribute("aria-pressed", isDark ? "true" : "false");
+        }
+        const savedTheme =
+          localStorage.getItem(themeKey) ||
+          (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        applyTheme(savedTheme);
+        themeToggle.addEventListener("click", () => {
+          const cur = document.documentElement.getAttribute("data-theme");
+          applyTheme(cur === "dark" ? "light" : "dark");
+        });
+
         const fields = {
           channel: $("channel"),
           vcMode: $("vcMode"),

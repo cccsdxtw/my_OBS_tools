@@ -164,6 +164,34 @@
         border: 1px solid var(--line);
       }
 
+      .steps {
+        margin-top: 12px;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        background: #f7faf7;
+      }
+
+      .steps h3 {
+        margin: 0 0 10px;
+        font-size: 0.95rem;
+      }
+
+      .steps ol {
+        margin: 0 0 12px;
+        padding-left: 1.25rem;
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 0.9rem;
+      }
+
+      .steps li {
+        margin: 0 0 6px;
+      }
+
+      .steps .actions {
+        margin-top: 0;
+      }
+
       #url {
         width: 100%;
         min-height: 96px;
@@ -268,11 +296,49 @@
             </div>
           </div>
           <label for="ytKey">YouTube API Key</label>
-          <input id="ytKey" type="text" placeholder="Google Cloud → YouTube Data API v3" />
-          <p class="hint">
-            YT 人數需要 API Key（申請一次即可，不像 Twitch token 常過期）。
-            有填頻道時會自動找正在直播的影片；也可直接填影片 ID 省 quota。
-          </p>
+          <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
+
+          <div class="steps" id="yt-key-guide">
+            <h3>YT API Key 怎麼申請（一次即可）</h3>
+            <ol>
+              <li>開 Google Cloud，登入後建立／選擇一個專案。</li>
+              <li>啟用 <b>YouTube Data API v3</b>。</li>
+              <li>到 Credentials 建立 <b>API key</b>，複製 `AIza…` 貼到上方欄位。</li>
+              <li>
+                （建議）編輯金鑰 → API restrictions 只允許 YouTube Data API v3。
+                Application restrictions 可先維持 None。
+              </li>
+              <li>
+                有填 YouTube 頻道時會自動找正在直播的影片；若要省 quota，也可直接填直播影片 ID。
+              </li>
+            </ol>
+            <div class="actions">
+              <a
+                class="btn"
+                href="https://console.cloud.google.com/"
+                target="_blank"
+                rel="noopener"
+                >1. 開 Cloud Console</a
+              >
+              <a
+                class="btn"
+                href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
+                target="_blank"
+                rel="noopener"
+                >2. 啟用 YouTube Data API</a
+              >
+              <a
+                class="btn"
+                href="https://console.cloud.google.com/apis/credentials"
+                target="_blank"
+                rel="noopener"
+                >3. 建立／複製 API Key</a
+              >
+            </div>
+            <p class="hint">
+              按上面按鈕會開新分頁。金鑰申請一次就能一直用，不像 Twitch token 常過期。
+            </p>
+          </div>
 
           <div class="row">
             <div>

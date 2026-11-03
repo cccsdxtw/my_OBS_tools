@@ -28,11 +28,13 @@ OBS 統合工具：觀看人數、已開台時間、日期／時間、國旗、�
 
 ## YouTube 人數 API Key
 
-1. 開 [Google Cloud Console](https://console.cloud.google.com/) 建立專案  
-2. 啟用 **YouTube Data API v3**  
-3. 建立 API 金鑰，貼到設定頁  
+設定頁「觀眾人數」區塊已有步驟與跳轉按鈕：
 
-金鑰申請一次即可，不像舊 Twitch Access Token 常過期。可填 `@handle`／`UC…` 自動找 live，或直接填直播影片 ID。
+1. 開 Cloud Console  
+2. 啟用 YouTube Data API v3  
+3. 建立／複製 API Key  
+
+金鑰申請一次即可。可填 `@handle`／`UC…` 自動找 live，或直接填直播影片 ID。
 
 ## 版號
 

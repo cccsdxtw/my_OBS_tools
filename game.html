@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS Game Title</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <link id="ms-symbols" rel="stylesheet" href="" />
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.85);
+        --icon: var(--fg);
+        --muted: rgba(255, 255, 255, 0.7);
+        --size: 22px;
+        --bar-h: calc(var(--size) + 16px);
+        --pad-x: 12px;
+        --gap: 10px;
+        --radius: 0;
+        --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
+          "PingFang TC", sans-serif;
+        --font-num: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        color: var(--fg);
+      }
+
+      #bar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: var(--gap);
+        height: var(--bar-h);
+        padding: 0 var(--pad-x);
+        background: var(--bg);
+        border-radius: var(--radius);
+        white-space: nowrap;
+        line-height: 1;
+        overflow: hidden;
+      }
+
+      .icon-slot {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(var(--size) * 0.95);
+        height: calc(var(--size) * 0.95);
+        flex: 0 0 auto;
+      }
+
+      .icon,
+      .custom-icon {
+        width: 100%;
+        height: 100%;
+        opacity: 0.95;
+        display: block;
+        object-fit: contain;
+      }
+
+      .material-symbols-outlined.icon {
+        width: auto;
+        height: auto;
+        font-size: calc(var(--size) * 0.95);
+        line-height: 1;
+        color: var(--icon);
+        font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+        user-select: none;
+      }
+
+      .label,
+      .value {
+        display: flex;
+        align-items: center;
+        height: var(--size);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        line-height: 1;
+      }
+
+      .label {
+        color: var(--muted);
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.82);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        transform: translateY(0.06em);
+      }
+
+      .value {
+        font-family: var(--font-zh);
+        font-size: var(--size);
+        font-weight: 600;
+        transform: translateY(0.02em);
+      }
+
+      .sep {
+        opacity: 0.55;
+        font-weight: 500;
+        margin: 0 0.15em;
+      }
+
+      .platform {
+        font-family: var(--font-num);
+        font-weight: 500;
+        letter-spacing: 0.02em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar" aria-live="polite">
+      <span class="icon-slot" id="game-icon" hidden></span>
+      <span class="label" id="game-label">遊戲名稱</span>
+      <span class="value" id="game-value">
+        <span class="platform" id="game-platform">PC</span>
+        <span class="sep" id="game-sep"> - </span>
+        <span id="game-name">遊戲名</span>
+      </span>
+    </div>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(location.search);
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        cssVar("--fg", params.get("color"));
+        cssVar("--icon", params.get("iconColor") || params.get("iconColour"));
+        const bgParam = (params.get("bg") || "").trim();
+        if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {
+          cssVar("--bg", "transparent");
+        } else {
+          cssVar("--bg", bgParam);
+        }
+        cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
+        cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+
+        function normalizeMsName(raw) {
+          return String(raw || "")
+            .trim()
+            .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+            .replace(/[\s-]+/g, "_")
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, "");
+        }
+
+        function isUrlIcon(raw) {
+          const s = String(raw || "").trim();
+          return /^https?:\/\//i.test(s) || /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s);
+        }
+
+        function loadMaterialIcon(name) {
+          const n = normalizeMsName(name);
+          const link = document.getElementById("ms-symbols");
+          if (!link || !n) return;
+          link.href =
+            "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=" +
+            n;
+        }
+
+        const iconRaw = (params.get("gameIcon") || params.get("icon") || "").trim();
+        const iconSlot = document.getElementById("game-icon");
+        if (iconSlot && iconRaw) {
+          iconSlot.hidden = false;
+          if (isUrlIcon(iconRaw)) {
+            iconSlot.innerHTML = "";
+            const img = document.createElement("img");
+            img.className = "custom-icon";
+            img.alt = "";
+            img.referrerPolicy = "no-referrer";
+            img.src = iconRaw;
+            iconSlot.appendChild(img);
+          } else {
+            const name = normalizeMsName(iconRaw) || "sports_esports";
+            iconSlot.innerHTML = "";
+            const span = document.createElement("span");
+            span.className = "material-symbols-outlined icon";
+            span.setAttribute("aria-hidden", "true");
+            span.textContent = name;
+            iconSlot.appendChild(span);
+            loadMaterialIcon(name);
+          }
+        }
+
+        const label =
+          (params.get("gameLabel") || params.get("label") || "遊戲名稱").trim() || "遊戲名稱";
+        const platform = (params.get("platform") || params.get("plat") || "").trim();
+        const game = (params.get("game") || params.get("title") || "").trim();
+        let sep = params.get("sep");
+        if (sep == null || sep === "") sep = " - ";
+        else {
+          try {
+            sep = decodeURIComponent(sep);
+          } catch (_) {}
+        }
+
+        document.getElementById("game-label").textContent = label;
+        const platEl = document.getElementById("game-platform");
+        const sepEl = document.getElementById("game-sep");
+        const nameEl = document.getElementById("game-name");
+
+        if (platform && game) {
+          platEl.textContent = platform;
+          sepEl.textContent = sep;
+          nameEl.textContent = game;
+        } else if (game) {
+          platEl.hidden = true;
+          sepEl.hidden = true;
+          nameEl.textContent = game;
+        } else if (platform) {
+          sepEl.hidden = true;
+          nameEl.hidden = true;
+          platEl.textContent = platform;
+        } else {
+          platEl.textContent = "平台";
+          nameEl.textContent = "遊戲名";
+        }
+      })();
+    </script>
+  </body>
+</html>

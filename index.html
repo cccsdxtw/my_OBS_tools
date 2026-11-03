@@ -333,6 +333,41 @@
         line-height: 1.45;
       }
 
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .chip-row button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .chip-row button.is-active {
+        background: var(--accent);
+        color: #fff;
+        border-color: transparent;
+      }
+
+      .chip-row button.history {
+        font-weight: 500;
+        opacity: 0.92;
+      }
+
+      .chip-row button.history .meta {
+        display: block;
+        font-size: 0.75rem;
+        opacity: 0.7;
+        font-weight: 400;
+        margin-top: 2px;
+      }
+
       .actions {
         display: flex;
         flex-wrap: wrap;
@@ -460,7 +495,7 @@
         </div>
         <h1>拉基的OBS工具箱</h1>
         <p>
-          先填最上方的 Twitch／YouTube 帳號，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／聊天室可分開放來源。
+          先填最上方的 Twitch／YouTube 帳號，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室可分開放來源。
         </p>
       </header>
 
@@ -948,11 +983,132 @@
           </aside>
         </div>
 
-        <!-- ⑤ 聊天室 -->
+        <!-- ⑤ 遊戲名稱 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑤ 聊天室（TW + YT）</h2>
+              <h2>⑤ 遊戲名稱</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">顯示格式：<code>標籤： 平台 - 遊戲名</code>（例如「遊戲名稱： PC - 艾爾登法環」）</p>
+
+            <div class="field">
+              <label for="gameLabel">標籤</label>
+              <input id="gameLabel" type="text" value="遊戲名稱" placeholder="遊戲名稱" />
+            </div>
+
+            <label style="display: block; margin-top: 14px">平台（快速選）</label>
+            <div class="chip-row" id="gamePlatformPresets" role="group" aria-label="平台快捷">
+              <button type="button" data-platform="PC">PC</button>
+              <button type="button" data-platform="PS5">PS5</button>
+              <button type="button" data-platform="NS2">NS2</button>
+              <button type="button" data-platform="電競掌機">電競掌機</button>
+              <button type="button" data-platform="iOS">iOS</button>
+              <button type="button" data-platform="ANDROID">ANDROID</button>
+            </div>
+            <div class="field">
+              <label for="gamePlatform">平台</label>
+              <input id="gamePlatform" type="text" list="gamePlatformSuggest" value="PC" placeholder="PC / PS5 / NS2…" />
+              <datalist id="gamePlatformSuggest">
+                <option value="PC"></option>
+                <option value="PS5"></option>
+                <option value="NS2"></option>
+                <option value="電競掌機"></option>
+                <option value="iOS"></option>
+                <option value="ANDROID"></option>
+              </datalist>
+            </div>
+
+            <div class="field">
+              <label for="gameName">遊戲名</label>
+              <input id="gameName" type="text" list="gameNameSuggest" placeholder="例如 艾爾登法環" />
+              <datalist id="gameNameSuggest"></datalist>
+            </div>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" id="saveGameHistory" class="secondary">記住目前組合</button>
+              <button type="button" id="clearGameHistory" class="secondary">清除紀錄</button>
+            </div>
+            <p class="hint">最近用過的「平台 + 遊戲」會出現在下方，點一下即可套用；也會自動補進遊戲名建議清單。</p>
+            <div class="chip-row" id="gameHistoryList" aria-label="最近遊戲紀錄"></div>
+
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label for="gameIcon">圖示（選填）</label>
+              <input
+                id="gameIcon"
+                type="text"
+                list="materialIconSuggest"
+                value="sports_esports"
+                placeholder="Material 名稱或圖片 https://…；空白＝不顯示"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="gameIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="gameIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="gameIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="gameFontSize">字級</label>
+                <input id="gameFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="gameColor">文字色</label>
+                <div class="color-pair">
+                  <input id="gameColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="gameColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="gameShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="gameBg">底色</label>
+                <input id="gameBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑤ 遊戲名稱網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="gameUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 360–720、高度 40–60。換遊戲時改設定頁再複製，或直接改 OBS 網址參數。</p>
+            <div class="actions">
+              <button type="button" id="copyGame">複製遊戲名稱網址</button>
+              <a class="btn secondary" id="openGame" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewGame" title="game title preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑥ 聊天室 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑥ 聊天室（TW + YT）</h2>
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
@@ -1040,7 +1196,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑤ 聊天室網址</h2>
+              <h2>⑥ 聊天室網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
 
@@ -1081,16 +1237,16 @@
           </aside>
         </div>
 
-        <!-- ⑥ 回覆（主播用） -->
+        <!-- ⑦ 回覆（主播用） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑥ 聊天回覆</h2>
+              <h2>⑦ 聊天回覆</h2>
               <span class="side-title">主播用 · 非 OBS</span>
             </div>
             <p class="hint">
               <strong>建議用 Restream Chat</strong>：TW／YT 等平台授權存在 Restream，平常回覆不用自己換 token，也可一次回兩邊。
-              OBS 上的⑤聊天室覆蓋仍只負責「顯示」、免發話授權。
+              OBS 上的⑥聊天室覆蓋仍只負責「顯示」、免發話授權。
             </p>
             <p class="hint">
               沒有 Restream 才用下方本機回覆頁（要自己貼 TW／YT 發話 token，那些<strong>會過期</strong>）。
@@ -1115,7 +1271,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑥ 開啟回覆</h2>
+              <h2>⑦ 開啟回覆</h2>
               <span class="side-title">用瀏覽器開啟</span>
             </div>
             <div class="actions" style="margin-top: 0">
@@ -1123,7 +1279,7 @@
                 >開啟 Restream Chat（建議）</a
               >
             </div>
-            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑤覆蓋、一邊回覆。</p>
+            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑥覆蓋、一邊回覆。</p>
 
             <h3 style="margin: 18px 0 8px; font-size: 0.95rem">備選：本機回覆頁</h3>
             <textarea id="chatReplyUrl" class="url-box" readonly></textarea>
@@ -1140,7 +1296,7 @@
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          ①②③⑤ 右邊網址各自加 OBS 瀏覽器來源即可（⑥ 回覆除外）。
+          ①②③⑤⑥ 右邊網址各自加 OBS 瀏覽器來源即可（⑦ 回覆除外）。
         </div>
       </div>
 
@@ -1207,6 +1363,15 @@
           countdownIconColor: $("countdownIconColor"),
           countdownShowBg: $("countdownShowBg"),
           countdownBg: $("countdownBg"),
+          gameLabel: $("gameLabel"),
+          gamePlatform: $("gamePlatform"),
+          gameName: $("gameName"),
+          gameIcon: $("gameIcon"),
+          gameIconColor: $("gameIconColor"),
+          gameFontSize: $("gameFontSize"),
+          gameColor: $("gameColor"),
+          gameShowBg: $("gameShowBg"),
+          gameBg: $("gameBg"),
           chatSource: $("chatSource"),
           chatLayout: $("chatLayout"),
           chatStack: $("chatStack"),
@@ -1364,6 +1529,7 @@
             fields.overlayFontSize,
             fields.viewersFontSize,
             fields.countdownFontSize,
+            fields.gameFontSize,
             fields.chatFontSize,
           ].forEach((el) => {
             el.placeholder = `預設 ${fs}`;
@@ -1372,11 +1538,12 @@
             fields.overlayColor,
             fields.viewersColor,
             fields.countdownColor,
+            fields.gameColor,
             fields.chatColor,
           ].forEach((el) => {
             el.placeholder = `預設 ${col}`;
           });
-          [fields.overlayIconColor, fields.countdownIconColor].forEach((el) => {
+          [fields.overlayIconColor, fields.countdownIconColor, fields.gameIconColor].forEach((el) => {
             if (!el) return;
             el.placeholder = fields.defaultIconColor.value.trim()
               ? `預設 ${iconCol}`
@@ -1435,7 +1602,103 @@
           syncBgField(fields.overlayShowBg, fields.overlayBg);
           syncBgField(fields.viewersShowBg, fields.viewersBg);
           syncBgField(fields.countdownShowBg, fields.countdownBg);
+          syncBgField(fields.gameShowBg, fields.gameBg);
           syncBgField(fields.chatShowBg, fields.chatBg);
+        }
+
+        const GAME_HISTORY_KEY = "my_obs_tools_game_history";
+        const GAME_HISTORY_MAX = 12;
+
+        function loadGameHistory() {
+          try {
+            const raw = localStorage.getItem(GAME_HISTORY_KEY);
+            const list = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(list)) return [];
+            return list
+              .map((item) => ({
+                platform: String((item && item.platform) || "").trim(),
+                game: String((item && item.game) || "").trim(),
+              }))
+              .filter((item) => item.platform || item.game);
+          } catch (_) {
+            return [];
+          }
+        }
+
+        function saveGameHistory(list) {
+          localStorage.setItem(GAME_HISTORY_KEY, JSON.stringify(list.slice(0, GAME_HISTORY_MAX)));
+        }
+
+        function rememberCurrentGame(opts = {}) {
+          const platform = fields.gamePlatform.value.trim();
+          const game = fields.gameName.value.trim();
+          if (!platform && !game) return;
+          const next = loadGameHistory().filter(
+            (item) => !(item.platform === platform && item.game === game)
+          );
+          next.unshift({ platform, game });
+          saveGameHistory(next);
+          renderGameHistory();
+          if (opts.toastBtn) {
+            const btn = opts.toastBtn;
+            const label = btn.textContent;
+            btn.textContent = "已記住";
+            setTimeout(() => (btn.textContent = label), 1000);
+          }
+        }
+
+        function renderGameHistory() {
+          const list = loadGameHistory();
+          const wrap = $("gameHistoryList");
+          const suggest = $("gameNameSuggest");
+          if (!wrap) return;
+          wrap.innerHTML = "";
+          if (suggest) {
+            const names = [];
+            list.forEach((item) => {
+              if (item.game && !names.includes(item.game)) names.push(item.game);
+            });
+            suggest.innerHTML = names
+              .map((n) => `<option value="${n.replace(/"/g, "&quot;")}"></option>`)
+              .join("");
+          }
+          if (!list.length) {
+            wrap.innerHTML = '<span class="hint" style="margin:0">尚無紀錄。填好後按「記住目前組合」。</span>';
+            return;
+          }
+          list.forEach((item, idx) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "history";
+            const title = [item.platform, item.game].filter(Boolean).join(" - ") || "（空白）";
+            btn.appendChild(document.createTextNode(title));
+            const meta = document.createElement("span");
+            meta.className = "meta";
+            meta.textContent = "點一下套用 · 右鍵移除此項";
+            btn.appendChild(meta);
+            btn.title = "左鍵套用；右鍵移除此項";
+            btn.addEventListener("click", () => {
+              fields.gamePlatform.value = item.platform;
+              fields.gameName.value = item.game;
+              syncGamePlatformChips();
+              buildUrls();
+            });
+            btn.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              const next = loadGameHistory();
+              next.splice(idx, 1);
+              saveGameHistory(next);
+              renderGameHistory();
+            });
+            wrap.appendChild(btn);
+          });
+        }
+
+        function syncGamePlatformChips() {
+          const cur = fields.gamePlatform.value.trim();
+          document.querySelectorAll("#gamePlatformPresets [data-platform]").forEach((btn) => {
+            btn.classList.toggle("is-active", btn.dataset.platform === cur);
+          });
         }
 
         function buildOverlayUrl() {
@@ -1525,6 +1788,28 @@
           return url.toString();
         }
 
+        function buildGameUrl() {
+          const url = new URL("game.html", location.href);
+          const p = url.searchParams;
+          const label = fields.gameLabel.value.trim() || "遊戲名稱";
+          const platform = fields.gamePlatform.value.trim();
+          const game = fields.gameName.value.trim();
+          p.set("gameLabel", label);
+          if (platform) p.set("platform", platform);
+          else if (!game) p.set("platform", "PC");
+          p.set("game", game || "遊戲名");
+          if (fields.gameIcon.value.trim()) p.set("gameIcon", fields.gameIcon.value.trim());
+          styleParams(
+            p,
+            fields.gameShowBg,
+            fields.gameBg,
+            fields.gameFontSize,
+            fields.gameColor,
+            fields.gameIconColor
+          );
+          return url.toString();
+        }
+
         function buildChatUrl(opts = {}) {
           const url = new URL("chat.html", location.href);
           const p = url.searchParams;
@@ -1587,9 +1872,11 @@
 
         function buildUrls() {
           syncStylePlaceholders();
+          syncGamePlatformChips();
           const { href, mods, moduleOrder } = buildOverlayUrl();
           const cdHref = buildCountdownUrl();
           const vcHref = buildViewersUrl();
+          const gameHref = buildGameUrl();
           const split = fields.chatLayout.value === "split";
           const chatHref = buildChatUrl({
             source: split ? "twitch" : fields.chatSource.value || "auto",
@@ -1614,6 +1901,10 @@
           $("vcUrl").value = vcHref;
           $("openVc").href = vcHref;
           $("previewVc").src = vcHref;
+
+          $("gameUrl").value = gameHref;
+          $("openGame").href = gameHref;
+          $("previewGame").src = gameHref;
 
           syncChatPanels();
 
@@ -1650,7 +1941,7 @@
               vcPlatformOrder: getVcPlatformOrder(),
             })
           );
-          return { href, cdHref, vcHref, chatHref, chatHrefTw, chatHrefYt, chatReplyHref };
+          return { href, cdHref, vcHref, gameHref, chatHref, chatHrefTw, chatHrefYt, chatReplyHref };
         }
 
         async function copyText(text, btn, resetLabel) {
@@ -1681,6 +1972,31 @@
           await copyText(vcHref, $("copyVc"), "複製人數網址");
         });
 
+        $("copyGame").addEventListener("click", async () => {
+          rememberCurrentGame();
+          const { gameHref } = buildUrls();
+          $("gameUrl").select();
+          await copyText(gameHref, $("copyGame"), "複製遊戲名稱網址");
+        });
+
+        document.querySelectorAll("#gamePlatformPresets [data-platform]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            fields.gamePlatform.value = btn.dataset.platform;
+            syncGamePlatformChips();
+            buildUrls();
+          });
+        });
+
+        $("saveGameHistory").addEventListener("click", () => {
+          rememberCurrentGame({ toastBtn: $("saveGameHistory") });
+          buildUrls();
+        });
+
+        $("clearGameHistory").addEventListener("click", () => {
+          saveGameHistory([]);
+          renderGameHistory();
+        });
+
         $("copyChat").addEventListener("click", async () => {
           const { chatHref } = buildUrls();
           $("chatUrl").select();
@@ -1708,6 +2024,7 @@
               el === fields.overlayShowBg ||
               el === fields.viewersShowBg ||
               el === fields.countdownShowBg ||
+              el === fields.gameShowBg ||
               el === fields.chatShowBg
             ) {
               syncAllBgFields();
@@ -1721,6 +2038,8 @@
 
         bindColorPickers();
         syncAllBgFields();
+        renderGameHistory();
+        syncGamePlatformChips();
         buildUrls();
       })();
     </script>

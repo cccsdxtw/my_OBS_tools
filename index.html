@@ -587,10 +587,15 @@
       }
 
       #checkUpdateBtn,
+      #downloadUpdateBtn,
       #applyBtn {
         min-width: 7.5rem;
         padding: 12px 20px;
         font-size: 1rem;
+      }
+
+      #downloadUpdateBtn {
+        background: var(--accent-2);
       }
 
       #applyBtn {
@@ -608,6 +613,7 @@
         }
 
         #checkUpdateBtn,
+        #downloadUpdateBtn,
         #applyBtn {
           flex: 1;
         }
@@ -1451,6 +1457,7 @@
         </div>
         <div class="apply-dock-actions">
           <button type="button" class="secondary" id="checkUpdateBtn" hidden>檢查更新</button>
+          <button type="button" id="downloadUpdateBtn" hidden>下載更新包</button>
           <button type="button" id="applyBtn">確定</button>
         </div>
       </div>
@@ -1469,6 +1476,7 @@
         const themeToggle = $("themeToggle");
         const applyBtn = $("applyBtn");
         const checkUpdateBtn = $("checkUpdateBtn");
+        const downloadUpdateBtn = $("downloadUpdateBtn");
         const versionStatus = $("versionStatus");
         const brandVersion = $("brandVersion");
         const updateModeAutoBtn = $("updateModeAuto");
@@ -1477,6 +1485,7 @@
         let applyTimer = 0;
         let versionMsg = `本機 ${APP_VERSION}`;
         let versionKind = null;
+        let pendingZip = null;
         if (brandVersion) brandVersion.textContent = APP_VERSION;
 
         function applyTheme(theme) {
@@ -1494,6 +1503,11 @@
           applyTheme(cur === "dark" ? "light" : "dark");
         });
 
+        function clearPendingZip() {
+          pendingZip = null;
+          downloadUpdateBtn.hidden = true;
+        }
+
         function renderVersionStatus(text, kind) {
           versionMsg = text;
           versionKind = kind || null;
@@ -1510,6 +1524,7 @@
           updateModeAutoBtn.setAttribute("aria-pressed", isAuto ? "true" : "false");
           updateModeManualBtn.setAttribute("aria-pressed", isAuto ? "false" : "true");
           checkUpdateBtn.hidden = isAuto;
+          if (!pendingZip) downloadUpdateBtn.hidden = true;
         }
 
         function parseVer(tag) {
@@ -1528,7 +1543,63 @@
           return 0;
         }
 
-        async function checkLatestVersion() {
+        function pickZipAsset(data, tag) {
+          const assets = Array.isArray(data.assets) ? data.assets : [];
+          const preferName = `my_OBS_tools-${tag}.zip`;
+          const hit =
+            assets.find((a) => a && a.name === preferName) ||
+            assets.find((a) => a && /\.zip$/i.test(String(a.name || "")));
+          if (!hit || !hit.browser_download_url) return null;
+          return {
+            url: hit.browser_download_url,
+            name: hit.name || preferName,
+            page: data.html_url || RELEASES_PAGE,
+            tag,
+          };
+        }
+
+        function startZipDownload(zip) {
+          if (!zip || !zip.url) return false;
+          const a = document.createElement("a");
+          a.href = zip.url;
+          a.download = zip.name || "";
+          a.rel = "noopener";
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          return true;
+        }
+
+        function showUpdateAvailable(latestTag, zip) {
+          pendingZip = zip;
+          downloadUpdateBtn.hidden = !zip;
+          downloadUpdateBtn.textContent = zip ? `下載 ${latestTag}` : "下載更新包";
+          versionStatus.classList.toggle("is-warn", true);
+          versionStatus.classList.toggle("is-ok", false);
+          versionKind = "warn";
+          versionMsg = `有新版本 ${latestTag}（本機 ${APP_VERSION}）`;
+          versionStatus.innerHTML = "";
+          versionStatus.appendChild(
+            document.createTextNode(
+              zip
+                ? `有新版本 ${latestTag}（本機 ${APP_VERSION}）· 可直接下載 zip`
+                : `有新版本 ${latestTag}（本機 ${APP_VERSION}）· `
+            )
+          );
+          if (!zip) {
+            const a = document.createElement("a");
+            a.href = RELEASES_PAGE;
+            a.target = "_blank";
+            a.rel = "noopener";
+            a.textContent = "開 Releases";
+            versionStatus.appendChild(a);
+          }
+        }
+
+        async function checkLatestVersion(opts) {
+          const autoDownload = !!(opts && opts.autoDownload);
+          clearPendingZip();
           renderVersionStatus(`本機 ${APP_VERSION} · 檢查中…`, null);
           try {
             const res = await fetch(RELEASES_API, {
@@ -1545,20 +1616,17 @@
             }
             const diff = cmpVer(remote, local);
             if (diff > 0) {
-              versionStatus.classList.toggle("is-warn", true);
-              versionStatus.classList.toggle("is-ok", false);
-              versionKind = "warn";
-              versionMsg = `有新版本 ${latestTag}（本機 ${APP_VERSION}）`;
-              versionStatus.innerHTML = "";
-              versionStatus.appendChild(
-                document.createTextNode(`有新版本 ${latestTag}（本機 ${APP_VERSION}） · `)
-              );
-              const a = document.createElement("a");
-              a.href = data.html_url || RELEASES_PAGE;
-              a.target = "_blank";
-              a.rel = "noopener";
-              a.textContent = "下載更新";
-              versionStatus.appendChild(a);
+              const zip = pickZipAsset(data, latestTag);
+              showUpdateAvailable(latestTag, zip);
+              if (autoDownload && zip) {
+                startZipDownload(zip);
+                renderVersionStatus(
+                  `有新版本 ${latestTag} · 已開始下載 ${zip.name}`,
+                  "warn"
+                );
+                downloadUpdateBtn.hidden = false;
+                downloadUpdateBtn.textContent = `再下載 ${latestTag}`;
+              }
             } else {
               renderVersionStatus(`已跟上最新 ${APP_VERSION}`, "ok");
             }
@@ -1571,8 +1639,11 @@
           versionMode = mode === "manual" ? "manual" : "auto";
           localStorage.setItem(versionModeKey, versionMode);
           syncVersionModeUi();
-          if (versionMode === "auto") checkLatestVersion();
-          else renderVersionStatus(`本機 ${APP_VERSION} · 按「檢查更新」跟上版本`, null);
+          if (versionMode === "auto") checkLatestVersion({ autoDownload: false });
+          else {
+            clearPendingZip();
+            renderVersionStatus(`本機 ${APP_VERSION} · 按「檢查更新」跟上版本`, null);
+          }
         }
 
         function flashApplied() {
@@ -1586,11 +1657,21 @@
 
         updateModeAutoBtn.addEventListener("click", () => setVersionMode("auto"));
         updateModeManualBtn.addEventListener("click", () => setVersionMode("manual"));
-        checkUpdateBtn.addEventListener("click", () => checkLatestVersion());
+        checkUpdateBtn.addEventListener("click", () =>
+          checkLatestVersion({ autoDownload: true })
+        );
+        downloadUpdateBtn.addEventListener("click", () => {
+          if (!pendingZip) return;
+          startZipDownload(pendingZip);
+          renderVersionStatus(
+            `有新版本 ${pendingZip.tag} · 已開始下載 ${pendingZip.name}`,
+            "warn"
+          );
+        });
         applyBtn.addEventListener("click", () => flashApplied());
 
         syncVersionModeUi();
-        if (versionMode === "auto") checkLatestVersion();
+        if (versionMode === "auto") checkLatestVersion({ autoDownload: false });
         else renderVersionStatus(`本機 ${APP_VERSION} · 按「檢查更新」跟上版本`, null);
 
         const fields = {

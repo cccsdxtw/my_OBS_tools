@@ -139,16 +139,7 @@
         <span class="value" id="tz" hidden></span>
       </section>
 
-      <section class="mod" id="mod-countdown" hidden>
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M11 1h2v3h-2zm7.1 2.5 1.4 1.4-2.1 2.1-1.4-1.4zM12 6a9 9 0 1 1-9 9 9 9 0 0 1 9-9zm-1 3h2v5.2l3.4 2-1 1.7L11 15z"
-          />
-        </svg>
-        <span class="label" id="countdown-label" hidden></span>
-        <span class="value" id="countdown">00:00:00</span>
-      </section>
+      <!-- 倒計時已獨立成 countdown.html，可另開 OBS 瀏覽器來源分開放 -->
     </div>
 
     <script>
@@ -197,10 +188,6 @@
         const flagCodeParam = (params.get("flag") || "").trim().toLowerCase();
         const showTz =
           flag("showTz", !!flagCodeParam) || flag("flag", !!flagCodeParam);
-        const showCountdown = flag(
-          "cd",
-          !!(params.get("countdown") || params.get("cdMins") || params.get("cdSecs"))
-        );
 
         const TZ_TO_FLAG = {
           "Asia/Taipei": "tw",
@@ -237,14 +224,11 @@
           dateMod: document.getElementById("mod-date"),
           timeMod: document.getElementById("mod-time"),
           tzMod: document.getElementById("mod-tz"),
-          countdownMod: document.getElementById("mod-countdown"),
           viewers: document.getElementById("viewers"),
           uptime: document.getElementById("uptime"),
           date: document.getElementById("date"),
           time: document.getElementById("time"),
           tz: document.getElementById("tz"),
-          countdown: document.getElementById("countdown"),
-          countdownLabel: document.getElementById("countdown-label"),
         };
 
         els.viewersMod.hidden = !showViewers;
@@ -252,7 +236,6 @@
         els.dateMod.hidden = !showDate;
         els.timeMod.hidden = !showTime;
         els.tzMod.hidden = !showTz;
-        els.countdownMod.hidden = !showCountdown;
 
         const flagEl = document.getElementById("flag");
         const flagCode =
@@ -270,14 +253,7 @@
           els.tz.textContent = tz;
         }
 
-        const cdLabel = params.get("cdLabel") || "";
-        if (cdLabel) {
-          els.countdownLabel.hidden = false;
-          els.countdownLabel.textContent = cdLabel;
-        }
-
         let startedAt = null;
-        let countdownTarget = null;
 
         function pad(n) {
           return String(Math.max(0, Math.floor(n))).padStart(2, "0");
@@ -359,32 +335,7 @@
               els.uptime.textContent = formatHMS((now - startedAt) / 1000);
             }
           }
-          if (showCountdown && countdownTarget) {
-            const remain = (countdownTarget - now) / 1000;
-            if (remain <= 0) {
-              els.countdown.textContent = params.get("cdDone") || "00:00:00";
-            } else {
-              els.countdown.textContent = formatHMS(remain);
-            }
-          }
         }
-
-        function parseCountdownTarget() {
-          const absolute = params.get("countdown");
-          if (absolute) {
-            const t = Date.parse(absolute);
-            if (!Number.isNaN(t)) return new Date(t);
-          }
-          const mins = parseFloat(params.get("cdMins") || "");
-          const secs = parseFloat(params.get("cdSecs") || "");
-          let total = 0;
-          if (!Number.isNaN(mins)) total += mins * 60;
-          if (!Number.isNaN(secs)) total += secs;
-          if (total > 0) return new Date(Date.now() + total * 1000);
-          return null;
-        }
-
-        countdownTarget = parseCountdownTarget();
 
         function parseDecapiUptime(text) {
           if (!text || /offline|not live|is offline/i.test(text)) return null;

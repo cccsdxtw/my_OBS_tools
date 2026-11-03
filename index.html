@@ -242,8 +242,8 @@
             <label><input type="checkbox" data-key="date" checked /> 日期</label>
             <label><input type="checkbox" data-key="time" checked /> 時間</label>
             <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
-            <label><input type="checkbox" data-key="cd" /> 倒計時</label>
           </div>
+          <p class="hint">以上是「資訊條」overlay。倒計時在下面，會另外產生獨立網址，方便 OBS 分開放。</p>
 
           <div class="row">
             <div>
@@ -278,7 +278,7 @@
           </div>
           <p class="hint">可用 token：YYYY YY MM DD HH mm ss　ddd＝週一　dddd＝星期一</p>
 
-          <h2 style="margin-top: 22px">倒計時</h2>
+          <h2 style="margin-top: 22px">倒計時（獨立來源）</h2>
           <label for="countdown">目標時間（本地）</label>
           <input id="countdown" type="datetime-local" step="1" />
           <div class="row">
@@ -291,7 +291,7 @@
               <input id="cdLabel" type="text" placeholder="START" />
             </div>
           </div>
-          <p class="hint">目標時間與「從現在起」擇一；有勾選倒計時才會出現在 overlay。</p>
+          <p class="hint">目標時間與「從現在起」擇一。會產生獨立的 `countdown.html` 網址，不要跟資訊條黏在同一來源。</p>
 
           <div class="row">
             <div>
@@ -305,29 +305,40 @@
           </div>
           <label for="bg">背景色</label>
           <input id="bg" type="text" value="rgba(0,0,0,0.45)" />
-
-          <div class="actions">
-            <button type="button" id="copy">複製 OBS 網址</button>
-            <a class="btn secondary" id="open" href="#" target="_blank" rel="noopener"
-              >預覽 overlay</a
-            >
-          </div>
         </section>
 
         <aside class="card">
-          <h2>OBS 瀏覽器來源網址</h2>
+          <h2>① 資訊條網址</h2>
           <textarea id="url" readonly></textarea>
-          <p class="hint">建議寬度 700–900、高度 40–60（依字級調整）。</p>
-
+          <p class="hint">建議寬度 700–900、高度 40–60。OBS 加一個瀏覽器來源貼這個。</p>
+          <div class="actions">
+            <button type="button" id="copy">複製資訊條網址</button>
+            <a class="btn secondary" id="open" href="#" target="_blank" rel="noopener"
+              >預覽</a
+            >
+          </div>
           <div class="preview-wrap">
             <iframe id="preview" title="overlay preview"></iframe>
+          </div>
+
+          <h2 style="margin-top: 22px">② 倒計時網址</h2>
+          <textarea id="cdUrl" readonly></textarea>
+          <p class="hint">建議寬度 220–360、高度 40–60。OBS 再加一個瀏覽器來源，放到別的位置。</p>
+          <div class="actions">
+            <button type="button" id="copyCd">複製倒計時網址</button>
+            <a class="btn secondary" id="openCd" href="#" target="_blank" rel="noopener"
+              >預覽</a
+            >
+          </div>
+          <div class="preview-wrap">
+            <iframe id="previewCd" title="countdown preview"></iframe>
           </div>
 
           <div class="note">
             <strong>為什麼不用一直驗證？</strong><br />
             舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
             這裡改抓公開實況資料，日常開台不必再跑 OAuth。
-            若你原本的 Streamlabs 人數 widget 仍要用，可另外加一個瀏覽器來源，不必塞進這個統合網址。
+            資訊條與倒計時分開兩個瀏覽器來源，方便你分開放。
           </div>
         </aside>
       </div>
@@ -378,7 +389,13 @@
           } catch (_) {}
         }
 
-        function buildUrl() {
+        function styleParams(p) {
+          if (fields.fontSize.value) p.set("fontSize", fields.fontSize.value);
+          if (fields.color.value.trim()) p.set("color", fields.color.value.trim());
+          if (fields.bg.value.trim()) p.set("bg", fields.bg.value.trim());
+        }
+
+        function buildOverlayUrl() {
           const url = new URL("overlay.html", location.href);
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
@@ -397,24 +414,38 @@
           if (fields.viewersSource.value) p.set("viewersSource", fields.viewersSource.value);
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
+          styleParams(p);
+          return { href: url.toString(), mods };
+        }
+
+        function buildCountdownUrl() {
+          const url = new URL("countdown.html", location.href);
+          const p = url.searchParams;
           if (fields.cdLabel.value.trim()) p.set("cdLabel", fields.cdLabel.value.trim());
-          if (fields.fontSize.value) p.set("fontSize", fields.fontSize.value);
-          if (fields.color.value.trim()) p.set("color", fields.color.value.trim());
-          if (fields.bg.value.trim()) p.set("bg", fields.bg.value.trim());
-
-          if (mods.cd) {
-            if (fields.countdown.value) {
-              const local = new Date(fields.countdown.value);
-              if (!Number.isNaN(local.getTime())) p.set("countdown", local.toISOString());
-            } else if (fields.cdMins.value) {
-              p.set("cdMins", fields.cdMins.value);
-            }
+          if (fields.countdown.value) {
+            const local = new Date(fields.countdown.value);
+            if (!Number.isNaN(local.getTime())) p.set("countdown", local.toISOString());
+          } else if (fields.cdMins.value) {
+            p.set("cdMins", fields.cdMins.value);
+          } else {
+            // 預設給 10 分鐘，方便預覽；正式用請改目標時間或分鐘數
+            p.set("cdMins", "10");
           }
+          styleParams(p);
+          return url.toString();
+        }
 
-          const href = url.toString();
+        function buildUrls() {
+          const { href, mods } = buildOverlayUrl();
+          const cdHref = buildCountdownUrl();
+
           $("url").value = href;
           $("open").href = href;
           $("preview").src = href;
+
+          $("cdUrl").value = cdHref;
+          $("openCd").href = cdHref;
+          $("previewCd").src = cdHref;
 
           localStorage.setItem(
             "my_obs_tools_setup",
@@ -425,27 +456,37 @@
               modules: mods,
             })
           );
-          return href;
+          return { href, cdHref };
+        }
+
+        async function copyText(text, btn, resetLabel) {
+          try {
+            await navigator.clipboard.writeText(text);
+            btn.textContent = "已複製";
+            setTimeout(() => (btn.textContent = resetLabel), 1200);
+          } catch (_) {
+            // fallback
+          }
         }
 
         $("copy").addEventListener("click", async () => {
-          const href = buildUrl();
-          try {
-            await navigator.clipboard.writeText(href);
-            $("copy").textContent = "已複製";
-            setTimeout(() => ($("copy").textContent = "複製 OBS 網址"), 1200);
-          } catch (_) {
-            $("url").select();
-            document.execCommand("copy");
-          }
+          const { href } = buildUrls();
+          $("url").select();
+          await copyText(href, $("copy"), "複製資訊條網址");
         });
 
-        Object.values(fields).forEach((el) => el.addEventListener("input", buildUrl));
+        $("copyCd").addEventListener("click", async () => {
+          const { cdHref } = buildUrls();
+          $("cdUrl").select();
+          await copyText(cdHref, $("copyCd"), "複製倒計時網址");
+        });
+
+        Object.values(fields).forEach((el) => el.addEventListener("input", buildUrls));
         document.querySelectorAll("#modules input").forEach((el) =>
-          el.addEventListener("change", buildUrl)
+          el.addEventListener("change", buildUrls)
         );
 
-        buildUrl();
+        buildUrls();
       })();
     </script>
   </body>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS Countdown</title>
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.85);
+        --muted: rgba(255, 255, 255, 0.55);
+        --size: 22px;
+        --pad-x: 10px;
+        --gap: 8px;
+        --radius: 0;
+        --font: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        font-family: var(--font);
+        color: var(--fg);
+      }
+
+      #bar {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--gap);
+        min-height: calc(var(--size) + 12px);
+        padding: 6px var(--pad-x);
+        background: var(--bg);
+        border-radius: var(--radius);
+        white-space: nowrap;
+        line-height: 1.15;
+        overflow: visible;
+      }
+
+      .icon {
+        width: var(--size);
+        height: var(--size);
+        opacity: 0.85;
+        flex: 0 0 auto;
+        display: block;
+      }
+
+      .label {
+        color: var(--muted);
+        font-size: 0.72em;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .value {
+        font-size: var(--size);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar" aria-live="polite">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M11 1h2v3h-2zm7.1 2.5 1.4 1.4-2.1 2.1-1.4-1.4zM12 6a9 9 0 1 1-9 9 9 9 0 0 1 9-9zm-1 3h2v5.2l3.4 2-1 1.7L11 15z"
+        />
+      </svg>
+      <span class="label" id="countdown-label" hidden></span>
+      <span class="value" id="countdown">00:00:00</span>
+    </div>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(location.search);
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        cssVar("--fg", params.get("color"));
+        cssVar("--bg", params.get("bg"));
+        cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
+        cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+
+        const els = {
+          countdown: document.getElementById("countdown"),
+          countdownLabel: document.getElementById("countdown-label"),
+        };
+
+        const cdLabel = params.get("cdLabel") || params.get("label") || "";
+        if (cdLabel) {
+          els.countdownLabel.hidden = false;
+          els.countdownLabel.textContent = cdLabel;
+        }
+
+        function pad(n) {
+          return String(Math.max(0, Math.floor(n))).padStart(2, "0");
+        }
+
+        function formatHMS(totalSeconds) {
+          const s = Math.max(0, Math.floor(totalSeconds));
+          const h = Math.floor(s / 3600);
+          const m = Math.floor((s % 3600) / 60);
+          const sec = s % 60;
+          return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+        }
+
+        function parseCountdownTarget() {
+          const absolute = params.get("countdown") || params.get("target");
+          if (absolute) {
+            const t = Date.parse(absolute);
+            if (!Number.isNaN(t)) return new Date(t);
+          }
+          const mins = parseFloat(params.get("cdMins") || params.get("mins") || "");
+          const secs = parseFloat(params.get("cdSecs") || params.get("secs") || "");
+          let total = 0;
+          if (!Number.isNaN(mins)) total += mins * 60;
+          if (!Number.isNaN(secs)) total += secs;
+          if (total > 0) return new Date(Date.now() + total * 1000);
+          return null;
+        }
+
+        const countdownTarget = parseCountdownTarget();
+        const doneText = params.get("cdDone") || "00:00:00";
+
+        function tick() {
+          if (!countdownTarget) {
+            els.countdown.textContent = doneText;
+            return;
+          }
+          const remain = (countdownTarget - Date.now()) / 1000;
+          els.countdown.textContent =
+            remain <= 0 ? doneText : formatHMS(remain);
+        }
+
+        tick();
+        setInterval(tick, 250);
+      })();
+    </script>
+  </body>
+</html>

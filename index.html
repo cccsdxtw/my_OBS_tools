@@ -400,7 +400,7 @@
         </div>
         <h1>拉基的OBS工具箱</h1>
         <p>
-          左欄填設定、右欄複製對應 OBS 網址。資訊條／觀眾人數／倒計時各一橫列，方便分開放來源。
+          左欄填設定、右欄複製對應 OBS 網址。資訊條／觀眾人數／倒計時／聊天室各一橫列，方便分開放來源。
         </p>
       </header>
 
@@ -664,10 +664,70 @@
           </aside>
         </div>
 
+        <!-- ⑤ 聊天室（序號跳過 4） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑤ 聊天室（TW + YT）</h2>
+              <span class="side-title">獨立來源 · 序號跳過 4</span>
+            </div>
+            <p class="hint">
+              沿用上面的 Twitch 頻道／YouTube 頻道與 API Key。Twitch 用匿名 IRC 讀聊天（免登入）；
+              YouTube 用 Data API 拉 live chat。
+            </p>
+            <div class="field">
+              <label for="chatSource">來源</label>
+              <select id="chatSource">
+                <option value="auto" selected>auto（有填就連）</option>
+                <option value="both">TW + YT</option>
+                <option value="twitch">只用 Twitch</option>
+                <option value="youtube">只用 YouTube</option>
+              </select>
+            </div>
+            <div class="row">
+              <div>
+                <label for="chatMax">最多保留則數</label>
+                <input id="chatMax" type="number" min="5" max="100" value="30" />
+              </div>
+              <div>
+                <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="chatShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="chatBg">底色</label>
+                <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <p class="hint">OBS 建議寬 360–480、高 500–720；訊息從底部往上堆疊。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑤ 聊天室網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="chatUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 360–480、高度 500–720。</p>
+            <div class="actions">
+              <button type="button" id="copyChat">複製聊天室網址</button>
+              <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap" style="min-height: 160px">
+              <iframe id="previewChat" title="chat preview" style="height: 160px"></iframe>
+            </div>
+          </aside>
+        </div>
+
         <div class="note">
           <strong>為什麼不用一直驗證？</strong><br />
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
-          這裡改抓公開實況資料，日常開台不必再跑 OAuth。
+          這裡改抓公開實況／聊天資料，日常開台不必再跑 OAuth。
           每一橫列右邊的網址各自加一個 OBS 瀏覽器來源即可。
         </div>
       </div>
@@ -722,6 +782,11 @@
           viewersBg: $("viewersBg"),
           countdownShowBg: $("countdownShowBg"),
           countdownBg: $("countdownBg"),
+          chatSource: $("chatSource"),
+          chatMax: $("chatMax"),
+          chatHideStatus: $("chatHideStatus"),
+          chatShowBg: $("chatShowBg"),
+          chatBg: $("chatBg"),
         };
 
         try {
@@ -742,12 +807,14 @@
               rawFields.overlayBg = rawFields.bg;
               rawFields.viewersBg = rawFields.bg;
               rawFields.countdownBg = rawFields.bg;
+              rawFields.chatBg = rawFields.bg;
             }
             if (Object.prototype.hasOwnProperty.call(rawFields, "showBg")) {
               if (!Object.prototype.hasOwnProperty.call(rawFields, "overlayShowBg")) {
                 rawFields.overlayShowBg = rawFields.showBg;
                 rawFields.viewersShowBg = rawFields.showBg;
                 rawFields.countdownShowBg = rawFields.showBg;
+                rawFields.chatShowBg = rawFields.showBg;
               }
             }
             Object.entries(rawFields).forEach(([k, v]) => {
@@ -785,6 +852,7 @@
           syncBgField(fields.overlayShowBg, fields.overlayBg);
           syncBgField(fields.viewersShowBg, fields.viewersBg);
           syncBgField(fields.countdownShowBg, fields.countdownBg);
+          syncBgField(fields.chatShowBg, fields.chatBg);
         }
 
         function buildOverlayUrl() {
@@ -846,10 +914,30 @@
           return url.toString();
         }
 
+        function buildChatUrl() {
+          const url = new URL("chat.html", location.href);
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = fields.ytChannel.value.trim();
+          const ytVideo = fields.ytVideo.value.trim();
+          const ytKey = fields.ytKey.value.trim();
+
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          if (fields.chatSource.value) p.set("chatSource", fields.chatSource.value);
+          if (fields.chatMax.value) p.set("max", fields.chatMax.value);
+          if (fields.chatHideStatus.checked) p.set("hideStatus", "1");
+          styleParams(p, fields.chatShowBg, fields.chatBg);
+          return url.toString();
+        }
+
         function buildUrls() {
           const { href, mods } = buildOverlayUrl();
           const cdHref = buildCountdownUrl();
           const vcHref = buildViewersUrl();
+          const chatHref = buildChatUrl();
 
           $("url").value = href;
           $("open").href = href;
@@ -863,6 +951,10 @@
           $("openVc").href = vcHref;
           $("previewVc").src = vcHref;
 
+          $("chatUrl").value = chatHref;
+          $("openChat").href = chatHref;
+          $("previewChat").src = chatHref;
+
           localStorage.setItem(
             "my_obs_tools_setup",
             JSON.stringify({
@@ -875,7 +967,7 @@
               modules: mods,
             })
           );
-          return { href, cdHref, vcHref };
+          return { href, cdHref, vcHref, chatHref };
         }
 
         async function copyText(text, btn, resetLabel) {
@@ -906,12 +998,19 @@
           await copyText(vcHref, $("copyVc"), "複製人數網址");
         });
 
+        $("copyChat").addEventListener("click", async () => {
+          const { chatHref } = buildUrls();
+          $("chatUrl").select();
+          await copyText(chatHref, $("copyChat"), "複製聊天室網址");
+        });
+
         Object.values(fields).forEach((el) => {
           el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
             if (
               el === fields.overlayShowBg ||
               el === fields.viewersShowBg ||
-              el === fields.countdownShowBg
+              el === fields.countdownShowBg ||
+              el === fields.chatShowBg
             ) {
               syncAllBgFields();
             }

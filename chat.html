@@ -21,7 +21,6 @@
         --pad: 10px;
         --radius: 0;
         --gap: 6px;
-        --col-gap: 12px;
         --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
           "PingFang TC", sans-serif;
       }
@@ -60,60 +59,7 @@
         justify-content: flex-start;
       }
 
-      #wrap.layout-split {
-        flex-direction: row;
-        align-items: stretch;
-        gap: var(--col-gap);
-      }
-
-      #wrap.layout-split.stack-bottom {
-        align-items: flex-end;
-      }
-
-      #wrap.layout-split.stack-top {
-        align-items: flex-start;
-      }
-
-      .col {
-        flex: 1;
-        min-width: 0;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      #wrap.layout-merge .col {
-        display: none;
-      }
-
-      #wrap.layout-merge #col-merge {
-        display: flex;
-        flex: 1;
-        min-height: 0;
-      }
-
-      #wrap.layout-split #col-merge {
-        display: none;
-      }
-
-      .col-label {
-        flex: 0 0 auto;
-        font-size: 0.72em;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        opacity: 0.75;
-      }
-
-      #col-tw .col-label {
-        color: var(--tw);
-      }
-
-      #col-yt .col-label {
-        color: var(--yt);
-      }
-
-      .feed {
+      #feed {
         display: flex;
         flex-direction: column;
         gap: var(--gap);
@@ -122,11 +68,11 @@
         width: 100%;
       }
 
-      #wrap.stack-bottom .feed {
+      #wrap.stack-bottom #feed {
         justify-content: flex-end;
       }
 
-      #wrap.stack-top .feed {
+      #wrap.stack-top #feed {
         justify-content: flex-start;
       }
 
@@ -230,18 +176,8 @@
   </head>
   <body>
     <div id="status">connecting…</div>
-    <div id="wrap" class="layout-merge stack-bottom">
-      <div class="col" id="col-merge">
-        <div class="feed" id="feed" aria-live="polite"></div>
-      </div>
-      <div class="col" id="col-tw">
-        <div class="col-label">TWITCH</div>
-        <div class="feed" id="feed-tw" aria-live="polite"></div>
-      </div>
-      <div class="col" id="col-yt">
-        <div class="col-label">YOUTUBE</div>
-        <div class="feed" id="feed-yt" aria-live="polite"></div>
-      </div>
+    <div id="wrap" class="stack-bottom">
+      <div id="feed" aria-live="polite"></div>
     </div>
 
     <script>
@@ -267,16 +203,13 @@
         }
 
         const maxMsgs = Math.max(5, Math.min(100, parseInt(params.get("max") || "30", 10) || 30));
-        // ttl：秒；0／空白＝不依時間消失（只受則數限制）
         const ttlSec = Math.max(0, parseInt(params.get("ttl") || "0", 10) || 0);
-        const layout = (params.get("layout") || "merge").toLowerCase() === "split" ? "split" : "merge";
         const stack = (params.get("stack") || "bottom").toLowerCase() === "top" ? "top" : "bottom";
         const showSource = params.get("showSource") !== "0";
         const demo = params.get("demo") === "1";
         if (params.get("hideStatus") === "1") document.body.classList.add("hide-status");
         if (!showSource) document.body.classList.add("hide-source");
-
-        wrap.className = `layout-${layout} stack-${stack}`;
+        wrap.className = `stack-${stack}`;
 
         const customCss = params.get("css") || "";
         if (customCss) {
@@ -296,11 +229,10 @@
         const ytChannel = (params.get("yt") || params.get("youtube") || params.get("ytChannel") || "").trim();
         const ytVideoParam = (params.get("ytVideo") || "").trim();
         const ytKey = (params.get("ytKey") || params.get("youtubeKey") || "").trim();
-        const sources = (params.get("chatSource") || "auto").toLowerCase(); // auto|twitch|youtube|both
+        // auto|twitch|youtube|both（分開兩頁時各傳 twitch / youtube）
+        const sources = (params.get("chatSource") || "auto").toLowerCase();
 
-        const feedMerge = document.getElementById("feed");
-        const feedTw = document.getElementById("feed-tw");
-        const feedYt = document.getElementById("feed-yt");
+        const feed = document.getElementById("feed");
         const statusEl = document.getElementById("status");
         const connected = { tw: false, yt: false };
 
@@ -309,15 +241,11 @@
         const wantYt =
           !!(ytVideoParam || (ytChannel && ytKey)) &&
           (sources === "auto" || sources === "youtube" || sources === "both");
+        // demo 時依 chatSource 決定要播哪些示範平台
+        const demoTw = demo && (sources === "auto" || sources === "twitch" || sources === "both");
+        const demoYt = demo && (sources === "auto" || sources === "youtube" || sources === "both");
 
-        if (layout === "split") {
-          const showTwCol = wantTw || demo;
-          const showYtCol = wantYt || demo;
-          document.getElementById("col-tw").style.display = showTwCol ? "" : "none";
-          document.getElementById("col-yt").style.display = showYtCol ? "" : "none";
-        }
-
-        function setStatus() {
+        function refreshStatus() {
           if (demo && !wantTw && !wantYt) {
             statusEl.textContent = "DEMO";
             return;
@@ -329,12 +257,7 @@
           statusEl.textContent = parts.length ? parts.join(" ") : "NO SRC";
         }
 
-        function targetFeed(platform) {
-          if (layout === "split") return platform === "tw" ? feedTw : feedYt;
-          return feedMerge;
-        }
-
-        function trimFeed(feed) {
+        function trimFeed() {
           while (feed.children.length > maxMsgs) {
             if (stack === "top") feed.removeChild(feed.lastChild);
             else feed.removeChild(feed.firstChild);
@@ -342,8 +265,6 @@
         }
 
         function addMessage({ platform, user, text, born }) {
-          const feed = targetFeed(platform);
-          if (!feed) return;
           const row = document.createElement("div");
           row.className = "msg";
           row.dataset.born = String(born || Date.now());
@@ -360,7 +281,7 @@
           row.append(plat, u, t);
           if (stack === "top") feed.insertBefore(row, feed.firstChild);
           else feed.appendChild(row);
-          trimFeed(feed);
+          trimFeed();
         }
 
         function expireTick() {
@@ -381,7 +302,7 @@
         if (ttlSec > 0) setInterval(expireTick, 500);
 
         function startDemo() {
-          const samples = [
+          const all = [
             { platform: "tw", user: "拉基粉絲A", text: "哈哈哈這招好強" },
             { platform: "yt", user: "YT觀眾1", text: "剛進來～晚安" },
             { platform: "tw", user: "NightOwl", text: "KKK 太好笑了" },
@@ -391,8 +312,10 @@
             { platform: "tw", user: "Tea", text: "今天氣氛很好" },
             { platform: "yt", user: "StreamerFan", text: "加油加油" },
           ];
+          const samples = all.filter((m) => (m.platform === "tw" ? demoTw : demoYt));
+          if (!samples.length) return;
           const now = Date.now();
-          samples.slice(0, 6).forEach((m, i) => {
+          samples.slice(0, Math.min(6, samples.length)).forEach((m, i) => {
             addMessage({ ...m, born: now - (6 - i) * 2500 });
           });
           let i = 0;
@@ -406,9 +329,8 @@
           statusEl.textContent = "NO SRC";
           return;
         }
-        setStatus();
+        refreshStatus();
 
-        // ----- Twitch anonymous IRC -----
         function connectTwitch() {
           if (!wantTw) return;
           const nick = `justinfan${Math.floor(10000 + Math.random() * 80000)}`;
@@ -434,7 +356,7 @@
                 }
                 if (line.includes(" JOIN #")) {
                   connected.tw = true;
-                  setStatus();
+                  refreshStatus();
                 }
                 const m = line.match(
                   /^(?:@([^ ]+) )?(?::([^ ]+) )?PRIVMSG #[^ ]+ :(.*)$/
@@ -456,7 +378,7 @@
             });
             ws.addEventListener("close", () => {
               connected.tw = false;
-              setStatus();
+              refreshStatus();
               if (closed) return;
               retry = Math.min(retry + 1, 6);
               setTimeout(connect, 1000 * retry);
@@ -476,7 +398,6 @@
           });
         }
 
-        // ----- YouTube live chat via Data API -----
         function normalizeHandle(input) {
           let s = input.trim();
           if (s.startsWith("http://") || s.startsWith("https://")) {
@@ -543,7 +464,7 @@
             chatId = await resolveLiveChatId(videoId);
             if (!chatId) throw new Error("yt no live chat");
             connected.yt = true;
-            setStatus();
+            refreshStatus();
             fail = 0;
           }
 
@@ -561,7 +482,7 @@
                 if (res.status === 403 || res.status === 404) {
                   chatId = null;
                   connected.yt = false;
-                  setStatus();
+                  refreshStatus();
                 }
                 throw new Error(`yt chat ${res.status}`);
               }
@@ -586,7 +507,7 @@
             } catch (err) {
               console.warn(err);
               connected.yt = false;
-              setStatus();
+              refreshStatus();
               fail += 1;
               chatId = fail >= 3 ? null : chatId;
               setTimeout(tick, Math.min(15000, 3000 * fail));
@@ -601,6 +522,7 @@
           connectTwitch();
           pollYoutube();
         }
+        refreshStatus();
       })();
     </script>
   </body>

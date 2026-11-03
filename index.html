@@ -759,31 +759,37 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              使用最上方的 Twitch／YouTube 帳號。右側預覽會播示範留言（正式 OBS 網址不含 demo）。
+              使用最上方的 Twitch／YouTube 帳號。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。
             </p>
-            <div class="field">
-              <label for="chatSource">來源平台</label>
-              <select id="chatSource">
-                <option value="auto" selected>auto（有填就連）</option>
-                <option value="both">TW + YT</option>
-                <option value="twitch">只用 Twitch</option>
-                <option value="youtube">只用 YouTube</option>
-              </select>
-            </div>
             <div class="row">
               <div>
                 <label for="chatLayout">1. 版面</label>
                 <select id="chatLayout">
-                  <option value="merge" selected>合併成一個</option>
-                  <option value="split">分開成兩個</option>
+                  <option value="merge" selected>合併成一個（一頁）</option>
+                  <option value="split">分開成兩個（兩頁／兩個來源）</option>
                 </select>
               </div>
+              <div id="chatSourceWrap">
+                <label for="chatSource">合併時來源</label>
+                <select id="chatSource">
+                  <option value="auto" selected>auto（有填就連）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只用 Twitch</option>
+                  <option value="youtube">只用 YouTube</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
               <div>
                 <label for="chatStack">3. 方向</label>
                 <select id="chatStack">
                   <option value="bottom" selected>從下到上（新在底部）</option>
                   <option value="top">從上到下（新在頂部）</option>
                 </select>
+              </div>
+              <div>
+                <label for="chatTtl">2. 過幾秒最舊消失</label>
+                <input id="chatTtl" type="number" min="0" max="600" value="15" placeholder="0＝不限" />
               </div>
             </div>
             <div class="row">
@@ -792,29 +798,21 @@
                 <input id="chatMax" type="number" min="5" max="100" value="30" />
               </div>
               <div>
-                <label for="chatTtl">2. 過幾秒最舊消失</label>
-                <input id="chatTtl" type="number" min="0" max="600" value="15" placeholder="0＝不限" />
-              </div>
-            </div>
-            <p class="hint">
-              2：填秒數，最舊留言到期會淡出；填 0＝只依則數清掉。分開版面時每欄各自算則數。
-            </p>
-            <div class="row">
-              <div>
                 <label><input type="checkbox" id="chatShowSource" checked /> 6. 顯示留言來源</label>
               </div>
+            </div>
+            <p class="hint">2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。</p>
+            <div class="row">
               <div>
                 <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
               </div>
-            </div>
-            <div class="row">
               <div>
                 <label><input type="checkbox" id="chatShowBg" checked /> 顯示底色</label>
               </div>
-              <div class="field" style="margin-top: 0">
-                <label for="chatBg">底色</label>
-                <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
+            </div>
+            <div class="field">
+              <label for="chatBg">底色</label>
+              <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
             </div>
             <div class="field" style="align-items: flex-start">
               <label for="chatCss">5. 自訂 CSS</label>
@@ -825,8 +823,8 @@
               ></textarea>
             </div>
             <p class="hint">
-              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `.feed`。
-              OBS 建議寬 360–480（分開可更寬）、高 500–720。
+              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
+              每頁建議寬 360–480、高 500–720。
             </p>
           </section>
 
@@ -837,14 +835,40 @@
               <h2>⑤ 聊天室網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
-            <textarea id="chatUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 360–480、高度 500–720。下方預覽含示範留言。</p>
-            <div class="actions">
-              <button type="button" id="copyChat">複製聊天室網址</button>
-              <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
+
+            <div id="chatMergePanel">
+              <textarea id="chatUrl" class="url-box" readonly></textarea>
+              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
+              <div class="actions">
+                <button type="button" id="copyChat">複製聊天室網址</button>
+                <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 220px">
+                <iframe id="previewChat" title="chat preview" style="height: 220px"></iframe>
+              </div>
             </div>
-            <div class="preview-wrap" style="min-height: 280px">
-              <iframe id="previewChat" title="chat preview" style="height: 280px"></iframe>
+
+            <div id="chatSplitPanel" hidden>
+              <p class="hint" style="margin-top: 0">分開：請在 OBS <strong>各加一個</strong>瀏覽器來源。</p>
+              <h3 style="margin: 12px 0 8px; font-size: 0.95rem">Twitch 聊天室</h3>
+              <textarea id="chatUrlTw" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatTw">複製 TW 網址</button>
+                <a class="btn secondary" id="openChatTw" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatTw" title="twitch chat preview" style="height: 160px"></iframe>
+              </div>
+
+              <h3 style="margin: 18px 0 8px; font-size: 0.95rem">YouTube 聊天室</h3>
+              <textarea id="chatUrlYt" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatYt">複製 YT 網址</button>
+                <a class="btn secondary" id="openChatYt" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
+              </div>
             </div>
           </aside>
         </div>
@@ -1092,13 +1116,16 @@
           const ytChannel = fields.ytChannel.value.trim();
           const ytVideo = fields.ytVideo.value.trim();
           const ytKey = fields.ytKey.value.trim();
+          const split = fields.chatLayout.value === "split";
+          const source =
+            opts.source ||
+            (split ? "twitch" : fields.chatSource.value || "auto");
 
           if (channel) p.set("login", channel);
           if (ytChannel) p.set("yt", ytChannel);
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
-          if (fields.chatSource.value) p.set("chatSource", fields.chatSource.value);
-          if (fields.chatLayout.value) p.set("layout", fields.chatLayout.value);
+          p.set("chatSource", source);
           if (fields.chatStack.value) p.set("stack", fields.chatStack.value);
           if (fields.chatMax.value) p.set("max", fields.chatMax.value);
           if (fields.chatTtl.value && Number(fields.chatTtl.value) > 0) {
@@ -1113,12 +1140,29 @@
           return url.toString();
         }
 
+        function syncChatPanels() {
+          const split = fields.chatLayout.value === "split";
+          $("chatMergePanel").hidden = split;
+          $("chatSplitPanel").hidden = !split;
+          $("chatSourceWrap").style.visibility = split ? "hidden" : "visible";
+        }
+
         function buildUrls() {
           const { href, mods, moduleOrder } = buildOverlayUrl();
           const cdHref = buildCountdownUrl();
           const vcHref = buildViewersUrl();
-          const chatHref = buildChatUrl();
-          const chatDemoHref = buildChatUrl({ demo: true });
+          const split = fields.chatLayout.value === "split";
+          const chatHref = buildChatUrl({
+            source: split ? "twitch" : fields.chatSource.value || "auto",
+          });
+          const chatHrefTw = buildChatUrl({ source: "twitch" });
+          const chatHrefYt = buildChatUrl({ source: "youtube" });
+          const chatDemoHref = buildChatUrl({
+            source: split ? "twitch" : fields.chatSource.value || "auto",
+            demo: true,
+          });
+          const chatDemoTw = buildChatUrl({ source: "twitch", demo: true });
+          const chatDemoYt = buildChatUrl({ source: "youtube", demo: true });
 
           $("url").value = href;
           $("open").href = href;
@@ -1132,9 +1176,19 @@
           $("openVc").href = vcHref;
           $("previewVc").src = vcHref;
 
+          syncChatPanels();
+
           $("chatUrl").value = chatHref;
           $("openChat").href = chatDemoHref;
           $("previewChat").src = chatDemoHref;
+
+          $("chatUrlTw").value = chatHrefTw;
+          $("openChatTw").href = chatDemoTw;
+          $("previewChatTw").src = chatDemoTw;
+
+          $("chatUrlYt").value = chatHrefYt;
+          $("openChatYt").href = chatDemoYt;
+          $("previewChatYt").src = chatDemoYt;
 
           localStorage.setItem(
             "my_obs_tools_setup",
@@ -1149,7 +1203,7 @@
               moduleOrder,
             })
           );
-          return { href, cdHref, vcHref, chatHref };
+          return { href, cdHref, vcHref, chatHref, chatHrefTw, chatHrefYt };
         }
 
         async function copyText(text, btn, resetLabel) {
@@ -1184,6 +1238,16 @@
           const { chatHref } = buildUrls();
           $("chatUrl").select();
           await copyText(chatHref, $("copyChat"), "複製聊天室網址");
+        });
+        $("copyChatTw").addEventListener("click", async () => {
+          const { chatHrefTw } = buildUrls();
+          $("chatUrlTw").select();
+          await copyText(chatHrefTw, $("copyChatTw"), "複製 TW 網址");
+        });
+        $("copyChatYt").addEventListener("click", async () => {
+          const { chatHrefYt } = buildUrls();
+          $("chatUrlYt").select();
+          await copyText(chatHrefYt, $("copyChatYt"), "複製 YT 網址");
         });
 
         Object.values(fields).forEach((el) => {

@@ -10,6 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=calendar_month,schedule,videocam"
+    />
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -72,6 +76,15 @@
         display: block;
       }
 
+      .material-symbols-outlined.icon {
+        width: auto;
+        height: auto;
+        font-size: calc(var(--size) * 0.95);
+        line-height: 1;
+        font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+        user-select: none;
+      }
+
       .flag-icon {
         width: calc(var(--size) * 1.15);
         height: calc(var(--size) * 0.82);
@@ -124,34 +137,17 @@
       </section>
 
       <section class="mod" id="mod-uptime" hidden title="已開台時間">
-        <!-- 直播訊號圖標（與時鐘區隔） -->
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0 3.5c-1.4 0-2.7-.5-3.7-1.3l-1.4 1.4A7.9 7.9 0 0 0 12 20a7.9 7.9 0 0 0 5.1-1.9l-1.4-1.4A5.4 5.4 0 0 1 12 18zm0-12c1.4 0 2.7.5 3.7 1.3l1.4-1.4A7.9 7.9 0 0 0 12 4a7.9 7.9 0 0 0-5.1 1.9l1.4 1.4A5.4 5.4 0 0 1 12 6zm7.1 2.2-1.4 1.4A5.4 5.4 0 0 1 19 12a5.4 5.4 0 0 1-1.3 3.4l1.4 1.4A7.9 7.9 0 0 0 21 12a7.9 7.9 0 0 0-1.9-3.8zM4.9 8.2A7.9 7.9 0 0 0 3 12a7.9 7.9 0 0 0 1.9 3.8l1.4-1.4A5.4 5.4 0 0 1 5 12c0-1.3.5-2.5 1.3-3.4L4.9 8.2z"
-          />
-        </svg>
+        <span class="material-symbols-outlined icon" aria-hidden="true">videocam</span>
         <span class="value" id="uptime">00:00:00</span>
       </section>
 
       <section class="mod" id="mod-date" hidden>
-        <!-- 日曆內縮，避免掛環被裁切 -->
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M8 3.25h1.5v1.5h5V3.25H16v1.5h2.25A1.75 1.75 0 0 1 20 6.5v12.25A1.75 1.75 0 0 1 18.25 20.5H5.75A1.75 1.75 0 0 1 4 18.75V6.5A1.75 1.75 0 0 1 5.75 4.75H8V3.25zM5.5 9.25h13v9.25H5.5V9.25z"
-          />
-        </svg>
+        <span class="material-symbols-outlined icon" aria-hidden="true">calendar_month</span>
         <span class="value" id="date"></span>
       </section>
 
       <section class="mod" id="mod-time" hidden>
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5A8.51 8.51 0 0 0 12 3.5zm.75 4.25h-1.5v5.1l4.2 2.45.75-1.3-3.45-2V7.75z"
-          />
-        </svg>
+        <span class="material-symbols-outlined icon" aria-hidden="true">schedule</span>
         <span class="value" id="time"></span>
       </section>
 

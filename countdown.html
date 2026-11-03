@@ -10,6 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=hourglass_empty"
+    />
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -70,6 +74,15 @@
         object-fit: contain;
       }
 
+      .material-symbols-outlined.icon {
+        width: auto;
+        height: auto;
+        font-size: calc(var(--size) * 0.95);
+        line-height: 1;
+        font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+        user-select: none;
+      }
+
       .label,
       .value {
         display: flex;
@@ -103,12 +116,7 @@
   <body>
     <div id="bar" aria-live="polite">
       <span class="icon-slot" id="cd-icon">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M11 1h2v3h-2zm7.1 2.5 1.4 1.4-2.1 2.1-1.4-1.4zM12 6a9 9 0 1 1-9 9 9 9 0 0 1 9-9zm-1 3h2v5.2l3.4 2-1 1.7L11 15z"
-          />
-        </svg>
+        <span class="material-symbols-outlined icon" aria-hidden="true">hourglass_empty</span>
       </span>
       <span class="label" id="countdown-label" hidden></span>
       <span class="value" id="countdown">00:00:00</span>

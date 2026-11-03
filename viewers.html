@@ -219,6 +219,22 @@
         } else {
           els.modTw.hidden = !wantTw;
           els.modYt.hidden = !wantYt;
+          // vcOrder=tw,yt | yt,tw
+          const bar = document.getElementById("bar");
+          const order = (params.get("vcOrder") || "tw,yt")
+            .split(",")
+            .map((s) => s.trim().toLowerCase())
+            .filter((s) => s === "tw" || s === "yt");
+          const uniq = [];
+          order.forEach((k) => {
+            if (!uniq.includes(k)) uniq.push(k);
+          });
+          if (!uniq.includes("tw")) uniq.push("tw");
+          if (!uniq.includes("yt")) uniq.push("yt");
+          uniq.forEach((k) => {
+            const el = k === "tw" ? els.modTw : els.modYt;
+            if (el) bar.appendChild(el);
+          });
         }
 
         if (!wantTw && !wantYt) {

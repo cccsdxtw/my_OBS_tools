@@ -263,6 +263,29 @@
         els.timeMod.hidden = !showTime;
         els.tzMod.hidden = !showTz;
 
+        // order=vc,st,date,time,showTz → 資訊條由左到右
+        const MOD_IDS = {
+          vc: "mod-viewers",
+          st: "mod-uptime",
+          date: "mod-date",
+          time: "mod-time",
+          showTz: "mod-tz",
+        };
+        const DEFAULT_ORDER = ["vc", "st", "date", "time", "showTz"];
+        const orderRaw = (params.get("order") || "").split(",").map((s) => s.trim()).filter(Boolean);
+        const order = [];
+        orderRaw.forEach((k) => {
+          if (MOD_IDS[k] && !order.includes(k)) order.push(k);
+        });
+        DEFAULT_ORDER.forEach((k) => {
+          if (!order.includes(k)) order.push(k);
+        });
+        const bar = document.getElementById("bar");
+        order.forEach((k) => {
+          const el = document.getElementById(MOD_IDS[k]);
+          if (el) bar.appendChild(el);
+        });
+
         const flagEl = document.getElementById("flag");
         const flagCode =
           (flagCodeParam || TZ_TO_FLAG[tz] || "").replace(/[^a-z]/g, "").slice(0, 2);

@@ -265,18 +265,40 @@
       }
 
       .checks {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
         margin-top: 8px;
       }
 
-      .checks label {
+      .checks .mod-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        background: var(--input-bg);
+      }
+
+      .checks .mod-row label {
         display: flex;
         align-items: center;
         gap: 8px;
         margin: 0;
         font-weight: 500;
+      }
+
+      .checks .mod-move {
+        display: flex;
+        gap: 4px;
+      }
+
+      .checks .mod-move button {
+        min-width: 2rem;
+        padding: 4px 8px;
+        font-size: 0.85rem;
+        line-height: 1;
       }
 
       .hint {
@@ -497,13 +519,45 @@
             </div>
 
             <div class="checks" id="modules">
-              <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條，僅 TW）</label>
-              <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
-              <label><input type="checkbox" data-key="date" checked /> 日期</label>
-              <label><input type="checkbox" data-key="time" checked /> 時間</label>
-              <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
+              <div class="mod-row" data-key="vc">
+                <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條，僅 TW）</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+              </div>
+              <div class="mod-row" data-key="st">
+                <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+              </div>
+              <div class="mod-row" data-key="date">
+                <label><input type="checkbox" data-key="date" checked /> 日期</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+              </div>
+              <div class="mod-row" data-key="time">
+                <label><input type="checkbox" data-key="time" checked /> 時間</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+              </div>
+              <div class="mod-row" data-key="showTz">
+                <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+              </div>
             </div>
-            <p class="hint">TW＋YT 人數請用「② 觀眾人數」橫列。這裡勾選的人數只含 Twitch（用上方頻道）。</p>
+            <p class="hint">
+              用 ↑↓ 調整左右順序（列表上＝資訊條左邊）。TW＋YT 人數請用「② 觀眾人數」；這裡勾選的人數只含 Twitch。
+            </p>
 
             <div class="row">
               <div>
@@ -579,12 +633,21 @@
             </div>
             <p class="hint">使用最上方的 Twitch／YouTube 帳號。</p>
 
-            <div class="field">
-              <label for="vcMode">顯示方式</label>
-              <select id="vcMode">
-                <option value="split" selected>分開：圖示＋人數</option>
-                <option value="total">加總</option>
-              </select>
+            <div class="row">
+              <div>
+                <label for="vcMode">顯示方式</label>
+                <select id="vcMode">
+                  <option value="split" selected>分開：圖示＋人數</option>
+                  <option value="total">加總</option>
+                </select>
+              </div>
+              <div>
+                <label for="vcOrder">平台左右</label>
+                <select id="vcOrder">
+                  <option value="tw,yt" selected>TW → YT</option>
+                  <option value="yt,tw">YT → TW</option>
+                </select>
+              </div>
             </div>
 
             <div class="row">
@@ -821,6 +884,7 @@
         const fields = {
           channel: $("channel"),
           vcMode: $("vcMode"),
+          vcOrder: $("vcOrder"),
           ytChannel: $("ytChannel"),
           ytVideo: $("ytVideo"),
           ytKey: $("ytKey"),
@@ -853,6 +917,40 @@
           chatBg: $("chatBg"),
           chatCss: $("chatCss"),
         };
+
+        const modulesEl = $("modules");
+        function getModuleOrder() {
+          return Array.from(modulesEl.querySelectorAll(".mod-row")).map((row) => row.dataset.key);
+        }
+        function applyModuleOrder(order) {
+          const map = Object.fromEntries(
+            Array.from(modulesEl.querySelectorAll(".mod-row")).map((row) => [row.dataset.key, row])
+          );
+          const seen = new Set();
+          order.forEach((key) => {
+            if (map[key] && !seen.has(key)) {
+              modulesEl.appendChild(map[key]);
+              seen.add(key);
+            }
+          });
+          Object.keys(map).forEach((key) => {
+            if (!seen.has(key)) modulesEl.appendChild(map[key]);
+          });
+        }
+        modulesEl.addEventListener("click", (ev) => {
+          const btn = ev.target.closest("button[data-dir]");
+          if (!btn) return;
+          const row = btn.closest(".mod-row");
+          if (!row) return;
+          if (btn.dataset.dir === "up") {
+            const prev = row.previousElementSibling;
+            if (prev) modulesEl.insertBefore(row, prev);
+          } else {
+            const next = row.nextElementSibling;
+            if (next) modulesEl.insertBefore(next, row);
+          }
+          buildUrls();
+        });
 
         try {
           const guessed = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -895,6 +993,9 @@
                 el.checked = !!data.modules[el.dataset.key];
               }
             });
+            if (Array.isArray(data.moduleOrder) && data.moduleOrder.length) {
+              applyModuleOrder(data.moduleOrder);
+            }
           } catch (_) {}
         }
 
@@ -931,6 +1032,8 @@
             mods[el.dataset.key] = el.checked;
             p.set(el.dataset.key, el.checked ? "1" : "0");
           });
+          const moduleOrder = getModuleOrder();
+          if (moduleOrder.length) p.set("order", moduleOrder.join(","));
 
           if (fields.tz.value.trim()) p.set("tz", fields.tz.value.trim());
           if (mods.showTz && fields.flagCode.value.trim()) {
@@ -939,7 +1042,7 @@
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
           styleParams(p, fields.overlayShowBg, fields.overlayBg);
-          return { href: url.toString(), mods };
+          return { href: url.toString(), mods, moduleOrder };
         }
 
         function buildCountdownUrl() {
@@ -973,6 +1076,7 @@
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
+          if (fields.vcOrder.value) p.set("vcOrder", fields.vcOrder.value);
           if (fields.twIcon.value.trim()) p.set("twIcon", fields.twIcon.value.trim());
           if (fields.ytIcon.value.trim()) p.set("ytIcon", fields.ytIcon.value.trim());
           styleParams(p, fields.viewersShowBg, fields.viewersBg);
@@ -1007,7 +1111,7 @@
         }
 
         function buildUrls() {
-          const { href, mods } = buildOverlayUrl();
+          const { href, mods, moduleOrder } = buildOverlayUrl();
           const cdHref = buildCountdownUrl();
           const vcHref = buildViewersUrl();
           const chatHref = buildChatUrl();
@@ -1038,6 +1142,7 @@
                 ])
               ),
               modules: mods,
+              moduleOrder,
             })
           );
           return { href, cdHref, vcHref, chatHref };

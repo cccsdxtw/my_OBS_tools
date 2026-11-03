@@ -133,6 +133,10 @@
         box-shadow: var(--shadow);
       }
 
+      .band.band-solo {
+        grid-template-columns: 1fr;
+      }
+
       .band-divider {
         background: var(--line);
         width: 1px;
@@ -400,11 +404,81 @@
         </div>
         <h1>拉基的OBS工具箱</h1>
         <p>
-          左欄填設定、右欄複製對應 OBS 網址。資訊條／觀眾人數／倒計時／聊天室各一橫列，方便分開放來源。
+          先填最上方的 Twitch／YouTube 帳號，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／聊天室可分開放來源。
         </p>
       </header>
 
       <div class="bands">
+        <!-- 共用帳號（人數、開台、聊天室共用） -->
+        <div class="band band-solo">
+          <section class="card">
+            <div class="card-head">
+              <h2>Twitch／YouTube 帳號</h2>
+              <span class="side-title">人數 · 開台 · 聊天室共用</span>
+            </div>
+            <div class="row">
+              <div>
+                <label for="channel">Twitch 頻道（login）</label>
+                <input id="channel" type="text" placeholder="例如 your_channel" />
+              </div>
+              <div>
+                <label for="ytChannel">YouTube 頻道</label>
+                <input id="ytChannel" type="text" placeholder="@handle 或 UC…" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="ytVideo">或 YT 直播影片 ID</label>
+                <input id="ytVideo" type="text" placeholder="可留空，自動找 live" />
+              </div>
+              <div>
+                <label for="ytKey">YouTube API Key</label>
+                <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
+              </div>
+            </div>
+            <p class="hint">
+              填一次即可套用到觀眾人數、資訊條開台時間、聊天室。有填 YouTube 頻道時會自動找 live；要省 quota 可直接填直播影片 ID。
+            </p>
+
+            <div class="steps" id="yt-key-guide">
+              <h3>YT API Key 怎麼申請（一次即可）</h3>
+              <ol>
+                <li>開 Google Cloud，登入後建立／選擇一個專案。</li>
+                <li>啟用 <b>YouTube Data API v3</b>。</li>
+                <li>到 Credentials 建立 <b>API key</b>，複製 `AIza…` 貼到上方欄位。</li>
+                <li>
+                  （建議）編輯金鑰 → API restrictions 只允許 YouTube Data API v3。
+                  Application restrictions 可先維持 None。
+                </li>
+              </ol>
+              <div class="actions">
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/"
+                  target="_blank"
+                  rel="noopener"
+                  >1. 開 Cloud Console</a
+                >
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
+                  target="_blank"
+                  rel="noopener"
+                  >2. 啟用 YouTube Data API</a
+                >
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noopener"
+                  >3. 建立／複製 API Key</a
+                >
+              </div>
+              <p class="hint">按上面按鈕會開新分頁。金鑰申請一次就能一直用。</p>
+            </div>
+          </section>
+        </div>
+
         <!-- ① 資訊條 -->
         <div class="band">
           <section class="card">
@@ -420,7 +494,7 @@
               <label><input type="checkbox" data-key="time" checked /> 時間</label>
               <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
             </div>
-            <p class="hint">TW＋YT 人數請用下面「② 觀眾人數」橫列。這裡勾選的人數只含 Twitch。</p>
+            <p class="hint">TW＋YT 人數請用「② 觀眾人數」橫列。這裡勾選的人數只含 Twitch（用上方頻道）。</p>
 
             <div class="row">
               <div>
@@ -494,33 +568,14 @@
               <h2>② 觀眾人數（TW + YT）</h2>
               <span class="side-title">獨立來源</span>
             </div>
+            <p class="hint">使用最上方的 Twitch／YouTube 帳號。</p>
 
-            <div class="row">
-              <div>
-                <label for="channel">Twitch 頻道（login）</label>
-                <input id="channel" type="text" placeholder="例如 your_channel" />
-              </div>
-              <div>
-                <label for="vcMode">顯示方式</label>
-                <select id="vcMode">
-                  <option value="split" selected>分開：圖示＋人數</option>
-                  <option value="total">加總</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="ytChannel">YouTube 頻道</label>
-                <input id="ytChannel" type="text" placeholder="@handle 或 UC…" />
-              </div>
-              <div>
-                <label for="ytVideo">或 YT 直播影片 ID</label>
-                <input id="ytVideo" type="text" placeholder="可留空，自動找 live" />
-              </div>
-            </div>
             <div class="field">
-              <label for="ytKey">YouTube API Key</label>
-              <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
+              <label for="vcMode">顯示方式</label>
+              <select id="vcMode">
+                <option value="split" selected>分開：圖示＋人數</option>
+                <option value="total">加總</option>
+              </select>
             </div>
 
             <div class="row">
@@ -546,46 +601,6 @@
               </div>
             </div>
             <p class="hint">這一橫列專用底色，可跟資訊條／倒計時分開設定。</p>
-
-            <div class="steps" id="yt-key-guide">
-              <h3>YT API Key 怎麼申請（一次即可）</h3>
-              <ol>
-                <li>開 Google Cloud，登入後建立／選擇一個專案。</li>
-                <li>啟用 <b>YouTube Data API v3</b>。</li>
-                <li>到 Credentials 建立 <b>API key</b>，複製 `AIza…` 貼到上方欄位。</li>
-                <li>
-                  （建議）編輯金鑰 → API restrictions 只允許 YouTube Data API v3。
-                  Application restrictions 可先維持 None。
-                </li>
-                <li>
-                  有填 YouTube 頻道時會自動找正在直播的影片；若要省 quota，也可直接填直播影片 ID。
-                </li>
-              </ol>
-              <div class="actions">
-                <a
-                  class="btn"
-                  href="https://console.cloud.google.com/"
-                  target="_blank"
-                  rel="noopener"
-                  >1. 開 Cloud Console</a
-                >
-                <a
-                  class="btn"
-                  href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
-                  target="_blank"
-                  rel="noopener"
-                  >2. 啟用 YouTube Data API</a
-                >
-                <a
-                  class="btn"
-                  href="https://console.cloud.google.com/apis/credentials"
-                  target="_blank"
-                  rel="noopener"
-                  >3. 建立／複製 API Key</a
-                >
-              </div>
-              <p class="hint">按上面按鈕會開新分頁。金鑰申請一次就能一直用。</p>
-            </div>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -664,16 +679,15 @@
           </aside>
         </div>
 
-        <!-- ⑤ 聊天室（序號跳過 4） -->
+        <!-- ⑤ 聊天室 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
               <h2>⑤ 聊天室（TW + YT）</h2>
-              <span class="side-title">獨立來源 · 序號跳過 4</span>
+              <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              沿用上面的 Twitch 頻道／YouTube 頻道與 API Key。Twitch 用匿名 IRC 讀聊天（免登入）；
-              YouTube 用 Data API 拉 live chat。
+              使用最上方的 Twitch／YouTube 帳號。Twitch 用匿名 IRC（免登入）；YouTube 用 Data API 拉 live chat。
             </p>
             <div class="field">
               <label for="chatSource">來源</label>

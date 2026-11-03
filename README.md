@@ -6,8 +6,6 @@ OBS 統合工具：觀看人數、已開台時間、日期／時間、國旗、�
 
 資訊條／倒計時／人數／聊天室是**獨立網址**，OBS 可分開放多個瀏覽器來源。
 
-設定頁區塊編號為 ①②③⑤（**跳過 ④**）。
-
 ## 功能
 
 - **人數**：獨立頁 `viewers.html`，同時支援 **Twitch + YouTube**（平台圖示＋人數；可自訂圖示網址）
@@ -16,12 +14,12 @@ OBS 統合工具：觀看人數、已開台時間、日期／時間、國旗、�
 - **國旗**：用國旗代表時區／地區（例如 `flag=tw`）
 - **倒計時**：獨立頁 `countdown.html`（目標時間，或從現在起 N 分鐘）
 - **聊天室**：獨立頁 `chat.html`（Twitch 匿名 IRC＋YouTube live chat；免再登入）
-- **設定頁**：`index.html` 分別複製各來源網址；支援黑夜模式
+- **設定頁**：`index.html` 最上方填共用帳號，再分別複製各來源網址；支援黑夜模式
 
 ## 使用
 
 1. 開 `index.html`（或 GitHub Pages：`https://cccsdxtw.github.io/my_OBS_tools/`）
-2. 填頻道、勾資訊條項目；另設倒計時／聊天室
+2. 最上方填 Twitch／YouTube 帳號與 API Key；再調各橫列樣式
 3. OBS 加「瀏覽器」來源（可分開放）：
    - 資訊條 `overlay.html`（建議寬 700–900、高 40–60）
    - 倒計時 `countdown.html`（建議寬 220–360、高 40–60）
@@ -30,9 +28,9 @@ OBS 統合工具：觀看人數、已開台時間、日期／時間、國旗、�
 
 也可從 [Releases](https://github.com/cccsdxtw/my_OBS_tools/releases) 下載打包檔，解壓後用瀏覽器開 `index.html`。
 
-## YouTube 人數 API Key
+## YouTube API Key
 
-設定頁「觀眾人數」區塊已有步驟與跳轉按鈕：
+設定頁最上方「Twitch／YouTube 帳號」區塊已有步驟與跳轉按鈕：
 
 1. 開 Cloud Console  
 2. 啟用 YouTube Data API v3  
@@ -44,4 +42,4 @@ OBS 統合工具：觀看人數、已開台時間、日期／時間、國旗、�
 
 見 GitHub Releases（目前最新例如 v0.1.19）。
 
-版號與設定頁區塊編號都會**跳過含「4」的數字**（例如沒有 v0.1.4、v0.1.14，也沒有 ④；4 之後接 5，13 之後接 15，③ 之後接 ⑤）。
+版號會**跳過含「4」的數字**（例如沒有 v0.1.4、v0.1.14；4 之後接 5，13 之後接 15）。

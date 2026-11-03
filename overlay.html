@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS Overlay</title>
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.85);
+        --muted: rgba(255, 255, 255, 0.55);
+        --size: 22px;
+        --pad-x: 10px;
+        --gap: 14px;
+        --radius: 0;
+        --font: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        font-family: var(--font);
+        color: var(--fg);
+      }
+
+      #bar {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--gap);
+        min-height: calc(var(--size) + 8px);
+        padding: 4px var(--pad-x);
+        background: var(--bg);
+        border-radius: var(--radius);
+        white-space: nowrap;
+        line-height: 1;
+      }
+
+      .mod {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: var(--size);
+        font-weight: 500;
+      }
+
+      .mod[hidden] {
+        display: none !important;
+      }
+
+      .icon {
+        width: var(--size);
+        height: var(--size);
+        opacity: 0.8;
+        flex: 0 0 auto;
+      }
+
+      .label {
+        color: var(--muted);
+        font-size: 0.72em;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .value {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .error {
+        color: #ff8f8f;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar" aria-live="polite">
+      <section class="mod" id="mod-viewers" hidden>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
+          />
+        </svg>
+        <span class="value" id="viewers">—</span>
+      </section>
+
+      <section class="mod" id="mod-uptime" hidden>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 10.6 3.5 2-1 1.7L11 13V7h2z"
+          />
+        </svg>
+        <span class="value" id="uptime">00:00:00</span>
+      </section>
+
+      <section class="mod" id="mod-date" hidden>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H6v10h14V10zM6 8h14V6H6v2z"
+          />
+        </svg>
+        <span class="value" id="date"></span>
+      </section>
+
+      <section class="mod" id="mod-time" hidden>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm1 11.7 4.3 2.5-.9 1.6L11 13.4V6h2z"
+          />
+        </svg>
+        <span class="value" id="time"></span>
+      </section>
+
+      <section class="mod" id="mod-tz" hidden>
+        <span class="label">TZ</span>
+        <span class="value" id="tz"></span>
+      </section>
+
+      <section class="mod" id="mod-countdown" hidden>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M11 1h2v3h-2zm7.1 2.5 1.4 1.4-2.1 2.1-1.4-1.4zM12 6a9 9 0 1 1-9 9 9 9 0 0 1 9-9zm-1 3h2v5.2l3.4 2-1 1.7L11 15z"
+          />
+        </svg>
+        <span class="label" id="countdown-label" hidden></span>
+        <span class="value" id="countdown">00:00:00</span>
+      </section>
+    </div>
+
+    <script>
+      (() => {
+        const TWITCH_GQL = "https://gql.twitch.tv/gql";
+        // Twitch web Client-ID：公開、免登入，用來讀公開實況資料（人數 / 開台時間）
+        const TWITCH_WEB_CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko";
+        const DECAPI_VIEWERS = (login) =>
+          `https://decapi.me/twitch/viewercount/${encodeURIComponent(login)}`;
+        const DECAPI_UPTIME = (login) =>
+          `https://decapi.me/twitch/uptime/${encodeURIComponent(login)}`;
+        const POLL_MS = 15000;
+
+        const params = new URLSearchParams(location.search);
+
+        function flag(name, fallback = false) {
+          if (!params.has(name)) return fallback;
+          const v = params.get(name);
+          return !(v === "0" || v === "false" || v === "off" || v === "no");
+        }
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        const channel = (
+          params.get("login") ||
+          params.get("channel") ||
+          ""
+        ).trim();
+        const tz =
+          params.get("tz") ||
+          Intl.DateTimeFormat().resolvedOptions().timeZone ||
+          "UTC";
+        const dateFmt = params.get("dateFormat") || "MM/DD ddd";
+        const timeFmt = params.get("timeFormat") || "HH:mm:ss";
+        const viewersSource = (params.get("viewersSource") || "auto").toLowerCase();
+        const streamlabsToken = (params.get("streamlabsToken") || "").trim();
+
+        // 沒填頻道時即使勾選也不顯示人數 / 開台時間（避免空白 ERR）
+        const showViewers = !!channel && flag("vc", true);
+        const showUptime = !!channel && flag("st", true);
+        const showDate = flag("date", true);
+        const showTime = flag("time", true);
+        const showTz = flag("showTz", false);
+        const showCountdown = flag(
+          "cd",
+          !!(params.get("countdown") || params.get("cdMins") || params.get("cdSecs"))
+        );
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        cssVar("--fg", params.get("color"));
+        cssVar("--bg", params.get("bg"));
+        cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
+        cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+
+        const els = {
+          viewersMod: document.getElementById("mod-viewers"),
+          uptimeMod: document.getElementById("mod-uptime"),
+          dateMod: document.getElementById("mod-date"),
+          timeMod: document.getElementById("mod-time"),
+          tzMod: document.getElementById("mod-tz"),
+          countdownMod: document.getElementById("mod-countdown"),
+          viewers: document.getElementById("viewers"),
+          uptime: document.getElementById("uptime"),
+          date: document.getElementById("date"),
+          time: document.getElementById("time"),
+          tz: document.getElementById("tz"),
+          countdown: document.getElementById("countdown"),
+          countdownLabel: document.getElementById("countdown-label"),
+        };
+
+        els.viewersMod.hidden = !showViewers;
+        els.uptimeMod.hidden = !showUptime;
+        els.dateMod.hidden = !showDate;
+        els.timeMod.hidden = !showTime;
+        els.tzMod.hidden = !showTz;
+        els.countdownMod.hidden = !showCountdown;
+        els.tz.textContent = tz;
+
+        const cdLabel = params.get("cdLabel") || "";
+        if (cdLabel) {
+          els.countdownLabel.hidden = false;
+          els.countdownLabel.textContent = cdLabel;
+        }
+
+        let startedAt = null;
+        let countdownTarget = null;
+
+        function pad(n) {
+          return String(Math.max(0, Math.floor(n))).padStart(2, "0");
+        }
+
+        function formatHMS(totalSeconds) {
+          const s = Math.max(0, Math.floor(totalSeconds));
+          const h = Math.floor(s / 3600);
+          const m = Math.floor((s % 3600) / 60);
+          const sec = s % 60;
+          return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+        }
+
+        // 簡易 format：支援 YYYY MM DD HH mm ss ddd 與常見分隔
+        function formatInTz(date, pattern, timeZone) {
+          const dtf = new Intl.DateTimeFormat("en-US", {
+            timeZone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            weekday: "short",
+            hour12: false,
+            hourCycle: "h23",
+          });
+          const parts = Object.fromEntries(
+            dtf.formatToParts(date).map((p) => [p.type, p.value])
+          );
+          // en-US 偶爾給 24:xx，正規化
+          let hour = parts.hour === "24" ? "00" : parts.hour;
+          const map = {
+            YYYY: parts.year,
+            YY: parts.year.slice(-2),
+            MM: parts.month,
+            DD: parts.day,
+            HH: hour,
+            mm: parts.minute,
+            ss: parts.second,
+            ddd: parts.weekday,
+            Z: timeZone,
+          };
+          return pattern.replace(
+            /YYYY|YY|MM|DD|HH|mm|ss|ddd|Z/g,
+            (token) => map[token] ?? token
+          );
+        }
+
+        function tickClock() {
+          const now = new Date();
+          if (showDate) els.date.textContent = formatInTz(now, dateFmt, tz);
+          if (showTime) els.time.textContent = formatInTz(now, timeFmt, tz);
+          if (showUptime) {
+            if (startedAt) {
+              els.uptime.classList.remove("error");
+              els.uptime.textContent = formatHMS((now - startedAt) / 1000);
+            }
+          }
+          if (showCountdown && countdownTarget) {
+            const remain = (countdownTarget - now) / 1000;
+            if (remain <= 0) {
+              els.countdown.textContent = params.get("cdDone") || "00:00:00";
+            } else {
+              els.countdown.textContent = formatHMS(remain);
+            }
+          }
+        }
+
+        function parseCountdownTarget() {
+          const absolute = params.get("countdown");
+          if (absolute) {
+            const t = Date.parse(absolute);
+            if (!Number.isNaN(t)) return new Date(t);
+          }
+          const mins = parseFloat(params.get("cdMins") || "");
+          const secs = parseFloat(params.get("cdSecs") || "");
+          let total = 0;
+          if (!Number.isNaN(mins)) total += mins * 60;
+          if (!Number.isNaN(secs)) total += secs;
+          if (total > 0) return new Date(Date.now() + total * 1000);
+          return null;
+        }
+
+        countdownTarget = parseCountdownTarget();
+
+        function parseDecapiUptime(text) {
+          if (!text || /offline|not live|is offline/i.test(text)) return null;
+          const re =
+            /(?:(\d+)\s*days?)?(?:,?\s*)?(?:(\d+)\s*hours?)?(?:,?\s*)?(?:(\d+)\s*minutes?)?(?:,?\s*)?(?:(\d+)\s*seconds?)?/i;
+          const m = text.trim().match(re);
+          if (!m || (!m[1] && !m[2] && !m[3] && !m[4])) return null;
+          const days = Number(m[1] || 0);
+          const hours = Number(m[2] || 0);
+          const minutes = Number(m[3] || 0);
+          const seconds = Number(m[4] || 0);
+          const ms =
+            (((days * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000;
+          return new Date(Date.now() - ms);
+        }
+
+        async function fetchGql() {
+          const query = {
+            query: `query($login:String!){user(login:$login){stream{viewersCount createdAt}}}`,
+            variables: { login: channel },
+          };
+          const res = await fetch(TWITCH_GQL, {
+            method: "POST",
+            headers: {
+              "Client-ID": TWITCH_WEB_CLIENT_ID,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(query),
+          });
+          if (!res.ok) throw new Error(`gql ${res.status}`);
+          const json = await res.json();
+          const stream = json?.data?.user?.stream;
+          if (!stream) {
+            return { live: false, viewers: 0, startedAt: null };
+          }
+          return {
+            live: true,
+            viewers: stream.viewersCount ?? 0,
+            startedAt: stream.createdAt ? new Date(stream.createdAt) : null,
+          };
+        }
+
+        async function fetchDecapi() {
+          const tasks = [];
+          if (showViewers) tasks.push(fetch(DECAPI_VIEWERS(channel)).then((r) => r.text()));
+          else tasks.push(Promise.resolve(null));
+          if (showUptime) tasks.push(fetch(DECAPI_UPTIME(channel)).then((r) => r.text()));
+          else tasks.push(Promise.resolve(null));
+          const [viewersText, uptimeText] = await Promise.all(tasks);
+          let viewers = 0;
+          let live = false;
+          let start = null;
+          if (viewersText != null) {
+            const n = parseInt(String(viewersText).trim(), 10);
+            if (!Number.isNaN(n)) {
+              viewers = n;
+              live = n > 0 || (uptimeText && !/offline/i.test(uptimeText));
+            }
+          }
+          if (uptimeText) {
+            start = parseDecapiUptime(uptimeText);
+            if (start) live = true;
+          }
+          return { live, viewers, startedAt: start };
+        }
+
+        async function fetchStreamlabsViewers() {
+          // Streamlabs widget 是完整頁面，無法穩定解析人數；保留參數提示用。
+          throw new Error("streamlabs-embed-only");
+        }
+
+        async function refreshStream() {
+          if (!channel || (!showViewers && !showUptime)) return;
+          try {
+            let data;
+            if (viewersSource === "decapi") data = await fetchDecapi();
+            else if (viewersSource === "streamlabs") {
+              await fetchStreamlabsViewers();
+            } else {
+              try {
+                data = await fetchGql();
+              } catch (e) {
+                console.warn("GQL failed, fallback DecAPI", e);
+                data = await fetchDecapi();
+              }
+            }
+
+            if (showViewers) {
+              els.viewers.classList.remove("error");
+              els.viewers.textContent = data.live ? String(data.viewers) : "0";
+            }
+            if (showUptime) {
+              if (data.live && data.startedAt) {
+                startedAt = data.startedAt;
+                els.uptime.classList.remove("error");
+              } else {
+                startedAt = null;
+                els.uptime.textContent = "00:00:00";
+              }
+            }
+          } catch (err) {
+            console.error(err);
+            if (showViewers) {
+              els.viewers.classList.add("error");
+              els.viewers.textContent = "ERR";
+            }
+            if (showUptime) {
+              els.uptime.classList.add("error");
+              els.uptime.textContent = "ERR";
+            }
+          }
+        }
+
+        tickClock();
+        setInterval(tickClock, 250);
+        refreshStream();
+        setInterval(refreshStream, POLL_MS);
+
+        // 未使用的 Streamlabs token：在 console 提示改用免驗證來源
+        if (streamlabsToken) {
+          console.info(
+            "[my_OBS_tools] Streamlabs token 已記錄。建議改用免驗證人數來源（預設 auto/GQL）。若仍要用 Streamlabs，請另開瀏覽器來源貼上其 widget 網址。"
+          );
+        }
+      })();
+    </script>
+  </body>
+</html>

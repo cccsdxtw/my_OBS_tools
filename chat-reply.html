@@ -283,8 +283,8 @@
     <header>
       <h1>聊天回覆視窗</h1>
       <p>
-        給主播用的獨立視窗（不要丟進 OBS 瀏覽器來源）。左邊看留言、點「回覆」帶入對象；右邊登入後送出。
-        Twitch 需 chat token；YouTube 需 OAuth access token（API Key 只能讀不能回）。
+        給主播用的獨立視窗（不要丟進 OBS）。左邊看留言、點「回覆」；右邊可選只送一邊或<strong>兩邊一起回覆</strong>。
+        發話用的 token <strong>會過期</strong>，過期就重貼一次（顯示用的 OBS 聊天室覆蓋仍免 token）。
       </p>
     </header>
 
@@ -300,38 +300,43 @@
       <section class="pane">
         <div class="pane-head"><span>回覆／送出</span></div>
         <div class="form">
-          <div class="row">
-            <div>
-              <label for="sendTo">送到</label>
-              <select id="sendTo">
-                <option value="auto">自動（依回覆對象）</option>
-                <option value="twitch">只送 Twitch</option>
-                <option value="youtube">只送 YouTube</option>
-                <option value="both">兩邊都送</option>
-              </select>
+          <div>
+            <label>送到哪裡</label>
+            <div class="actions" style="margin-top: 0">
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 500; margin: 0">
+                <input type="checkbox" id="sendTw" checked /> Twitch
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 500; margin: 0">
+                <input type="checkbox" id="sendYt" checked /> YouTube
+              </label>
             </div>
-            <div>
-              <label for="twNick">Twitch 顯示名稱（選填）</label>
-              <input id="twNick" type="text" placeholder="登入後可自動帶" />
-            </div>
+            <p class="hint">預設兩邊都勾＝同一則訊息一起回覆 TW＋YT。只想回一邊就取消另一邊。</p>
           </div>
 
           <div>
-            <label for="twToken">Twitch OAuth Token</label>
+            <label for="twNick">Twitch 顯示名稱（選填）</label>
+            <input id="twNick" type="text" placeholder="你的 Twitch 帳號 login" />
+          </div>
+
+          <div>
+            <label for="twToken">Twitch Chat Token</label>
             <input id="twToken" type="password" placeholder="oauth:xxxxxxxx 或純 token" autocomplete="off" />
             <p class="hint">
-              可用
+              <strong>會過期／失效</strong>（撤銷授權或平台作廢就要重貼）。可用
               <a href="https://twitchtokengenerator.com/" target="_blank" rel="noopener">Twitch Token Generator</a>
-              勾 chat:read + chat:write，或舊版
+              勾 chat:read + chat:write，或
               <a href="https://twitchapps.com/tmi/" target="_blank" rel="noopener">twitchapps.com/tmi</a>
-              。token 只存在此瀏覽器 localStorage。
+              。只存在此瀏覽器。
             </p>
           </div>
 
           <div>
-            <label for="ytAccess">YouTube OAuth Access Token（選填）</label>
+            <label for="ytAccess">YouTube OAuth Access Token</label>
             <input id="ytAccess" type="password" placeholder="ya29.…（要能 liveChatMessages.insert）" autocomplete="off" />
-            <p class="hint">API Key 無法發話。需自備有 YouTube 權限的 OAuth access token；過期要重貼。</p>
+            <p class="hint">
+              API Key <strong>只能讀、不能回</strong>。Access token <strong>通常約 1 小時過期</strong>，過期重貼即可。
+              Refresh token 若你有自己的 OAuth 應用可另存，此靜態頁目前請手動更新 access token。
+            </p>
           </div>
 
           <div>
@@ -348,7 +353,8 @@
           </div>
 
           <div class="actions">
-            <button type="button" class="primary" id="sendBtn">送出</button>
+            <button type="button" class="primary" id="sendBtn">送出（依上方勾選）</button>
+            <button type="button" class="secondary" id="sendBothBtn">兩邊一起送</button>
             <button type="button" class="secondary" id="saveBtn">儲存登入設定</button>
           </div>
           <div id="log"></div>
@@ -391,7 +397,8 @@
         const twTokenEl = document.getElementById("twToken");
         const ytAccessEl = document.getElementById("ytAccess");
         const twNickEl = document.getElementById("twNick");
-        const sendToEl = document.getElementById("sendTo");
+        const sendTwEl = document.getElementById("sendTw");
+        const sendYtEl = document.getElementById("sendYt");
 
         let replyTarget = null; // { platform, user, text, id? }
         let ytLiveChatId = null;
@@ -426,7 +433,27 @@
             if (data.twToken) twTokenEl.value = data.twToken;
             if (data.ytAccess) ytAccessEl.value = data.ytAccess;
             if (data.twNick) twNickEl.value = data.twNick;
-            if (data.sendTo) sendToEl.value = data.sendTo;
+            // 舊版 sendTo 下拉 → 轉成雙勾選
+            if (Object.prototype.hasOwnProperty.call(data, "sendTw")) {
+              sendTwEl.checked = !!data.sendTw;
+            } else if (data.sendTo === "twitch") {
+              sendTwEl.checked = true;
+              sendYtEl.checked = false;
+            } else if (data.sendTo === "youtube") {
+              sendTwEl.checked = false;
+              sendYtEl.checked = true;
+            } else {
+              sendTwEl.checked = true;
+            }
+            if (Object.prototype.hasOwnProperty.call(data, "sendYt")) {
+              sendYtEl.checked = !!data.sendYt;
+            } else if (data.sendTo === "twitch") {
+              sendYtEl.checked = false;
+            } else if (data.sendTo === "youtube") {
+              sendYtEl.checked = true;
+            } else {
+              sendYtEl.checked = true;
+            }
           } catch (_) {}
         }
 
@@ -437,7 +464,8 @@
               twToken: twTokenEl.value.trim(),
               ytAccess: ytAccessEl.value.trim(),
               twNick: twNickEl.value.trim(),
-              sendTo: sendToEl.value,
+              sendTw: sendTwEl.checked,
+              sendYt: sendYtEl.checked,
             })
           );
           log("已儲存登入設定（僅此瀏覽器）");
@@ -777,18 +805,12 @@
           addMessage({ platform: "yt", user: "me", text });
         }
 
-        function destinationsForSend() {
-          const mode = sendToEl.value;
-          if (mode === "twitch") return { tw: true, yt: false };
-          if (mode === "youtube") return { tw: false, yt: true };
-          if (mode === "both") return { tw: true, yt: true };
-          // auto
-          if (replyTarget?.platform === "tw") return { tw: true, yt: false };
-          if (replyTarget?.platform === "yt") return { tw: false, yt: true };
-          return { tw: wantTw, yt: wantYt };
+        function destinationsForSend(forceBoth) {
+          if (forceBoth) return { tw: true, yt: true };
+          return { tw: !!sendTwEl.checked, yt: !!sendYtEl.checked };
         }
 
-        async function sendMessage() {
+        async function sendMessage(forceBoth) {
           let text = messageEl.value.trim();
           if (!text) {
             log("訊息是空的");
@@ -798,17 +820,26 @@
           if (replyTarget?.user && !text.includes(`@${replyTarget.user}`)) {
             text = `@${replyTarget.user} ${text}`;
           }
-          const dest = destinationsForSend();
+          const dest = destinationsForSend(forceBoth === true);
           const jobs = [];
-          if (dest.tw) jobs.push(sendTwitch(text).then(() => log("已送出 → Twitch")));
-          if (dest.yt) jobs.push(sendYoutube(text).then(() => log("已送出 → YouTube")));
+          if (dest.tw) {
+            if (!wantTw && !twitchLogin) log("略過 Twitch：網址沒有頻道");
+            else jobs.push(sendTwitch(text).then(() => log("已送出 → Twitch")));
+          }
+          if (dest.yt) {
+            if (!wantYt && !ytKey && !ytVideoParam) log("略過 YouTube：網址缺少 YT 參數");
+            else jobs.push(sendYoutube(text).then(() => log("已送出 → YouTube")));
+          }
           if (!jobs.length) {
-            log("沒有可送的目標");
+            log("沒有勾選送到哪裡（或兩邊都沒有可用頻道）");
             return;
           }
           try {
-            await Promise.all(jobs);
-            messageEl.value = "";
+            const results = await Promise.allSettled(jobs);
+            results.forEach((r) => {
+              if (r.status === "rejected") log(String(r.reason?.message || r.reason));
+            });
+            if (results.some((r) => r.status === "fulfilled")) messageEl.value = "";
           } catch (err) {
             log(String(err.message || err));
           }
@@ -816,11 +847,16 @@
 
         document.getElementById("clearReply").addEventListener("click", () => setReply(null));
         document.getElementById("saveBtn").addEventListener("click", saveStore);
-        document.getElementById("sendBtn").addEventListener("click", sendMessage);
+        document.getElementById("sendBtn").addEventListener("click", () => sendMessage(false));
+        document.getElementById("sendBothBtn").addEventListener("click", () => {
+          sendTwEl.checked = true;
+          sendYtEl.checked = true;
+          sendMessage(true);
+        });
         messageEl.addEventListener("keydown", (ev) => {
           if (ev.key === "Enter" && !ev.shiftKey) {
             ev.preventDefault();
-            sendMessage();
+            sendMessage(false);
           }
         });
 

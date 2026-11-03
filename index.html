@@ -398,14 +398,14 @@
             </div>
             <div class="row">
               <div>
-                <label><input type="checkbox" id="showBg" checked /> 顯示底色（灰）</label>
+                <label><input type="checkbox" id="overlayShowBg" checked /> 顯示底色</label>
               </div>
               <div class="field" style="margin-top: 0">
-                <label for="bg">底色</label>
-                <input id="bg" type="text" value="rgba(0,0,0,0.45)" />
+                <label for="overlayBg">底色</label>
+                <input id="overlayBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
-            <p class="hint">取消勾選＝完全透明底，只留圖示與文字。有勾選才套用右邊底色。</p>
+            <p class="hint">這一橫列專用。取消勾選＝透明底；有勾選可自訂顏色（支援 rgba / #hex）。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -476,6 +476,16 @@
             <p class="hint">
               預設已用平台圖示取代 TW／YT 文字。可貼自己的 PNG／SVG／WebP 網址來換圖（建議正方形）。
             </p>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="viewersShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="viewersBg">底色</label>
+                <input id="viewersBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <p class="hint">這一橫列專用底色，可跟資訊條／倒計時分開設定。</p>
 
             <div class="steps" id="yt-key-guide">
               <h3>YT API Key 怎麼申請（一次即可）</h3>
@@ -563,7 +573,16 @@
               <label for="cdIcon">倒計時圖示網址</label>
               <input id="cdIcon" type="text" placeholder="空白＝預設碼錶圖示" />
             </div>
-            <p class="hint">目標時間與「從現在起」擇一。不要跟資訊條黏在同一來源。圖示可貼自訂圖片網址。</p>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="countdownShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="countdownBg">底色</label>
+                <input id="countdownBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <p class="hint">目標時間與「從現在起」擇一。底色僅套用倒計時這條，可自訂顏色。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -619,8 +638,12 @@
           cdLabel: $("cdLabel"),
           fontSize: $("fontSize"),
           color: $("color"),
-          bg: $("bg"),
-          showBg: $("showBg"),
+          overlayShowBg: $("overlayShowBg"),
+          overlayBg: $("overlayBg"),
+          viewersShowBg: $("viewersShowBg"),
+          viewersBg: $("viewersBg"),
+          countdownShowBg: $("countdownShowBg"),
+          countdownBg: $("countdownBg"),
         };
 
         try {
@@ -635,7 +658,21 @@
         if (saved) {
           try {
             const data = JSON.parse(saved);
-            Object.entries(data.fields || {}).forEach(([k, v]) => {
+            const rawFields = data.fields || {};
+            // 舊版共用底色 → 三條都沿用
+            if (rawFields.bg && !rawFields.overlayBg) {
+              rawFields.overlayBg = rawFields.bg;
+              rawFields.viewersBg = rawFields.bg;
+              rawFields.countdownBg = rawFields.bg;
+            }
+            if (Object.prototype.hasOwnProperty.call(rawFields, "showBg")) {
+              if (!Object.prototype.hasOwnProperty.call(rawFields, "overlayShowBg")) {
+                rawFields.overlayShowBg = rawFields.showBg;
+                rawFields.viewersShowBg = rawFields.showBg;
+                rawFields.countdownShowBg = rawFields.showBg;
+              }
+            }
+            Object.entries(rawFields).forEach(([k, v]) => {
               if (!fields[k]) return;
               if (fields[k].type === "checkbox") {
                 fields[k].checked = v === true || v === "true" || v === 1 || v === "1";
@@ -651,19 +688,25 @@
           } catch (_) {}
         }
 
-        function styleParams(p) {
+        function styleParams(p, showBgEl, bgEl) {
           if (fields.fontSize.value) p.set("fontSize", fields.fontSize.value);
           if (fields.color.value.trim()) p.set("color", fields.color.value.trim());
-          if (fields.showBg.checked) {
-            p.set("bg", fields.bg.value.trim() || "rgba(0,0,0,0.45)");
+          if (showBgEl.checked) {
+            p.set("bg", bgEl.value.trim() || "rgba(0,0,0,0.45)");
           } else {
             p.set("bg", "0");
           }
         }
 
-        function syncBgField() {
-          fields.bg.disabled = !fields.showBg.checked;
-          fields.bg.style.opacity = fields.showBg.checked ? "1" : "0.5";
+        function syncBgField(showBgEl, bgEl) {
+          bgEl.disabled = !showBgEl.checked;
+          bgEl.style.opacity = showBgEl.checked ? "1" : "0.5";
+        }
+
+        function syncAllBgFields() {
+          syncBgField(fields.overlayShowBg, fields.overlayBg);
+          syncBgField(fields.viewersShowBg, fields.viewersBg);
+          syncBgField(fields.countdownShowBg, fields.countdownBg);
         }
 
         function buildOverlayUrl() {
@@ -684,7 +727,7 @@
           }
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
-          styleParams(p);
+          styleParams(p, fields.overlayShowBg, fields.overlayBg);
           return { href: url.toString(), mods };
         }
 
@@ -702,7 +745,7 @@
             // 預設給 10 分鐘，方便預覽；正式用請改目標時間或分鐘數
             p.set("cdMins", "10");
           }
-          styleParams(p);
+          styleParams(p, fields.countdownShowBg, fields.countdownBg);
           return url.toString();
         }
 
@@ -721,7 +764,7 @@
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
           if (fields.twIcon.value.trim()) p.set("twIcon", fields.twIcon.value.trim());
           if (fields.ytIcon.value.trim()) p.set("ytIcon", fields.ytIcon.value.trim());
-          styleParams(p);
+          styleParams(p, fields.viewersShowBg, fields.viewersBg);
           return url.toString();
         }
 
@@ -787,7 +830,13 @@
 
         Object.values(fields).forEach((el) => {
           el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
-            if (el === fields.showBg) syncBgField();
+            if (
+              el === fields.overlayShowBg ||
+              el === fields.viewersShowBg ||
+              el === fields.countdownShowBg
+            ) {
+              syncAllBgFields();
+            }
             buildUrls();
           });
         });
@@ -795,7 +844,7 @@
           el.addEventListener("change", buildUrls)
         );
 
-        syncBgField();
+        syncAllBgFields();
         buildUrls();
       })();
     </script>

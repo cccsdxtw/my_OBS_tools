@@ -2307,7 +2307,7 @@
           if (platform) p.set("platform", platform);
           else if (!game) p.set("platform", "PC");
           p.set("game", game || "遊戲名");
-          if (fields.gameIcon.value.trim()) p.set("gameIcon", fields.gameIcon.value.trim());
+          p.set("gameIcon", fields.gameIcon.value.trim() || "sports_esports");
           styleParams(
             p,
             fields.gameShowBg,

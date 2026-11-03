@@ -38,7 +38,7 @@
       }
 
       main {
-        width: min(920px, calc(100% - 32px));
+        width: min(1180px, calc(100% - 32px));
         margin: 40px auto 64px;
       }
 
@@ -66,14 +66,21 @@
         font-weight: 600;
       }
 
-      .grid {
-        display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
+      .bands {
+        display: flex;
+        flex-direction: column;
         gap: 18px;
       }
 
-      @media (max-width: 820px) {
-        .grid {
+      .band {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      @media (max-width: 900px) {
+        .band {
           grid-template-columns: 1fr;
         }
       }
@@ -83,11 +90,30 @@
         border: 1px solid var(--line);
         box-shadow: var(--shadow);
         padding: 20px 22px;
+        min-width: 0;
       }
 
       .card h2 {
         margin: 0 0 14px;
         font-size: 1.05rem;
+      }
+
+      .card-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .card-head h2 {
+        margin: 0;
+      }
+
+      .card-head .side-title {
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 600;
       }
 
       label {
@@ -192,10 +218,10 @@
         margin-top: 0;
       }
 
-      #url {
+      textarea.url-box {
         width: 100%;
-        min-height: 96px;
-        margin-top: 8px;
+        min-height: 88px;
+        margin-top: 0;
         padding: 12px;
         border: 1px solid var(--line);
         background: #0f1714;
@@ -250,197 +276,221 @@
         <div class="badge">免 Twitch OAuth · 少驗證</div>
         <h1>my_OBS_tools</h1>
         <p>
-          把實況時間／時區、觀看人數、倒計時統合成一個 OBS 瀏覽器來源。
-          預設用 Twitch 公開資料抓人數與開台時間，不必再跑 Client-ID /
-          Access Token 重驗證。
+          左欄填設定、右欄複製對應 OBS 網址。資訊條／觀眾人數／倒計時各一橫列，方便分開放來源。
         </p>
       </header>
 
-      <div class="grid">
-        <section class="card">
-          <h2>顯示設定</h2>
+      <div class="bands">
+        <!-- ① 資訊條 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>① 資訊條設定</h2>
+              <span class="side-title">日期／時間／開台／國旗</span>
+            </div>
 
-          <div class="checks" id="modules">
-            <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條，僅 TW）</label>
-            <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
-            <label><input type="checkbox" data-key="date" checked /> 日期</label>
-            <label><input type="checkbox" data-key="time" checked /> 時間</label>
-            <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
-          </div>
-          <p class="hint">
-            TW＋YT 人數請用右邊「③ 人數網址」獨立來源。資訊條勾選的人數只含 Twitch。
-          </p>
+            <div class="checks" id="modules">
+              <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條，僅 TW）</label>
+              <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
+              <label><input type="checkbox" data-key="date" checked /> 日期</label>
+              <label><input type="checkbox" data-key="time" checked /> 時間</label>
+              <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
+            </div>
+            <p class="hint">TW＋YT 人數請用下面「② 觀眾人數」橫列。這裡勾選的人數只含 Twitch。</p>
 
-          <h2 style="margin-top: 18px">觀眾人數（TW + YT）</h2>
-          <div class="row">
-            <div>
-              <label for="channel">Twitch 頻道（login）</label>
-              <input id="channel" type="text" placeholder="例如 your_channel" />
+            <div class="row">
+              <div>
+                <label for="tz">時區（計算用）</label>
+                <input id="tz" type="text" placeholder="Asia/Taipei" />
+              </div>
+              <div>
+                <label for="flagCode">國旗代碼</label>
+                <input id="flagCode" type="text" value="tw" placeholder="tw" maxlength="2" />
+              </div>
             </div>
-            <div>
-              <label for="vcMode">顯示方式</label>
-              <select id="vcMode">
-                <option value="split" selected>分開：TW / YT</option>
-                <option value="total">加總</option>
-              </select>
-            </div>
-          </div>
-          <div class="row">
-            <div>
-              <label for="ytChannel">YouTube 頻道</label>
-              <input id="ytChannel" type="text" placeholder="@handle 或 UC…" />
-            </div>
-            <div>
-              <label for="ytVideo">或 YT 直播影片 ID</label>
-              <input id="ytVideo" type="text" placeholder="可留空，自動找 live" />
-            </div>
-          </div>
-          <label for="ytKey">YouTube API Key</label>
-          <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
+            <p class="hint">國旗用 ISO 代碼（如 tw、jp、us）。</p>
 
-          <div class="steps" id="yt-key-guide">
-            <h3>YT API Key 怎麼申請（一次即可）</h3>
-            <ol>
-              <li>開 Google Cloud，登入後建立／選擇一個專案。</li>
-              <li>啟用 <b>YouTube Data API v3</b>。</li>
-              <li>到 Credentials 建立 <b>API key</b>，複製 `AIza…` 貼到上方欄位。</li>
-              <li>
-                （建議）編輯金鑰 → API restrictions 只允許 YouTube Data API v3。
-                Application restrictions 可先維持 None。
-              </li>
-              <li>
-                有填 YouTube 頻道時會自動找正在直播的影片；若要省 quota，也可直接填直播影片 ID。
-              </li>
-            </ol>
+            <div class="row">
+              <div>
+                <label for="dateFormat">日期格式</label>
+                <input id="dateFormat" type="text" value="MM/DD ddd" />
+              </div>
+              <div>
+                <label for="timeFormat">時間格式</label>
+                <input id="timeFormat" type="text" value="HH:mm:ss" />
+              </div>
+            </div>
+            <p class="hint">token：YYYY YY MM DD HH mm ss　ddd＝週一　dddd＝星期一</p>
+
+            <div class="row">
+              <div>
+                <label for="fontSize">字級（共用）</label>
+                <input id="fontSize" type="number" min="12" max="64" value="22" />
+              </div>
+              <div>
+                <label for="color">文字色（共用）</label>
+                <input id="color" type="text" value="rgba(255,255,255,0.85)" />
+              </div>
+            </div>
+            <label for="bg">背景色（共用）</label>
+            <input id="bg" type="text" value="rgba(0,0,0,0.45)" />
+          </section>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>① 資訊條網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="url" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 700–900、高度 40–60。</p>
             <div class="actions">
-              <a
-                class="btn"
-                href="https://console.cloud.google.com/"
-                target="_blank"
-                rel="noopener"
-                >1. 開 Cloud Console</a
-              >
-              <a
-                class="btn"
-                href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
-                target="_blank"
-                rel="noopener"
-                >2. 啟用 YouTube Data API</a
-              >
-              <a
-                class="btn"
-                href="https://console.cloud.google.com/apis/credentials"
-                target="_blank"
-                rel="noopener"
-                >3. 建立／複製 API Key</a
-              >
+              <button type="button" id="copy">複製資訊條網址</button>
+              <a class="btn secondary" id="open" href="#" target="_blank" rel="noopener">預覽</a>
             </div>
-            <p class="hint">
-              按上面按鈕會開新分頁。金鑰申請一次就能一直用，不像 Twitch token 常過期。
-            </p>
-          </div>
+            <div class="preview-wrap">
+              <iframe id="preview" title="overlay preview"></iframe>
+            </div>
+          </aside>
+        </div>
 
-          <div class="row">
-            <div>
-              <label for="tz">時區（計算用）</label>
-              <input id="tz" type="text" placeholder="Asia/Taipei" />
+        <!-- ② 觀眾人數 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>② 觀眾人數（TW + YT）</h2>
+              <span class="side-title">獨立來源</span>
             </div>
-            <div>
-              <label for="flagCode">國旗代碼</label>
-              <input id="flagCode" type="text" value="tw" placeholder="tw" maxlength="2" />
-            </div>
-          </div>
-          <p class="hint">國旗用 ISO 代碼（如 tw、jp、us）。有勾「國旗」就顯示國旗，不再顯示時區文字。</p>
 
-          <div class="row">
-            <div>
-              <label for="dateFormat">日期格式</label>
-              <input id="dateFormat" type="text" value="MM/DD ddd" />
+            <div class="row">
+              <div>
+                <label for="channel">Twitch 頻道（login）</label>
+                <input id="channel" type="text" placeholder="例如 your_channel" />
+              </div>
+              <div>
+                <label for="vcMode">顯示方式</label>
+                <select id="vcMode">
+                  <option value="split" selected>分開：TW / YT</option>
+                  <option value="total">加總</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label for="timeFormat">時間格式</label>
-              <input id="timeFormat" type="text" value="HH:mm:ss" />
+            <div class="row">
+              <div>
+                <label for="ytChannel">YouTube 頻道</label>
+                <input id="ytChannel" type="text" placeholder="@handle 或 UC…" />
+              </div>
+              <div>
+                <label for="ytVideo">或 YT 直播影片 ID</label>
+                <input id="ytVideo" type="text" placeholder="可留空，自動找 live" />
+              </div>
             </div>
-          </div>
-          <p class="hint">可用 token：YYYY YY MM DD HH mm ss　ddd＝週一　dddd＝星期一</p>
+            <label for="ytKey">YouTube API Key</label>
+            <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
 
-          <h2 style="margin-top: 22px">倒計時（獨立來源）</h2>
-          <label for="countdown">目標時間（本地）</label>
-          <input id="countdown" type="datetime-local" step="1" />
-          <div class="row">
-            <div>
-              <label for="cdMins">或：從現在起（分鐘）</label>
-              <input id="cdMins" type="number" min="0" step="1" placeholder="例如 10" />
+            <div class="steps" id="yt-key-guide">
+              <h3>YT API Key 怎麼申請（一次即可）</h3>
+              <ol>
+                <li>開 Google Cloud，登入後建立／選擇一個專案。</li>
+                <li>啟用 <b>YouTube Data API v3</b>。</li>
+                <li>到 Credentials 建立 <b>API key</b>，複製 `AIza…` 貼到上方欄位。</li>
+                <li>
+                  （建議）編輯金鑰 → API restrictions 只允許 YouTube Data API v3。
+                  Application restrictions 可先維持 None。
+                </li>
+                <li>
+                  有填 YouTube 頻道時會自動找正在直播的影片；若要省 quota，也可直接填直播影片 ID。
+                </li>
+              </ol>
+              <div class="actions">
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/"
+                  target="_blank"
+                  rel="noopener"
+                  >1. 開 Cloud Console</a
+                >
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
+                  target="_blank"
+                  rel="noopener"
+                  >2. 啟用 YouTube Data API</a
+                >
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noopener"
+                  >3. 建立／複製 API Key</a
+                >
+              </div>
+              <p class="hint">按上面按鈕會開新分頁。金鑰申請一次就能一直用。</p>
             </div>
-            <div>
-              <label for="cdLabel">倒計時標籤</label>
-              <input id="cdLabel" type="text" placeholder="START" />
+          </section>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>② 觀眾人數網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
             </div>
-          </div>
-          <p class="hint">目標時間與「從現在起」擇一。會產生獨立的 `countdown.html` 網址，不要跟資訊條黏在同一來源。</p>
-
-          <div class="row">
-            <div>
-              <label for="fontSize">字級</label>
-              <input id="fontSize" type="number" min="12" max="64" value="22" />
+            <textarea id="vcUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
+            <div class="actions">
+              <button type="button" id="copyVc">複製人數網址</button>
+              <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
             </div>
-            <div>
-              <label for="color">文字色</label>
-              <input id="color" type="text" value="rgba(255,255,255,0.85)" />
+            <div class="preview-wrap">
+              <iframe id="previewVc" title="viewers preview"></iframe>
             </div>
-          </div>
-          <label for="bg">背景色</label>
-          <input id="bg" type="text" value="rgba(0,0,0,0.45)" />
-        </section>
+          </aside>
+        </div>
 
-        <aside class="card">
-          <h2>① 資訊條網址</h2>
-          <textarea id="url" readonly></textarea>
-          <p class="hint">建議寬度 700–900、高度 40–60。OBS 加一個瀏覽器來源貼這個。</p>
-          <div class="actions">
-            <button type="button" id="copy">複製資訊條網址</button>
-            <a class="btn secondary" id="open" href="#" target="_blank" rel="noopener"
-              >預覽</a
-            >
-          </div>
-          <div class="preview-wrap">
-            <iframe id="preview" title="overlay preview"></iframe>
-          </div>
+        <!-- ③ 倒計時 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>③ 倒計時</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
 
-          <h2 style="margin-top: 22px">② 倒計時網址</h2>
-          <textarea id="cdUrl" readonly></textarea>
-          <p class="hint">建議寬度 220–360、高度 40–60。OBS 再加一個瀏覽器來源，放到別的位置。</p>
-          <div class="actions">
-            <button type="button" id="copyCd">複製倒計時網址</button>
-            <a class="btn secondary" id="openCd" href="#" target="_blank" rel="noopener"
-              >預覽</a
-            >
-          </div>
-          <div class="preview-wrap">
-            <iframe id="previewCd" title="countdown preview"></iframe>
-          </div>
+            <label for="countdown">目標時間（本地）</label>
+            <input id="countdown" type="datetime-local" step="1" />
+            <div class="row">
+              <div>
+                <label for="cdMins">或：從現在起（分鐘）</label>
+                <input id="cdMins" type="number" min="0" step="1" placeholder="例如 10" />
+              </div>
+              <div>
+                <label for="cdLabel">倒計時標籤</label>
+                <input id="cdLabel" type="text" placeholder="START" />
+              </div>
+            </div>
+            <p class="hint">目標時間與「從現在起」擇一。不要跟資訊條黏在同一來源。</p>
+          </section>
 
-          <h2 style="margin-top: 22px">③ 觀眾人數網址（TW + YT）</h2>
-          <textarea id="vcUrl" readonly></textarea>
-          <p class="hint">建議寬度 220–420、高度 40–60。獨立人數來源，可跟資訊條分開放。</p>
-          <div class="actions">
-            <button type="button" id="copyVc">複製人數網址</button>
-            <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener"
-              >預覽</a
-            >
-          </div>
-          <div class="preview-wrap">
-            <iframe id="previewVc" title="viewers preview"></iframe>
-          </div>
+          <aside class="card">
+            <div class="card-head">
+              <h2>③ 倒計時網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="cdUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–360、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyCd">複製倒計時網址</button>
+              <a class="btn secondary" id="openCd" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewCd" title="countdown preview"></iframe>
+            </div>
+          </aside>
+        </div>
 
-          <div class="note">
-            <strong>為什麼不用一直驗證？</strong><br />
-            舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
-            這裡改抓公開實況資料，日常開台不必再跑 OAuth。
-            資訊條／倒計時／人數可分成三個瀏覽器來源，分開放位置。
-            人數頁支援 Twitch＋YouTube；YT 需填一次 API Key。
-          </div>
-        </aside>
+        <div class="note">
+          <strong>為什麼不用一直驗證？</strong><br />
+          舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
+          這裡改抓公開實況資料，日常開台不必再跑 OAuth。
+          每一橫列右邊的網址各自加一個 OBS 瀏覽器來源即可。
+        </div>
       </div>
 
       <footer>

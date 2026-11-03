@@ -15,6 +15,7 @@
       :root {
         --bg: rgba(0, 0, 0, 0.45);
         --fg: rgba(255, 255, 255, 0.85);
+        --icon: var(--fg);
         --muted: rgba(255, 255, 255, 0.7);
         --size: 22px;
         --bar-h: calc(var(--size) + 16px);
@@ -76,6 +77,7 @@
         height: auto;
         font-size: calc(var(--size) * 0.95);
         line-height: 1;
+        color: var(--icon);
         font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
         user-select: none;
       }
@@ -129,6 +131,7 @@
 
         cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
         cssVar("--fg", params.get("color"));
+        cssVar("--icon", params.get("iconColor") || params.get("iconColour"));
         const bgParam = (params.get("bg") || "").trim();
         if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {
           cssVar("--bg", "transparent");

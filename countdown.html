@@ -112,7 +112,12 @@
 
         cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
         cssVar("--fg", params.get("color"));
-        cssVar("--bg", params.get("bg"));
+        const bgParam = (params.get("bg") || "").trim();
+        if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {
+          cssVar("--bg", "transparent");
+        } else {
+          cssVar("--bg", bgParam);
+        }
         cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
         cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
 

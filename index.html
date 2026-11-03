@@ -396,10 +396,16 @@
                 <input id="color" type="text" value="rgba(255,255,255,0.85)" />
               </div>
             </div>
-            <div class="field">
-              <label for="bg">背景色（共用）</label>
-              <input id="bg" type="text" value="rgba(0,0,0,0.45)" />
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="showBg" checked /> 顯示底色（灰）</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="bg">底色</label>
+                <input id="bg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
             </div>
+            <p class="hint">取消勾選＝完全透明底，只留圖示與文字。有勾選才套用右邊底色。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -593,6 +599,7 @@
           fontSize: $("fontSize"),
           color: $("color"),
           bg: $("bg"),
+          showBg: $("showBg"),
         };
 
         try {
@@ -608,7 +615,12 @@
           try {
             const data = JSON.parse(saved);
             Object.entries(data.fields || {}).forEach(([k, v]) => {
-              if (fields[k]) fields[k].value = v;
+              if (!fields[k]) return;
+              if (fields[k].type === "checkbox") {
+                fields[k].checked = v === true || v === "true" || v === 1 || v === "1";
+              } else {
+                fields[k].value = v;
+              }
             });
             document.querySelectorAll("#modules input[type=checkbox]").forEach((el) => {
               if (data.modules && Object.prototype.hasOwnProperty.call(data.modules, el.dataset.key)) {
@@ -621,7 +633,16 @@
         function styleParams(p) {
           if (fields.fontSize.value) p.set("fontSize", fields.fontSize.value);
           if (fields.color.value.trim()) p.set("color", fields.color.value.trim());
-          if (fields.bg.value.trim()) p.set("bg", fields.bg.value.trim());
+          if (fields.showBg.checked) {
+            p.set("bg", fields.bg.value.trim() || "rgba(0,0,0,0.45)");
+          } else {
+            p.set("bg", "0");
+          }
+        }
+
+        function syncBgField() {
+          fields.bg.disabled = !fields.showBg.checked;
+          fields.bg.style.opacity = fields.showBg.checked ? "1" : "0.5";
         }
 
         function buildOverlayUrl() {
@@ -701,7 +722,10 @@
             "my_obs_tools_setup",
             JSON.stringify({
               fields: Object.fromEntries(
-                Object.entries(fields).map(([k, el]) => [k, el.value])
+                Object.entries(fields).map(([k, el]) => [
+                  k,
+                  el.type === "checkbox" ? el.checked : el.value,
+                ])
               ),
               modules: mods,
             })
@@ -737,11 +761,17 @@
           await copyText(vcHref, $("copyVc"), "複製人數網址");
         });
 
-        Object.values(fields).forEach((el) => el.addEventListener("input", buildUrls));
+        Object.values(fields).forEach((el) => {
+          el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
+            if (el === fields.showBg) syncBgField();
+            buildUrls();
+          });
+        });
         document.querySelectorAll("#modules input").forEach((el) =>
           el.addEventListener("change", buildUrls)
         );
 
+        syncBgField();
         buildUrls();
       })();
     </script>

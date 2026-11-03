@@ -592,6 +592,7 @@
         align-items: center;
       }
 
+      #installUpdateBtn,
       #downloadUpdateBtn,
       #applyBtn {
         min-width: 7.5rem;
@@ -599,8 +600,14 @@
         font-size: 1rem;
       }
 
-      #downloadUpdateBtn {
+      #installUpdateBtn {
         background: var(--accent-2);
+      }
+
+      #downloadUpdateBtn {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
       }
 
       #applyBtn {
@@ -617,6 +624,7 @@
           width: 100%;
         }
 
+        #installUpdateBtn,
         #downloadUpdateBtn,
         #applyBtn {
           flex: 1;
@@ -1461,7 +1469,8 @@
           <p class="apply-status" id="versionStatus">本機 v0.1.50</p>
         </div>
         <div class="apply-dock-actions">
-          <button type="button" id="downloadUpdateBtn" hidden>下載更新包</button>
+          <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
+          <button type="button" id="downloadUpdateBtn" hidden>下載 zip</button>
           <button type="button" id="applyBtn">確定</button>
         </div>
       </div>
@@ -1475,11 +1484,25 @@
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
+        const UPDATE_FILES = [
+          "index.html",
+          "overlay.html",
+          "countdown.html",
+          "viewers.html",
+          "game.html",
+          "chat.html",
+          "chat-reply.html",
+          "README.md",
+        ];
         const themeKey = "laji_obs_toolbox_theme";
         const autoUpdateKey = "my_obs_tools_auto_version_check";
+        const dirHandleDb = "my_obs_tools_fs";
+        const dirHandleStore = "handles";
+        const dirHandleKey = "installDir";
         const themeToggle = $("themeToggle");
         const applyBtn = $("applyBtn");
         const checkUpdateBtn = $("checkUpdateBtn");
+        const installUpdateBtn = $("installUpdateBtn");
         const downloadUpdateBtn = $("downloadUpdateBtn");
         const versionStatus = $("versionStatus");
         const brandVersion = $("brandVersion");
@@ -1487,7 +1510,7 @@
         let applyTimer = 0;
         let versionMsg = `本機 ${APP_VERSION}`;
         let versionKind = null;
-        let pendingZip = null;
+        let pendingUpdate = null;
         if (brandVersion) brandVersion.textContent = APP_VERSION;
 
         function readAutoUpdatePref() {
@@ -1499,6 +1522,104 @@
           return true;
         }
         autoUpdateCheck.checked = readAutoUpdatePref();
+
+        function canUseDirPicker() {
+          return typeof window.showDirectoryPicker === "function";
+        }
+
+        function isLocalPage() {
+          const host = location.hostname;
+          return (
+            location.protocol === "file:" ||
+            host === "localhost" ||
+            host === "127.0.0.1" ||
+            host === "[::1]"
+          );
+        }
+
+        function openDirDb() {
+          return new Promise((resolve, reject) => {
+            const req = indexedDB.open(dirHandleDb, 1);
+            req.onupgradeneeded = () => {
+              const db = req.result;
+              if (!db.objectStoreNames.contains(dirHandleStore)) {
+                db.createObjectStore(dirHandleStore);
+              }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+        }
+
+        async function saveDirHandle(handle) {
+          const db = await openDirDb();
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(dirHandleStore, "readwrite");
+            tx.objectStore(dirHandleStore).put(handle, dirHandleKey);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+          db.close();
+        }
+
+        async function loadDirHandle() {
+          try {
+            const db = await openDirDb();
+            const handle = await new Promise((resolve, reject) => {
+              const tx = db.transaction(dirHandleStore, "readonly");
+              const req = tx.objectStore(dirHandleStore).get(dirHandleKey);
+              req.onsuccess = () => resolve(req.result || null);
+              req.onerror = () => reject(req.error);
+            });
+            db.close();
+            return handle || null;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        async function ensureDirPermission(handle, mode) {
+          const opts = { mode: mode || "readwrite" };
+          if ((await handle.queryPermission(opts)) === "granted") return true;
+          if ((await handle.requestPermission(opts)) === "granted") return true;
+          return false;
+        }
+
+        async function pickInstallDir() {
+          let handle = await loadDirHandle();
+          if (handle) {
+            try {
+              if (await ensureDirPermission(handle, "readwrite")) return handle;
+            } catch (_) {}
+          }
+          handle = await window.showDirectoryPicker({
+            id: "my-obs-tools-install",
+            mode: "readwrite",
+          });
+          await saveDirHandle(handle);
+          return handle;
+        }
+
+        function fileUrlForTag(tag, name) {
+          return (
+            "https://cdn.jsdelivr.net/gh/cccsdxtw/my_OBS_tools@" +
+            encodeURIComponent(tag) +
+            "/" +
+            name
+          );
+        }
+
+        async function writeUpdateFiles(dirHandle, tag) {
+          for (const name of UPDATE_FILES) {
+            const res = await fetch(fileUrlForTag(tag, name), { cache: "no-store" });
+            if (!res.ok) throw new Error("fetch " + name + " " + res.status);
+            const text = await res.text();
+            const fileHandle = await dirHandle.getFileHandle(name, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(text);
+            await writable.close();
+          }
+        }
 
         function applyTheme(theme) {
           const next = theme === "dark" ? "dark" : "light";
@@ -1515,8 +1636,9 @@
           applyTheme(cur === "dark" ? "light" : "dark");
         });
 
-        function clearPendingZip() {
-          pendingZip = null;
+        function clearPendingUpdate() {
+          pendingUpdate = null;
+          installUpdateBtn.hidden = true;
           downloadUpdateBtn.hidden = true;
         }
 
@@ -1574,22 +1696,24 @@
         }
 
         function showUpdateAvailable(latestTag, zip) {
-          pendingZip = zip;
+          pendingUpdate = { tag: latestTag, zip };
+          const canInstall = canUseDirPicker();
+          installUpdateBtn.hidden = !canInstall;
+          installUpdateBtn.disabled = false;
+          installUpdateBtn.textContent = `覆蓋並重開 ${latestTag}`;
           downloadUpdateBtn.hidden = !zip;
-          downloadUpdateBtn.textContent = zip ? `下載 ${latestTag}` : "下載更新包";
+          downloadUpdateBtn.textContent = zip ? `下載 zip ${latestTag}` : "下載 zip";
           versionStatus.classList.toggle("is-warn", true);
           versionStatus.classList.toggle("is-ok", false);
           versionKind = "warn";
           versionMsg = `有新版本 ${latestTag}（本機 ${APP_VERSION}）`;
+          const tip = canInstall
+            ? `有新版本 ${latestTag}（本機 ${APP_VERSION}）· 可覆蓋本機資料夾並重開`
+            : `有新版本 ${latestTag}（本機 ${APP_VERSION}）· 請下載 zip 後手動覆蓋`;
           versionStatus.innerHTML = "";
-          versionStatus.appendChild(
-            document.createTextNode(
-              zip
-                ? `有新版本 ${latestTag}（本機 ${APP_VERSION}）· 可直接下載 zip`
-                : `有新版本 ${latestTag}（本機 ${APP_VERSION}）· `
-            )
-          );
-          if (!zip) {
+          versionStatus.appendChild(document.createTextNode(tip));
+          if (!canInstall && !zip) {
+            versionStatus.appendChild(document.createTextNode(" · "));
             const a = document.createElement("a");
             a.href = RELEASES_PAGE;
             a.target = "_blank";
@@ -1599,9 +1723,50 @@
           }
         }
 
+        async function installAndReopen() {
+          if (!pendingUpdate || !pendingUpdate.tag) return;
+          if (!canUseDirPicker()) {
+            renderVersionStatus(
+              "此瀏覽器不支援直接覆蓋，請改用「下載 zip」後手動解壓覆蓋",
+              "warn"
+            );
+            return;
+          }
+          const tag = pendingUpdate.tag;
+          installUpdateBtn.disabled = true;
+          installUpdateBtn.textContent = "覆蓋中…";
+          renderVersionStatus(`正在覆蓋安裝 ${tag}…`, "warn");
+          try {
+            const dir = await pickInstallDir();
+            await writeUpdateFiles(dir, tag);
+            renderVersionStatus(
+              `已覆蓋 ${tag} · 正在重開；OBS 瀏覽器來源請再按重新整理`,
+              "ok"
+            );
+            if (isLocalPage()) {
+              setTimeout(() => location.reload(), 500);
+            } else {
+              installUpdateBtn.disabled = false;
+              installUpdateBtn.textContent = `再覆蓋 ${tag}`;
+              renderVersionStatus(
+                `已寫入本機資料夾（${tag}）· 請改開該資料夾的 index.html；OBS 來源也請重新整理`,
+                "ok"
+              );
+            }
+          } catch (err) {
+            installUpdateBtn.disabled = false;
+            installUpdateBtn.textContent = `覆蓋並重開 ${tag}`;
+            const msg =
+              err && err.name === "AbortError"
+                ? "已取消選取資料夾"
+                : `覆蓋失敗：${(err && err.message) || "請改下載 zip"}`;
+            renderVersionStatus(msg, "warn");
+          }
+        }
+
         async function checkLatestVersion(opts) {
-          const autoDownload = !!(opts && opts.autoDownload);
-          clearPendingZip();
+          const autoInstall = !!(opts && opts.autoInstall);
+          clearPendingUpdate();
           renderVersionStatus(`本機 ${APP_VERSION} · 檢查中…`, null);
           try {
             const res = await fetch(RELEASES_API, {
@@ -1620,14 +1785,15 @@
             if (diff > 0) {
               const zip = pickZipAsset(data, latestTag);
               showUpdateAvailable(latestTag, zip);
-              if (autoDownload && zip) {
-                startZipDownload(zip);
-                renderVersionStatus(
-                  `有新版本 ${latestTag} · 已開始下載 ${zip.name}`,
-                  "warn"
-                );
-                downloadUpdateBtn.hidden = false;
-                downloadUpdateBtn.textContent = `再下載 ${latestTag}`;
+              if (autoInstall) {
+                if (canUseDirPicker()) await installAndReopen();
+                else if (zip) {
+                  startZipDownload(zip);
+                  renderVersionStatus(
+                    `有新版本 ${latestTag} · 已開始下載 ${zip.name}（請解壓覆蓋後重開）`,
+                    "warn"
+                  );
+                }
               }
             } else {
               renderVersionStatus(`已跟上最新 ${APP_VERSION}`, "ok");
@@ -1648,24 +1814,25 @@
 
         autoUpdateCheck.addEventListener("change", () => {
           localStorage.setItem(autoUpdateKey, autoUpdateCheck.checked ? "1" : "0");
-          if (autoUpdateCheck.checked) checkLatestVersion({ autoDownload: false });
+          if (autoUpdateCheck.checked) checkLatestVersion({ autoInstall: false });
           else
             renderVersionStatus(`本機 ${APP_VERSION} · 自動更新已關，仍可按「檢查更新」`, null);
         });
         checkUpdateBtn.addEventListener("click", () =>
-          checkLatestVersion({ autoDownload: true })
+          checkLatestVersion({ autoInstall: true })
         );
+        installUpdateBtn.addEventListener("click", () => installAndReopen());
         downloadUpdateBtn.addEventListener("click", () => {
-          if (!pendingZip) return;
-          startZipDownload(pendingZip);
+          if (!pendingUpdate || !pendingUpdate.zip) return;
+          startZipDownload(pendingUpdate.zip);
           renderVersionStatus(
-            `有新版本 ${pendingZip.tag} · 已開始下載 ${pendingZip.name}`,
+            `有新版本 ${pendingUpdate.tag} · 已開始下載 ${pendingUpdate.zip.name}`,
             "warn"
           );
         });
         applyBtn.addEventListener("click", () => flashApplied());
 
-        if (autoUpdateCheck.checked) checkLatestVersion({ autoDownload: false });
+        if (autoUpdateCheck.checked) checkLatestVersion({ autoInstall: false });
         else renderVersionStatus(`本機 ${APP_VERSION} · 可按「檢查更新」跟上版本`, null);
 
         const fields = {

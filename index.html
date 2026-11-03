@@ -443,7 +443,7 @@
               <div>
                 <label for="vcMode">顯示方式</label>
                 <select id="vcMode">
-                  <option value="split" selected>分開：TW / YT</option>
+                  <option value="split" selected>分開：圖示＋人數</option>
                   <option value="total">加總</option>
                 </select>
               </div>
@@ -462,6 +462,20 @@
               <label for="ytKey">YouTube API Key</label>
               <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
             </div>
+
+            <div class="row">
+              <div>
+                <label for="twIcon">Twitch 圖示網址</label>
+                <input id="twIcon" type="text" placeholder="空白＝預設 Twitch 圖示" />
+              </div>
+              <div>
+                <label for="ytIcon">YouTube 圖示網址</label>
+                <input id="ytIcon" type="text" placeholder="空白＝預設 YouTube 圖示" />
+              </div>
+            </div>
+            <p class="hint">
+              預設已用平台圖示取代 TW／YT 文字。可貼自己的 PNG／SVG／WebP 網址來換圖（建議正方形）。
+            </p>
 
             <div class="steps" id="yt-key-guide">
               <h3>YT API Key 怎麼申請（一次即可）</h3>
@@ -545,7 +559,11 @@
                 <input id="cdLabel" type="text" placeholder="START" />
               </div>
             </div>
-            <p class="hint">目標時間與「從現在起」擇一。不要跟資訊條黏在同一來源。</p>
+            <div class="field">
+              <label for="cdIcon">倒計時圖示網址</label>
+              <input id="cdIcon" type="text" placeholder="空白＝預設碼錶圖示" />
+            </div>
+            <p class="hint">目標時間與「從現在起」擇一。不要跟資訊條黏在同一來源。圖示可貼自訂圖片網址。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -589,6 +607,9 @@
           ytChannel: $("ytChannel"),
           ytVideo: $("ytVideo"),
           ytKey: $("ytKey"),
+          twIcon: $("twIcon"),
+          ytIcon: $("ytIcon"),
+          cdIcon: $("cdIcon"),
           tz: $("tz"),
           flagCode: $("flagCode"),
           dateFormat: $("dateFormat"),
@@ -671,6 +692,7 @@
           const url = new URL("countdown.html", location.href);
           const p = url.searchParams;
           if (fields.cdLabel.value.trim()) p.set("cdLabel", fields.cdLabel.value.trim());
+          if (fields.cdIcon.value.trim()) p.set("cdIcon", fields.cdIcon.value.trim());
           if (fields.countdown.value) {
             const local = new Date(fields.countdown.value);
             if (!Number.isNaN(local.getTime())) p.set("countdown", local.toISOString());
@@ -697,6 +719,8 @@
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
+          if (fields.twIcon.value.trim()) p.set("twIcon", fields.twIcon.value.trim());
+          if (fields.ytIcon.value.trim()) p.set("ytIcon", fields.ytIcon.value.trim());
           styleParams(p);
           return url.toString();
         }

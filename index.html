@@ -8,10 +8,8 @@
       (function () {
         try {
           var t = localStorage.getItem("laji_obs_toolbox_theme");
-          if (
-            t === "dark" ||
-            (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)
-          ) {
+          // 預設黑夜；只有明確選過白天才用 light
+          if (t !== "light") {
             document.documentElement.setAttribute("data-theme", "dark");
           }
         } catch (e) {}

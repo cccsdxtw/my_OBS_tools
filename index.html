@@ -759,7 +759,7 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              使用最上方的 Twitch／YouTube 帳號。Twitch 用匿名 IRC（免登入）；YouTube 用 Data API 拉 live chat。
+              使用最上方的 Twitch／YouTube 帳號。右側預覽會播示範留言（正式 OBS 網址不含 demo）。
             </p>
             <div class="field">
               <label for="chatSource">來源平台</label>
@@ -772,14 +772,14 @@
             </div>
             <div class="row">
               <div>
-                <label for="chatLayout">版面</label>
+                <label for="chatLayout">1. 版面</label>
                 <select id="chatLayout">
                   <option value="merge" selected>合併成一個</option>
                   <option value="split">分開成兩個</option>
                 </select>
               </div>
               <div>
-                <label for="chatStack">方向</label>
+                <label for="chatStack">3. 方向</label>
                 <select id="chatStack">
                   <option value="bottom" selected>從下到上（新在底部）</option>
                   <option value="top">從上到下（新在頂部）</option>
@@ -792,14 +792,16 @@
                 <input id="chatMax" type="number" min="5" max="100" value="30" />
               </div>
               <div>
-                <label for="chatTtl">過幾秒最舊消失</label>
-                <input id="chatTtl" type="number" min="0" max="600" value="0" placeholder="0＝不限" />
+                <label for="chatTtl">2. 過幾秒最舊消失</label>
+                <input id="chatTtl" type="number" min="0" max="600" value="15" placeholder="0＝不限" />
               </div>
             </div>
-            <p class="hint">「過幾秒」填 0 或不填＝只依則數清掉，不依時間消失。分開版面時每欄各自計算則數。</p>
+            <p class="hint">
+              2：填秒數，最舊留言到期會淡出；填 0＝只依則數清掉。分開版面時每欄各自算則數。
+            </p>
             <div class="row">
               <div>
-                <label><input type="checkbox" id="chatShowSource" checked /> 顯示留言來源</label>
+                <label><input type="checkbox" id="chatShowSource" checked /> 6. 顯示留言來源</label>
               </div>
               <div>
                 <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
@@ -815,7 +817,7 @@
               </div>
             </div>
             <div class="field" style="align-items: flex-start">
-              <label for="chatCss">自訂 CSS</label>
+              <label for="chatCss">5. 自訂 CSS</label>
               <textarea
                 id="chatCss"
                 class="css-box"
@@ -823,7 +825,7 @@
               ></textarea>
             </div>
             <p class="hint">
-              CSS 會寫進網址參數；太長可能被 OBS 截斷。可用選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `.feed`。
+              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `.feed`。
               OBS 建議寬 360–480（分開可更寬）、高 500–720。
             </p>
           </section>
@@ -836,13 +838,13 @@
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="chatUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 360–480、高度 500–720。</p>
+            <p class="hint">建議寬度 360–480、高度 500–720。下方預覽含示範留言。</p>
             <div class="actions">
               <button type="button" id="copyChat">複製聊天室網址</button>
               <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
             </div>
-            <div class="preview-wrap" style="min-height: 160px">
-              <iframe id="previewChat" title="chat preview" style="height: 160px"></iframe>
+            <div class="preview-wrap" style="min-height: 280px">
+              <iframe id="previewChat" title="chat preview" style="height: 280px"></iframe>
             </div>
           </aside>
         </div>
@@ -1083,7 +1085,7 @@
           return url.toString();
         }
 
-        function buildChatUrl() {
+        function buildChatUrl(opts = {}) {
           const url = new URL("chat.html", location.href);
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
@@ -1106,6 +1108,7 @@
           if (fields.chatHideStatus.checked) p.set("hideStatus", "1");
           const css = fields.chatCss.value.trim();
           if (css) p.set("css", css);
+          if (opts.demo) p.set("demo", "1");
           styleParams(p, fields.chatShowBg, fields.chatBg);
           return url.toString();
         }
@@ -1115,6 +1118,7 @@
           const cdHref = buildCountdownUrl();
           const vcHref = buildViewersUrl();
           const chatHref = buildChatUrl();
+          const chatDemoHref = buildChatUrl({ demo: true });
 
           $("url").value = href;
           $("open").href = href;
@@ -1129,8 +1133,8 @@
           $("previewVc").src = vcHref;
 
           $("chatUrl").value = chatHref;
-          $("openChat").href = chatHref;
-          $("previewChat").src = chatHref;
+          $("openChat").href = chatDemoHref;
+          $("previewChat").src = chatDemoHref;
 
           localStorage.setItem(
             "my_obs_tools_setup",

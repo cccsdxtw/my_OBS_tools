@@ -272,6 +272,7 @@
         const layout = (params.get("layout") || "merge").toLowerCase() === "split" ? "split" : "merge";
         const stack = (params.get("stack") || "bottom").toLowerCase() === "top" ? "top" : "bottom";
         const showSource = params.get("showSource") !== "0";
+        const demo = params.get("demo") === "1";
         if (params.get("hideStatus") === "1") document.body.classList.add("hide-status");
         if (!showSource) document.body.classList.add("hide-source");
 
@@ -310,14 +311,21 @@
           (sources === "auto" || sources === "youtube" || sources === "both");
 
         if (layout === "split") {
-          document.getElementById("col-tw").style.display = wantTw ? "" : "none";
-          document.getElementById("col-yt").style.display = wantYt ? "" : "none";
+          const showTwCol = wantTw || demo;
+          const showYtCol = wantYt || demo;
+          document.getElementById("col-tw").style.display = showTwCol ? "" : "none";
+          document.getElementById("col-yt").style.display = showYtCol ? "" : "none";
         }
 
         function setStatus() {
+          if (demo && !wantTw && !wantYt) {
+            statusEl.textContent = "DEMO";
+            return;
+          }
           const parts = [];
           if (wantTw) parts.push(connected.tw ? "TW●" : "TW○");
           if (wantYt) parts.push(connected.yt ? "YT●" : "YT○");
+          if (demo) parts.push("DEMO");
           statusEl.textContent = parts.length ? parts.join(" ") : "NO SRC";
         }
 
@@ -333,12 +341,12 @@
           }
         }
 
-        function addMessage({ platform, user, text }) {
+        function addMessage({ platform, user, text, born }) {
           const feed = targetFeed(platform);
           if (!feed) return;
           const row = document.createElement("div");
           row.className = "msg";
-          row.dataset.born = String(Date.now());
+          row.dataset.born = String(born || Date.now());
           row.dataset.platform = platform;
           const plat = document.createElement("span");
           plat.className = `plat ${platform}`;
@@ -372,7 +380,29 @@
         }
         if (ttlSec > 0) setInterval(expireTick, 500);
 
-        if (!wantTw && !wantYt) {
+        function startDemo() {
+          const samples = [
+            { platform: "tw", user: "拉基粉絲A", text: "哈哈哈這招好強" },
+            { platform: "yt", user: "YT觀眾1", text: "剛進來～晚安" },
+            { platform: "tw", user: "NightOwl", text: "KKK 太好笑了" },
+            { platform: "yt", user: "貓奴", text: "求歌單！" },
+            { platform: "tw", user: "BoxBox", text: "POG" },
+            { platform: "yt", user: "小白", text: "訂閱了～" },
+            { platform: "tw", user: "Tea", text: "今天氣氛很好" },
+            { platform: "yt", user: "StreamerFan", text: "加油加油" },
+          ];
+          const now = Date.now();
+          samples.slice(0, 6).forEach((m, i) => {
+            addMessage({ ...m, born: now - (6 - i) * 2500 });
+          });
+          let i = 0;
+          setInterval(() => {
+            addMessage(samples[i % samples.length]);
+            i += 1;
+          }, 2200);
+        }
+
+        if (!wantTw && !wantYt && !demo) {
           statusEl.textContent = "NO SRC";
           return;
         }
@@ -566,8 +596,11 @@
           tick();
         }
 
-        connectTwitch();
-        pollYoutube();
+        if (demo) startDemo();
+        else {
+          connectTwitch();
+          pollYoutube();
+        }
       })();
     </script>
   </body>

@@ -6,52 +6,55 @@ OBS 統合工具：觀看人數、已開台時間、日期／時間、國旗、�
 
 資訊條／倒計時／人數／遊戲名稱／聊天室是**獨立網址**，OBS 可分開放多個瀏覽器來源。
 
+## 目錄
+
+```
+入口.html          ← 設定頁（請開這個）
+index.html         ← 自動轉到入口
+子頁/              ← OBS 覆蓋頁（overlay／viewers／countdown／game／chat…）
+圖片/              ← 自訂圖示、封面圖
+資料/帳號.txt      ← Twitch／YouTube 帳號與 API Key
+fonts/             ← Material 圖示本機備援字型
+material-icons.js  ← Google Fonts 優先、失敗改本機字型
+```
+
 ## 功能
 
-- **人數**：獨立頁 `viewers.html`，同時支援 **Twitch + YouTube**（平台圖示＋人數；可自訂圖示網址）
+- **人數**：`子頁/viewers.html`，同時支援 **Twitch + YouTube**（平台圖示＋人數；可自訂圖示）
 - **開台時間**：Twitch 公開實況資料（GQL，失敗改 DecAPI）
 - **時鐘**：日期、時間可開關；星期為中文（週一／星期一）
 - **國旗**：用國旗代表時區／地區（例如 `flag=tw`）
 - **左右順序**：資訊條模組、觀眾人數 TW／YT 一律用 ↑↓（列表上＝左邊）
-- **圖示**：可貼 Google Material Symbol 名稱（如 `Timer`），自動載入 Google Fonts；也可貼圖片網址
-- **圖示色**：設定頁可選 Material 圖示顏色（跟 Google Icons 預覽一樣用 CSS 上色；貼圖片網址則不套用）
-- **倒計時**：獨立頁 `countdown.html`（目標時間，或從現在起 N 分鐘）
-- **遊戲名稱**：獨立頁 `game.html`（格式「遊戲名稱： 平台 - 遊戲名」；平台快捷 PC／PS5／NS2／電競掌機／iOS／ANDROID；本機記住最近組合）
-- **聊天室**：獨立頁 `chat.html`（合併＝一頁；分開＝TW／YT 各一頁兩個 OBS 來源；存活秒數、方向、自訂 CSS、來源標籤）
-- **回覆**：建議用 [Restream Chat](https://chat.restream.io/)（授權由 Restream 維持、可一次回兩邊）；備選本機 `chat-reply.html`（自貼 token，會過期）
-- **設定頁**：最上方填共用帳號與預設字級／文字色／圖示色；各橫列可覆寫（空白＝用預設）；支援黑夜模式
+- **圖示**：可貼 Google Material Symbol 名稱（如 `Timer`），優先 Google Fonts、失敗用內建字型；也可貼 `圖片/xxx.png` 或網址
+- **圖示色**：入口頁可選 Material 圖示顏色（貼圖片則不套用）
+- **倒計時**：`子頁/countdown.html`
+- **遊戲名稱**：`子頁/game.html`（格式「遊戲名稱： 平台 - 遊戲名」）
+- **聊天室**：`子頁/chat.html`
+- **回覆**：建議用 [Restream Chat](https://chat.restream.io/)；備選 `子頁/chat-reply.html`
+- **帳號**：可改 `資料/帳號.txt`，入口開頁會讀入
 
 ## 使用
 
-1. 開 `index.html`（或 GitHub Pages：`https://cccsdxtw.github.io/my_OBS_tools/`）
-2. 最上方填 Twitch／YouTube 帳號與 API Key；再調各橫列樣式
-3. OBS 加「瀏覽器」來源（可分開放）：
-   - 資訊條 `overlay.html`（建議寬 700–900、高 40–60）
-   - 倒計時 `countdown.html`（建議寬 220–360、高 40–60）
-   - 觀眾人數 `viewers.html`（建議寬 220–420、高 40–60）
-   - 遊戲名稱 `game.html`（建議寬 360–720、高 40–60）
-   - 聊天室 `chat.html`（建議寬 360–480、高 500–720）
-   - 回覆：優先開 Restream Chat；或備選 `chat-reply.html`（都不要丟 OBS）
+1. 開 `入口.html`（或 GitHub Pages：`https://cccsdxtw.github.io/my_OBS_tools/`）
+2. 編輯 `資料/帳號.txt`，或在入口最上方填 Twitch／YouTube／API Key
+3. 自訂圖放到 `圖片/`，圖示欄可貼例如 `圖片/twitch.png`
+4. OBS 加「瀏覽器」來源（入口頁右側會給完整網址）：
+   - 資訊條 `子頁/overlay.html`
+   - 倒計時 `子頁/countdown.html`
+   - 觀眾人數 `子頁/viewers.html`
+   - 遊戲名稱 `子頁/game.html`
+   - 聊天室 `子頁/chat.html`
 
-也可從 [Releases](https://github.com/cccsdxtw/my_OBS_tools/releases) 下載打包檔，解壓後用瀏覽器開 `index.html`。
+也可從 [Releases](https://github.com/cccsdxtw/my_OBS_tools/releases) 下載打包檔，解壓後開 `入口.html`。
 
 ## 跟 Restream 怎麼搭配
 
-- **推流／回覆**：繼續用 Restream（或 Restream Chat），連過的 Twitch／YouTube 不用在本工具重授權。
-- **OBS 覆蓋**：用本工具的人數／時鐘／倒計時／遊戲名稱／聊天室顯示頁（免把會過期的 token 塞進 OBS 網址）。
-- 也就是：Restream 負責「講」、本工具負責「給觀眾看的條」。
-
-
+- **推流／回覆**：繼續用 Restream（或 Restream Chat）
+- **OBS 覆蓋**：用本工具的人數／時鐘／倒計時／遊戲名稱／聊天室顯示頁
 
 ## YouTube API Key
 
-設定頁最上方「Twitch／YouTube 帳號」區塊已有步驟與跳轉按鈕：
-
-1. 開 Cloud Console  
-2. 啟用 YouTube Data API v3  
-3. 建立／複製 API Key  
-
-金鑰申請一次即可。可填 `@handle`／`UC…` 自動找 live，或直接填直播影片 ID。
+入口頁最上方「Twitch／YouTube 帳號」區塊已有步驟與跳轉按鈕；也可寫在 `資料/帳號.txt` 的 `YouTube_API_Key=`。
 
 ## 版號
 

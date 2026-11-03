@@ -1,6 +1,10 @@
 (() => {
   const FAMILY = "Material Symbols Outlined";
-  const LOCAL_FONT = new URL("fonts/MaterialSymbolsOutlined.ttf", location.href).href;
+  // 以本腳本所在目錄為基準（入口在根目錄、子頁在 子頁/ 都能找到 fonts/）
+  const SCRIPT_BASE = document.currentScript
+    ? new URL(".", document.currentScript.src).href
+    : new URL(".", location.href).href;
+  const LOCAL_FONT = new URL("fonts/MaterialSymbolsOutlined.ttf", SCRIPT_BASE).href;
   const CACHE_NAME = "my-obs-tools-ms-fonts-v1";
   const GOOGLE_TIMEOUT_MS = 3000;
 

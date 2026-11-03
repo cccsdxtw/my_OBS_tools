@@ -1,0 +1,2636 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>拉基的OBS工具箱 · 設定</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("laji_obs_toolbox_theme");
+          // 預設黑夜；只有明確選過白天才用 light
+          if (t !== "light") {
+            document.documentElement.setAttribute("data-theme", "dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #14201c;
+        --paper: #f3f6f2;
+        --panel: #ffffff;
+        --line: #d5ddd6;
+        --accent: #0f7a5f;
+        --accent-2: #c45c26;
+        --muted: #5b6b63;
+        --shadow: 0 18px 50px rgba(20, 32, 28, 0.08);
+        --input-bg: #fbfcfb;
+        --badge-bg: rgba(255, 255, 255, 0.7);
+        --steps-bg: #f7faf7;
+        --note-bg: rgba(196, 92, 38, 0.08);
+        --url-bg: #0f1714;
+        --url-fg: #d7f5ea;
+        --body-bg:
+          radial-gradient(900px 420px at 10% -10%, #d9efe6 0%, transparent 55%),
+          radial-gradient(700px 380px at 100% 0%, #f7e2d4 0%, transparent 50%),
+          linear-gradient(180deg, #eef3ee, var(--paper));
+      }
+
+      html[data-theme="dark"] {
+        --ink: #e7eee9;
+        --paper: #101612;
+        --panel: #171e1a;
+        --line: #2d3a33;
+        --accent: #2a7d62;
+        --accent-2: #c47a45;
+        --muted: #9aaca2;
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+        --input-bg: #101612;
+        --badge-bg: rgba(23, 30, 26, 0.9);
+        --steps-bg: #121916;
+        --note-bg: rgba(224, 138, 79, 0.12);
+        --url-bg: #0a0f0c;
+        --url-fg: #c8f0df;
+        --body-bg:
+          radial-gradient(900px 420px at 10% -10%, #1a3329 0%, transparent 55%),
+          radial-gradient(700px 380px at 100% 0%, #33241a 0%, transparent 50%),
+          linear-gradient(180deg, #121916, var(--paper));
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "IBM Plex Sans TC", sans-serif;
+        color: var(--ink);
+        background: var(--body-bg);
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 40px auto 120px;
+      }
+
+      header h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.8rem, 4vw, 2.4rem);
+        letter-spacing: 0.02em;
+      }
+
+      .brand-title {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 0.4em;
+      }
+
+      .brand-version {
+        font-size: 0.33em;
+        font-weight: 600;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+
+      header p {
+        margin: 0 0 28px;
+        color: var(--muted);
+        max-width: 46rem;
+        line-height: 1.6;
+      }
+
+      .header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .badge {
+        display: inline-block;
+        margin: 0;
+        padding: 4px 10px;
+        border: 1px solid var(--line);
+        background: var(--badge-bg);
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      #themeToggle {
+        flex: 0 0 auto;
+      }
+
+      .bands {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .band {
+        display: grid;
+        grid-template-columns: 1.15fr 1px 0.85fr;
+        gap: 0;
+        align-items: stretch;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+
+      .band.band-solo {
+        grid-template-columns: 1fr;
+      }
+
+      .band-divider {
+        background: var(--line);
+        width: 1px;
+        min-height: 100%;
+      }
+
+      @media (max-width: 900px) {
+        .band {
+          grid-template-columns: 1fr;
+        }
+
+        .band-divider {
+          width: 100%;
+          height: 1px;
+          min-height: 0;
+        }
+      }
+
+      .card {
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        padding: 20px 22px;
+        min-width: 0;
+      }
+
+      .card h2 {
+        margin: 0 0 14px;
+        font-size: 1.05rem;
+      }
+
+      .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .card-head h2 {
+        margin: 0;
+      }
+
+      .card-head .side-title {
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 600;
+        line-height: 1;
+      }
+
+      label {
+        display: block;
+        margin: 12px 0 6px;
+        font-size: 0.92rem;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      input[type="datetime-local"],
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        background: var(--input-bg);
+        font: inherit;
+        color: var(--ink);
+        line-height: 1.2;
+      }
+
+      input:disabled {
+        opacity: 0.55;
+      }
+
+      .color-pair {
+        display: grid;
+        grid-template-columns: 1fr 2.5rem;
+        gap: 8px;
+        align-items: center;
+        width: 100%;
+      }
+
+      .color-pair input[type="color"] {
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 2px;
+        cursor: pointer;
+      }
+
+      .field {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .field > label {
+        margin: 0;
+        flex: 0 0 auto;
+        min-width: 7.5rem;
+        line-height: 1.2;
+      }
+
+      .field > input,
+      .field > select {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .row > div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .row > div > label {
+        margin: 0;
+        flex: 0 0 auto;
+        max-width: 46%;
+        line-height: 1.2;
+      }
+
+      .row > div > input,
+      .row > div > select {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .row + .hint,
+      .field + .hint {
+        margin-top: 6px;
+      }
+
+      .checks {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .checks .mod-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        background: var(--input-bg);
+      }
+
+      .checks .mod-row > input[type="text"] {
+        width: 100%;
+      }
+
+      .checks .mod-row > input.icon-name {
+        grid-column: 1 / -1;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.85rem;
+      }
+
+      .checks .mod-row label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-weight: 500;
+      }
+
+      .checks .mod-move {
+        display: flex;
+        gap: 4px;
+      }
+
+      .checks .mod-move button {
+        min-width: 2rem;
+        padding: 4px 8px;
+        font-size: 0.85rem;
+        line-height: 1;
+      }
+
+      .hint {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.45;
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .chip-row button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .chip-row button.is-active {
+        background: var(--accent);
+        color: #fff;
+        border-color: transparent;
+      }
+
+      .chip-row button.history {
+        font-weight: 500;
+        opacity: 0.92;
+      }
+
+      .chip-row button.history .meta {
+        display: block;
+        font-size: 0.75rem;
+        opacity: 0.7;
+        font-weight: 400;
+        margin-top: 2px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      button,
+      .btn {
+        appearance: none;
+        border: 0;
+        cursor: pointer;
+        padding: 10px 14px;
+        background: var(--accent);
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      button.secondary,
+      .btn.secondary {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .steps {
+        margin-top: 12px;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        background: var(--steps-bg);
+      }
+
+      .steps h3 {
+        margin: 0 0 10px;
+        font-size: 0.95rem;
+      }
+
+      .steps ol {
+        margin: 0 0 12px;
+        padding-left: 1.25rem;
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 0.9rem;
+      }
+
+      .steps li {
+        margin: 0 0 6px;
+      }
+
+      .steps .actions {
+        margin-top: 0;
+      }
+
+      textarea.url-box,
+      textarea.css-box {
+        width: 100%;
+        min-height: 88px;
+        margin-top: 0;
+        padding: 12px;
+        border: 1px solid var(--line);
+        background: var(--url-bg);
+        color: var(--url-fg);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        word-break: break-all;
+        resize: vertical;
+      }
+
+      textarea.css-box {
+        min-height: 110px;
+        background: var(--input-bg);
+        color: var(--ink);
+        word-break: normal;
+        white-space: pre;
+      }
+
+      .preview-wrap {
+        margin-top: 14px;
+        padding: 18px;
+        background:
+          linear-gradient(45deg, #2a2a2a 25%, transparent 25%) 0 0 / 16px 16px,
+          linear-gradient(-45deg, #2a2a2a 25%, transparent 25%) 0 8px / 16px 16px,
+          linear-gradient(45deg, transparent 75%, #2a2a2a 75%) 8px -8px / 16px 16px,
+          linear-gradient(-45deg, transparent 75%, #2a2a2a 75%) -8px 0 / 16px 16px,
+          #1b1b1b;
+      }
+
+      .preview-wrap iframe {
+        width: 100%;
+        height: 48px;
+        border: 0;
+        background: transparent;
+      }
+
+      .note {
+        margin-top: 18px;
+        padding: 14px 16px;
+        border-left: 3px solid var(--accent-2);
+        background: var(--note-bg);
+        line-height: 1.55;
+      }
+
+      .note strong {
+        color: var(--accent-2);
+      }
+
+      footer {
+        margin-top: 22px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .apply-dock {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 40;
+        display: flex;
+        justify-content: center;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+        pointer-events: none;
+        background: linear-gradient(180deg, rgba(16, 22, 18, 0) 0%, rgba(16, 22, 18, 0.55) 100%);
+      }
+
+      html:not([data-theme="dark"]) .apply-dock {
+        background: linear-gradient(180deg, rgba(243, 246, 242, 0) 0%, rgba(243, 246, 242, 0.88) 100%);
+      }
+
+      .apply-dock-inner {
+        pointer-events: auto;
+        width: min(1180px, 100%);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
+        padding: 12px 16px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .apply-dock-left {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 14px;
+        min-width: 0;
+      }
+
+      .version-controls {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 10px;
+      }
+
+      .version-controls label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        color: var(--ink);
+      }
+
+      .version-controls #checkUpdateBtn {
+        min-width: 0;
+        padding: 8px 12px;
+        font-size: 0.88rem;
+      }
+
+      .apply-status {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.35;
+        min-width: 0;
+      }
+
+      .apply-status a {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .apply-status.is-warn {
+        color: var(--accent-2);
+        font-weight: 600;
+      }
+
+      .apply-status.is-ok {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .apply-dock-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      #installUpdateBtn,
+      #downloadUpdateBtn,
+      #applyBtn {
+        min-width: 7.5rem;
+        padding: 12px 20px;
+        font-size: 1rem;
+      }
+
+      #installUpdateBtn {
+        background: var(--accent-2);
+      }
+
+      #downloadUpdateBtn {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      #applyBtn {
+        box-shadow: 0 8px 20px rgba(15, 122, 95, 0.22);
+      }
+
+      @media (max-width: 640px) {
+        .apply-dock-inner {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .apply-dock-actions {
+          width: 100%;
+        }
+
+        #installUpdateBtn,
+        #downloadUpdateBtn,
+        #applyBtn {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="header-top">
+          <div class="badge">免 Twitch OAuth · 少驗證</div>
+          <button type="button" class="secondary" id="themeToggle" aria-pressed="false">
+            黑夜模式
+          </button>
+        </div>
+        <h1 class="brand-title">
+          拉基的OBS工具箱
+          <span class="brand-version" id="brandVersion">v0.1.50</span>
+        </h1>
+        <p>
+          先填最上方的 Twitch／YouTube 帳號，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室可分開放來源。
+        </p>
+      </header>
+
+      <div class="bands">
+        <!-- 共用帳號（人數、開台、聊天室共用） -->
+        <div class="band band-solo">
+          <section class="card">
+            <div class="card-head">
+              <h2>Twitch／YouTube 帳號</h2>
+              <span class="side-title">人數 · 開台 · 聊天室共用</span>
+            </div>
+            <div class="row">
+              <div>
+                <label for="channel">Twitch 頻道（login）</label>
+                <input id="channel" type="text" placeholder="例如 your_channel" />
+              </div>
+              <div>
+                <label for="ytChannel">YouTube 頻道</label>
+                <input id="ytChannel" type="text" placeholder="@handle 或 UC…" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="ytVideo">或 YT 直播影片 ID</label>
+                <input id="ytVideo" type="text" placeholder="可留空，自動找 live" />
+              </div>
+              <div>
+                <label for="ytKey">YouTube API Key</label>
+                <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
+              </div>
+            </div>
+            <p class="hint">
+              也可改根目錄 <code>資料/帳號.txt</code>（開頁會讀進來）。自訂圖放 <code>圖片/</code>，覆蓋頁在
+              <code>子頁/</code>。填一次即可套用到觀眾人數、資訊條開台時間、聊天室。
+            </p>
+
+            <div class="row">
+              <div>
+                <label for="defaultFontSize">預設字級</label>
+                <input id="defaultFontSize" type="number" min="12" max="64" value="22" />
+              </div>
+              <div>
+                <label for="defaultColor">預設文字色</label>
+                <div class="color-pair">
+                  <input id="defaultColor" type="text" value="rgba(255,255,255,0.85)" />
+                  <input type="color" data-sync="defaultColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="defaultIconColor">預設圖示色</label>
+                <div class="color-pair">
+                  <input id="defaultIconColor" type="text" placeholder="空白＝跟文字色" />
+                  <input type="color" data-sync="defaultIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              各橫列字級／文字色／圖示色沒填時，會用這裡的預設。圖示色空白＝跟文字色（跟 Google Icons 預覽一樣用 CSS 上色）。
+            </p>
+
+            <div class="steps" id="yt-key-guide">
+              <h3>YT API Key 怎麼申請（一次即可）</h3>
+              <ol>
+                <li>開 Google Cloud，登入後建立／選擇一個專案。</li>
+                <li>啟用 <b>YouTube Data API v3</b>。</li>
+                <li>到 Credentials 建立 <b>API key</b>，複製 `AIza…` 貼到上方欄位。</li>
+                <li>
+                  （建議）編輯金鑰 → API restrictions 只允許 YouTube Data API v3。
+                  Application restrictions 可先維持 None。
+                </li>
+              </ol>
+              <div class="actions">
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/"
+                  target="_blank"
+                  rel="noopener"
+                  >1. 開 Cloud Console</a
+                >
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
+                  target="_blank"
+                  rel="noopener"
+                  >2. 啟用 YouTube Data API</a
+                >
+                <a
+                  class="btn"
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noopener"
+                  >3. 建立／複製 API Key</a
+                >
+              </div>
+              <p class="hint">按上面按鈕會開新分頁。金鑰申請一次就能一直用。</p>
+            </div>
+          </section>
+        </div>
+
+        <!-- ① 資訊條 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>① 資訊條設定</h2>
+              <span class="side-title">日期／時間／開台／國旗</span>
+            </div>
+
+            <datalist id="materialIconSuggest">
+              <option value="calendar_month"></option>
+              <option value="schedule"></option>
+              <option value="videocam"></option>
+              <option value="timer"></option>
+              <option value="hourglass_empty"></option>
+              <option value="visibility"></option>
+              <option value="person"></option>
+              <option value="favorite"></option>
+              <option value="star"></option>
+              <option value="bolt"></option>
+              <option value="live_tv"></option>
+              <option value="podcasts"></option>
+              <option value="alarm"></option>
+              <option value="nest_clock_farsight_analog"></option>
+            </datalist>
+
+            <div class="actions" style="margin-top: 0">
+              <a
+                class="btn"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <p class="hint">
+              1. 按上面按鈕到 Google Icons 找圖示（那邊也可先預覽顏色）<br />
+              2. 點進圖示後，把名稱貼到下方欄位（例如 <code>Timer</code>、<code>calendar_month</code>）<br />
+              3. 圖示顏色用下面「圖示色」選（Material Symbols 用 CSS 上色）；若貼圖片網址則顏色選項不套用
+            </p>
+
+            <div class="row">
+              <div>
+                <label for="overlayIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="overlayIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="overlayIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+
+            <div class="checks" id="modules">
+              <div class="mod-row" data-key="vc">
+                <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條，僅 TW）</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <input
+                  id="vcMsIcon"
+                  class="icon-name"
+                  type="text"
+                  list="materialIconSuggest"
+                  placeholder="圖示名 visibility"
+                  value="visibility"
+                />
+              </div>
+              <div class="mod-row" data-key="st">
+                <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <input
+                  id="stMsIcon"
+                  class="icon-name"
+                  type="text"
+                  list="materialIconSuggest"
+                  placeholder="圖示名 videocam"
+                  value="videocam"
+                />
+              </div>
+              <div class="mod-row" data-key="date">
+                <label><input type="checkbox" data-key="date" checked /> 日期</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <input
+                  id="dateMsIcon"
+                  class="icon-name"
+                  type="text"
+                  list="materialIconSuggest"
+                  placeholder="圖示名 calendar_month"
+                  value="calendar_month"
+                />
+              </div>
+              <div class="mod-row" data-key="time">
+                <label><input type="checkbox" data-key="time" checked /> 時間</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <input
+                  id="timeMsIcon"
+                  class="icon-name"
+                  type="text"
+                  list="materialIconSuggest"
+                  placeholder="圖示名 schedule"
+                  value="schedule"
+                />
+              </div>
+              <div class="mod-row" data-key="showTz">
+                <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+              </div>
+            </div>
+            <p class="hint">
+              用 ↑↓ 調整左右順序（列表上＝資訊條左邊）。每個項目下方可填圖示名稱；國旗仍用 ISO 代碼，不用 Material 名稱。
+            </p>
+
+            <div class="row">
+              <div>
+                <label for="tz">時區（計算用）</label>
+                <input id="tz" type="text" placeholder="Asia/Taipei" />
+              </div>
+              <div>
+                <label for="flagCode">國旗代碼</label>
+                <input id="flagCode" type="text" value="tw" placeholder="tw" maxlength="2" />
+              </div>
+            </div>
+            <p class="hint">國旗用 ISO 代碼（如 tw、jp、us）。</p>
+
+            <div class="row">
+              <div>
+                <label for="dateFormat">日期格式</label>
+                <input id="dateFormat" type="text" value="MM/DD ddd" />
+              </div>
+              <div>
+                <label for="timeFormat">時間格式</label>
+                <input id="timeFormat" type="text" value="HH:mm:ss" />
+              </div>
+            </div>
+            <p class="hint">token：YYYY YY MM DD HH mm ss　ddd＝週一　dddd＝星期一</p>
+
+            <div class="row">
+              <div>
+                <label for="overlayFontSize">字級</label>
+                <input id="overlayFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="overlayColor">文字色</label>
+                <div class="color-pair">
+                  <input id="overlayColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="overlayColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="overlayShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="overlayBg">底色</label>
+                <input id="overlayBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>① 資訊條網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="url" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 700–900、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copy">複製資訊條網址</button>
+              <a class="btn secondary" id="open" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="preview" title="overlay preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ② 觀眾人數 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>② 觀眾人數（TW + YT）</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">使用最上方的 Twitch／YouTube 帳號。</p>
+
+            <div class="field">
+              <label for="vcMode">顯示方式</label>
+              <select id="vcMode">
+                <option value="split" selected>分開：圖示＋人數</option>
+                <option value="total">加總</option>
+              </select>
+            </div>
+
+            <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              平台左右順序
+            </p>
+            <div class="checks" id="vcPlatforms">
+              <div class="mod-row" data-key="tw">
+                <label>
+                  Twitch
+                  <span style="font-weight: 500; color: var(--muted); margin-left: 6px">圖示網址</span>
+                </label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <input
+                  id="twIcon"
+                  type="text"
+                  placeholder="空白＝預設 Twitch 圖示"
+                  style="grid-column: 1 / -1; margin-top: 4px"
+                />
+              </div>
+              <div class="mod-row" data-key="yt">
+                <label>
+                  YouTube
+                  <span style="font-weight: 500; color: var(--muted); margin-left: 6px">圖示網址</span>
+                </label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <input
+                  id="ytIcon"
+                  type="text"
+                  placeholder="空白＝預設 YouTube 圖示"
+                  style="grid-column: 1 / -1; margin-top: 4px"
+                />
+              </div>
+            </div>
+            <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。可貼自己的 PNG／SVG／WebP 網址換圖（建議正方形）。</p>
+            <div class="row">
+              <div>
+                <label for="viewersFontSize">字級</label>
+                <input id="viewersFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="viewersColor">文字色</label>
+                <input id="viewersColor" type="text" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="viewersShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="viewersBg">底色</label>
+                <input id="viewersBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>② 觀眾人數網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="vcUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
+            <div class="actions">
+              <button type="button" id="copyVc">複製人數網址</button>
+              <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewVc" title="viewers preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ③ 倒計時 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>③ 倒計時</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+
+            <div class="field">
+              <label for="countdown">目標時間（本地）</label>
+              <input id="countdown" type="datetime-local" step="1" />
+            </div>
+            <div class="row">
+              <div>
+                <label for="cdMins">或：從現在起（分鐘）</label>
+                <input id="cdMins" type="number" min="0" step="1" placeholder="例如 10" />
+              </div>
+              <div>
+                <label for="cdLabel">倒計時標籤</label>
+                <input id="cdLabel" type="text" placeholder="START" />
+              </div>
+            </div>
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label for="cdIcon">倒計時圖示</label>
+              <input
+                id="cdIcon"
+                type="text"
+                list="materialIconSuggest"
+                value="hourglass_empty"
+                placeholder="Material 名稱如 Timer，或圖片 https://…"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="countdownIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="countdownIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="countdownIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              同上：到 Google Icons 找名稱貼上來（如 <code>Timer</code>）；顏色用「圖示色」選。貼圖片網址則不套用圖示色。
+            </p>
+            <div class="row">
+              <div>
+                <label for="countdownFontSize">字級</label>
+                <input id="countdownFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="countdownColor">文字色</label>
+                <div class="color-pair">
+                  <input id="countdownColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="countdownColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="countdownShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="countdownBg">底色</label>
+                <input id="countdownBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <p class="hint">目標時間與「從現在起」擇一。字級／文字色空白＝用最上方預設。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>③ 倒計時網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="cdUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–360、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyCd">複製倒計時網址</button>
+              <a class="btn secondary" id="openCd" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewCd" title="countdown preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑤ 遊戲名稱 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑤ 遊戲名稱</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">顯示格式：<code>標籤： 平台 - 遊戲名</code>（例如「遊戲名稱： PC - 艾爾登法環」）</p>
+
+            <div class="field">
+              <label for="gameLabel">標籤</label>
+              <input id="gameLabel" type="text" value="遊戲名稱" placeholder="遊戲名稱" />
+            </div>
+
+            <label style="display: block; margin-top: 14px">平台（快速選）</label>
+            <div class="chip-row" id="gamePlatformPresets" role="group" aria-label="平台快捷">
+              <button type="button" data-platform="PC">PC</button>
+              <button type="button" data-platform="PS5">PS5</button>
+              <button type="button" data-platform="NS2">NS2</button>
+              <button type="button" data-platform="電競掌機">電競掌機</button>
+              <button type="button" data-platform="iOS">iOS</button>
+              <button type="button" data-platform="ANDROID">ANDROID</button>
+            </div>
+            <div class="field">
+              <label for="gamePlatform">平台</label>
+              <input id="gamePlatform" type="text" list="gamePlatformSuggest" value="PC" placeholder="PC / PS5 / NS2…" />
+              <datalist id="gamePlatformSuggest">
+                <option value="PC"></option>
+                <option value="PS5"></option>
+                <option value="NS2"></option>
+                <option value="電競掌機"></option>
+                <option value="iOS"></option>
+                <option value="ANDROID"></option>
+              </datalist>
+            </div>
+
+            <div class="field">
+              <label for="gameName">遊戲名</label>
+              <input id="gameName" type="text" list="gameNameSuggest" placeholder="例如 艾爾登法環" />
+              <datalist id="gameNameSuggest"></datalist>
+            </div>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" id="saveGameHistory" class="secondary">記住目前組合</button>
+              <button type="button" id="clearGameHistory" class="secondary">清除紀錄</button>
+            </div>
+            <p class="hint">最近用過的「平台 + 遊戲」會出現在下方，點一下即可套用；也會自動補進遊戲名建議清單。</p>
+            <div class="chip-row" id="gameHistoryList" aria-label="最近遊戲紀錄"></div>
+
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label for="gameIcon">圖示（選填）</label>
+              <input
+                id="gameIcon"
+                type="text"
+                list="materialIconSuggest"
+                value="sports_esports"
+                placeholder="Material 名稱或圖片 https://…；空白＝不顯示"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="gameIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="gameIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="gameIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="gameFontSize">字級</label>
+                <input id="gameFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="gameColor">文字色</label>
+                <div class="color-pair">
+                  <input id="gameColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="gameColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="gameShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="gameBg">底色</label>
+                <input id="gameBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑤ 遊戲名稱網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="gameUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 360–720、高度 40–60。換遊戲時改設定頁再複製，或直接改 OBS 網址參數。</p>
+            <div class="actions">
+              <button type="button" id="copyGame">複製遊戲名稱網址</button>
+              <a class="btn secondary" id="openGame" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewGame" title="game title preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑥ 聊天室 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑥ 聊天室（TW + YT）</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              使用最上方的 Twitch／YouTube 帳號。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。
+            </p>
+            <div class="row">
+              <div>
+                <label for="chatLayout">1. 版面</label>
+                <select id="chatLayout">
+                  <option value="merge" selected>合併成一個（一頁）</option>
+                  <option value="split">分開成兩個（兩頁／兩個來源）</option>
+                </select>
+              </div>
+              <div id="chatSourceWrap">
+                <label for="chatSource">合併時來源</label>
+                <select id="chatSource">
+                  <option value="auto" selected>auto（有填就連）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只用 Twitch</option>
+                  <option value="youtube">只用 YouTube</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="chatStack">3. 方向</label>
+                <select id="chatStack">
+                  <option value="bottom" selected>從下到上（新在底部）</option>
+                  <option value="top">從上到下（新在頂部）</option>
+                </select>
+              </div>
+              <div>
+                <label for="chatTtl">2. 過幾秒最舊消失</label>
+                <input id="chatTtl" type="number" min="0" max="600" value="15" placeholder="0＝不限" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="chatMax">最多保留則數</label>
+                <input id="chatMax" type="number" min="5" max="100" value="30" />
+              </div>
+              <div>
+                <label><input type="checkbox" id="chatShowSource" checked /> 6. 顯示留言來源</label>
+              </div>
+            </div>
+            <p class="hint">2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。</p>
+            <div class="row">
+              <div>
+                <label for="chatFontSize">字級</label>
+                <input id="chatFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="chatColor">文字色</label>
+                <input id="chatColor" type="text" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
+              </div>
+              <div>
+                <label><input type="checkbox" id="chatShowBg" checked /> 顯示底色</label>
+              </div>
+            </div>
+            <div class="field">
+              <label for="chatBg">底色</label>
+              <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
+            </div>
+            <p class="hint">字級／文字色空白＝用最上方預設。</p>
+            <div class="field" style="align-items: flex-start">
+              <label for="chatCss">5. 自訂 CSS</label>
+              <textarea
+                id="chatCss"
+                class="css-box"
+                placeholder=".msg { font-size: 20px; }&#10;.plat.tw { color: #a970ff; }"
+              ></textarea>
+            </div>
+            <p class="hint">
+              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
+              每頁建議寬 360–480、高 500–720。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑥ 聊天室網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+
+            <div id="chatMergePanel">
+              <textarea id="chatUrl" class="url-box" readonly></textarea>
+              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
+              <div class="actions">
+                <button type="button" id="copyChat">複製聊天室網址</button>
+                <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 220px">
+                <iframe id="previewChat" title="chat preview" style="height: 220px"></iframe>
+              </div>
+            </div>
+
+            <div id="chatSplitPanel" hidden>
+              <p class="hint" style="margin-top: 0">分開：請在 OBS <strong>各加一個</strong>瀏覽器來源。</p>
+              <h3 style="margin: 12px 0 8px; font-size: 0.95rem">Twitch 聊天室</h3>
+              <textarea id="chatUrlTw" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatTw">複製 TW 網址</button>
+                <a class="btn secondary" id="openChatTw" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatTw" title="twitch chat preview" style="height: 160px"></iframe>
+              </div>
+
+              <h3 style="margin: 18px 0 8px; font-size: 0.95rem">YouTube 聊天室</h3>
+              <textarea id="chatUrlYt" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatYt">複製 YT 網址</button>
+                <a class="btn secondary" id="openChatYt" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑦ 回覆（主播用） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑦ 聊天回覆</h2>
+              <span class="side-title">主播用 · 非 OBS</span>
+            </div>
+            <p class="hint">
+              <strong>建議用 Restream Chat</strong>：TW／YT 等平台授權存在 Restream，平常回覆不用自己換 token，也可一次回兩邊。
+              OBS 上的⑥聊天室覆蓋仍只負責「顯示」、免發話授權。
+            </p>
+            <p class="hint">
+              沒有 Restream 才用下方本機回覆頁（要自己貼 TW／YT 發話 token，那些<strong>會過期</strong>）。
+              回覆相關網址都<strong>不要</strong>加進 OBS 瀏覽器來源。
+            </p>
+            <div class="field">
+              <label for="restreamChatUrl">Restream Chat 網址（選填）</label>
+              <input
+                id="restreamChatUrl"
+                type="text"
+                placeholder="空白＝官方 chat.restream.io；可改貼你的 embed 網址"
+              />
+            </div>
+            <p class="hint">
+              預設開
+              <a href="https://chat.restream.io/" target="_blank" rel="noopener">chat.restream.io</a>
+              （用你的 Restream 帳號登入即可）。若你有「Embed in stream」專用網址也可貼上。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑦ 開啟回覆</h2>
+              <span class="side-title">用瀏覽器開啟</span>
+            </div>
+            <div class="actions" style="margin-top: 0">
+              <a class="btn" id="openRestreamChat" href="https://chat.restream.io/" target="_blank" rel="noopener"
+                >開啟 Restream Chat（建議）</a
+              >
+            </div>
+            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑥覆蓋、一邊回覆。</p>
+
+            <h3 style="margin: 18px 0 8px; font-size: 0.95rem">備選：本機回覆頁</h3>
+            <textarea id="chatReplyUrl" class="url-box" readonly></textarea>
+            <p class="hint">自備 token 才需要。可 TW＋YT 一起送，但 token 過期要重貼。</p>
+            <div class="actions">
+              <button type="button" id="copyChatReply">複製本機回覆網址</button>
+              <a class="btn secondary" id="openChatReply" href="#" target="_blank" rel="noopener">開啟本機回覆頁</a>
+            </div>
+          </aside>
+        </div>
+
+        <div class="note">
+          <strong>為什麼不用一直驗證？</strong><br />
+          舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
+          這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
+          回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
+          ①②③⑤⑥ 右邊網址各自加 OBS 瀏覽器來源即可（⑦ 回覆除外）。
+        </div>
+      </div>
+
+      <footer>
+        拉基的OBS工具箱 · Repo：cccsdxtw/my_OBS_tools · Overlay 為透明背景，適合 OBS 瀏覽器來源。
+      </footer>
+    </main>
+
+    <div class="apply-dock" role="region" aria-label="確定與版本更新">
+      <div class="apply-dock-inner">
+        <div class="apply-dock-left">
+          <div class="version-controls" role="group" aria-label="版本更新">
+            <label>
+              <input type="checkbox" id="autoUpdateCheck" checked />
+              自動更新
+            </label>
+            <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
+          </div>
+          <p class="apply-status" id="versionStatus">本機 v0.1.50</p>
+        </div>
+        <div class="apply-dock-actions">
+          <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
+          <button type="button" id="downloadUpdateBtn" hidden>下載 zip</button>
+          <button type="button" id="applyBtn">確定</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        const $ = (id) => document.getElementById(id);
+
+        const APP_VERSION = "v0.1.50";
+        const RELEASES_API =
+          "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
+        const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
+        const UPDATE_FILES = [
+          "index.html",
+          "入口.html",
+          "material-icons.js",
+          "fonts/MaterialSymbolsOutlined.ttf",
+          "子頁/overlay.html",
+          "子頁/countdown.html",
+          "子頁/viewers.html",
+          "子頁/game.html",
+          "子頁/chat.html",
+          "子頁/chat-reply.html",
+          "資料/帳號.txt",
+          "圖片/說明.txt",
+          "README.md",
+        ];
+        const SUBPAGE_BASE = "子頁/";
+        const ACCOUNT_TXT = "資料/帳號.txt";
+        const themeKey = "laji_obs_toolbox_theme";
+        const autoUpdateKey = "my_obs_tools_auto_version_check";
+        const dirHandleDb = "my_obs_tools_fs";
+        const dirHandleStore = "handles";
+        const dirHandleKey = "installDir";
+        const themeToggle = $("themeToggle");
+        const applyBtn = $("applyBtn");
+        const checkUpdateBtn = $("checkUpdateBtn");
+        const installUpdateBtn = $("installUpdateBtn");
+        const downloadUpdateBtn = $("downloadUpdateBtn");
+        const versionStatus = $("versionStatus");
+        const brandVersion = $("brandVersion");
+        const autoUpdateCheck = $("autoUpdateCheck");
+        let applyTimer = 0;
+        let versionMsg = `本機 ${APP_VERSION}`;
+        let versionKind = null;
+        let pendingUpdate = null;
+        if (brandVersion) brandVersion.textContent = APP_VERSION;
+
+        function readAutoUpdatePref() {
+          const legacy = localStorage.getItem("my_obs_tools_version_update_mode");
+          const raw = localStorage.getItem(autoUpdateKey);
+          if (raw === "0" || raw === "false") return false;
+          if (raw === "1" || raw === "true") return true;
+          if (legacy === "manual") return false;
+          return true;
+        }
+        autoUpdateCheck.checked = readAutoUpdatePref();
+
+        function canUseDirPicker() {
+          return typeof window.showDirectoryPicker === "function";
+        }
+
+        function isLocalPage() {
+          const host = location.hostname;
+          return (
+            location.protocol === "file:" ||
+            host === "localhost" ||
+            host === "127.0.0.1" ||
+            host === "[::1]"
+          );
+        }
+
+        function openDirDb() {
+          return new Promise((resolve, reject) => {
+            const req = indexedDB.open(dirHandleDb, 1);
+            req.onupgradeneeded = () => {
+              const db = req.result;
+              if (!db.objectStoreNames.contains(dirHandleStore)) {
+                db.createObjectStore(dirHandleStore);
+              }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+        }
+
+        async function saveDirHandle(handle) {
+          const db = await openDirDb();
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(dirHandleStore, "readwrite");
+            tx.objectStore(dirHandleStore).put(handle, dirHandleKey);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+          db.close();
+        }
+
+        async function loadDirHandle() {
+          try {
+            const db = await openDirDb();
+            const handle = await new Promise((resolve, reject) => {
+              const tx = db.transaction(dirHandleStore, "readonly");
+              const req = tx.objectStore(dirHandleStore).get(dirHandleKey);
+              req.onsuccess = () => resolve(req.result || null);
+              req.onerror = () => reject(req.error);
+            });
+            db.close();
+            return handle || null;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        async function ensureDirPermission(handle, mode) {
+          const opts = { mode: mode || "readwrite" };
+          if ((await handle.queryPermission(opts)) === "granted") return true;
+          if ((await handle.requestPermission(opts)) === "granted") return true;
+          return false;
+        }
+
+        async function pickInstallDir() {
+          let handle = await loadDirHandle();
+          if (handle) {
+            try {
+              if (await ensureDirPermission(handle, "readwrite")) return handle;
+            } catch (_) {}
+          }
+          handle = await window.showDirectoryPicker({
+            id: "my-obs-tools-install",
+            mode: "readwrite",
+          });
+          await saveDirHandle(handle);
+          return handle;
+        }
+
+        function fileUrlForTag(tag, name) {
+          return (
+            "https://cdn.jsdelivr.net/gh/cccsdxtw/my_OBS_tools@" +
+            encodeURIComponent(tag) +
+            "/" +
+            name
+          );
+        }
+
+        async function writeUpdateFiles(dirHandle, tag) {
+          for (const name of UPDATE_FILES) {
+            const res = await fetch(fileUrlForTag(tag, name), { cache: "no-store" });
+            if (!res.ok) throw new Error("fetch " + name + " " + res.status);
+            const parts = name.split("/").filter(Boolean);
+            let dir = dirHandle;
+            for (let i = 0; i < parts.length - 1; i++) {
+              dir = await dir.getDirectoryHandle(parts[i], { create: true });
+            }
+            const fileHandle = await dir.getFileHandle(parts[parts.length - 1], {
+              create: true,
+            });
+            const writable = await fileHandle.createWritable();
+            const binary = /\.(ttf|otf|woff2?|png|jpe?g|gif|webp|zip)$/i.test(name);
+            await writable.write(binary ? await res.arrayBuffer() : await res.text());
+            await writable.close();
+          }
+        }
+
+        function applyTheme(theme) {
+          const next = theme === "dark" ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", next);
+          localStorage.setItem(themeKey, next);
+          const isDark = next === "dark";
+          themeToggle.textContent = isDark ? "白天模式" : "黑夜模式";
+          themeToggle.setAttribute("aria-pressed", isDark ? "true" : "false");
+        }
+        const savedTheme = localStorage.getItem(themeKey) === "light" ? "light" : "dark";
+        applyTheme(savedTheme);
+        themeToggle.addEventListener("click", () => {
+          const cur = document.documentElement.getAttribute("data-theme");
+          applyTheme(cur === "dark" ? "light" : "dark");
+        });
+
+        function clearPendingUpdate() {
+          pendingUpdate = null;
+          installUpdateBtn.hidden = true;
+          downloadUpdateBtn.hidden = true;
+        }
+
+        function renderVersionStatus(text, kind) {
+          versionMsg = text;
+          versionKind = kind || null;
+          versionStatus.classList.toggle("is-warn", versionKind === "warn");
+          versionStatus.classList.toggle("is-ok", versionKind === "ok");
+          versionStatus.innerHTML = "";
+          versionStatus.appendChild(document.createTextNode(text));
+        }
+
+        function parseVer(tag) {
+          const m = String(tag || "")
+            .trim()
+            .replace(/^v/i, "")
+            .match(/^(\d+)\.(\d+)\.(\d+)/);
+          if (!m) return null;
+          return [Number(m[1]), Number(m[2]), Number(m[3])];
+        }
+
+        function cmpVer(a, b) {
+          for (let i = 0; i < 3; i++) {
+            if (a[i] !== b[i]) return a[i] - b[i];
+          }
+          return 0;
+        }
+
+        function pickZipAsset(data, tag) {
+          const assets = Array.isArray(data.assets) ? data.assets : [];
+          const preferName = `my_OBS_tools-${tag}.zip`;
+          const hit =
+            assets.find((a) => a && a.name === preferName) ||
+            assets.find((a) => a && /\.zip$/i.test(String(a.name || "")));
+          if (!hit || !hit.browser_download_url) return null;
+          return {
+            url: hit.browser_download_url,
+            name: hit.name || preferName,
+            page: data.html_url || RELEASES_PAGE,
+            tag,
+          };
+        }
+
+        function startZipDownload(zip) {
+          if (!zip || !zip.url) return false;
+          const a = document.createElement("a");
+          a.href = zip.url;
+          a.download = zip.name || "";
+          a.rel = "noopener";
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          return true;
+        }
+
+        function showUpdateAvailable(latestTag, zip) {
+          pendingUpdate = { tag: latestTag, zip };
+          const canInstall = canUseDirPicker();
+          installUpdateBtn.hidden = !canInstall;
+          installUpdateBtn.disabled = false;
+          installUpdateBtn.textContent = `覆蓋並重開 ${latestTag}`;
+          downloadUpdateBtn.hidden = !zip;
+          downloadUpdateBtn.textContent = zip ? `下載 zip ${latestTag}` : "下載 zip";
+          versionStatus.classList.toggle("is-warn", true);
+          versionStatus.classList.toggle("is-ok", false);
+          versionKind = "warn";
+          versionMsg = `有新版本 ${latestTag}（本機 ${APP_VERSION}）`;
+          const tip = canInstall
+            ? `有新版本 ${latestTag}（本機 ${APP_VERSION}）· 可覆蓋本機資料夾並重開`
+            : `有新版本 ${latestTag}（本機 ${APP_VERSION}）· 請下載 zip 後手動覆蓋`;
+          versionStatus.innerHTML = "";
+          versionStatus.appendChild(document.createTextNode(tip));
+          if (!canInstall && !zip) {
+            versionStatus.appendChild(document.createTextNode(" · "));
+            const a = document.createElement("a");
+            a.href = RELEASES_PAGE;
+            a.target = "_blank";
+            a.rel = "noopener";
+            a.textContent = "開 Releases";
+            versionStatus.appendChild(a);
+          }
+        }
+
+        async function installAndReopen() {
+          if (!pendingUpdate || !pendingUpdate.tag) return;
+          if (!canUseDirPicker()) {
+            renderVersionStatus(
+              "此瀏覽器不支援直接覆蓋，請改用「下載 zip」後手動解壓覆蓋",
+              "warn"
+            );
+            return;
+          }
+          const tag = pendingUpdate.tag;
+          installUpdateBtn.disabled = true;
+          installUpdateBtn.textContent = "覆蓋中…";
+          renderVersionStatus(`正在覆蓋安裝 ${tag}…`, "warn");
+          try {
+            const dir = await pickInstallDir();
+            await writeUpdateFiles(dir, tag);
+            renderVersionStatus(
+              `已覆蓋 ${tag} · 正在重開；OBS 瀏覽器來源請再按重新整理`,
+              "ok"
+            );
+            if (isLocalPage()) {
+              setTimeout(() => location.reload(), 500);
+            } else {
+              installUpdateBtn.disabled = false;
+              installUpdateBtn.textContent = `再覆蓋 ${tag}`;
+              renderVersionStatus(
+                `已寫入本機資料夾（${tag}）· 請改開該資料夾的 index.html；OBS 來源也請重新整理`,
+                "ok"
+              );
+            }
+          } catch (err) {
+            installUpdateBtn.disabled = false;
+            installUpdateBtn.textContent = `覆蓋並重開 ${tag}`;
+            const msg =
+              err && err.name === "AbortError"
+                ? "已取消選取資料夾"
+                : `覆蓋失敗：${(err && err.message) || "請改下載 zip"}`;
+            renderVersionStatus(msg, "warn");
+          }
+        }
+
+        async function checkLatestVersion(opts) {
+          const autoInstall = !!(opts && opts.autoInstall);
+          clearPendingUpdate();
+          renderVersionStatus(`本機 ${APP_VERSION} · 檢查中…`, null);
+          try {
+            const res = await fetch(RELEASES_API, {
+              headers: { Accept: "application/vnd.github+json" },
+            });
+            if (!res.ok) throw new Error("release api " + res.status);
+            const data = await res.json();
+            const latestTag = String(data.tag_name || "").trim();
+            const local = parseVer(APP_VERSION);
+            const remote = parseVer(latestTag);
+            if (!local || !remote || !latestTag) {
+              renderVersionStatus(`本機 ${APP_VERSION} · 無法比對版號`, "warn");
+              return;
+            }
+            const diff = cmpVer(remote, local);
+            if (diff > 0) {
+              const zip = pickZipAsset(data, latestTag);
+              showUpdateAvailable(latestTag, zip);
+              if (autoInstall) {
+                if (canUseDirPicker()) await installAndReopen();
+                else if (zip) {
+                  startZipDownload(zip);
+                  renderVersionStatus(
+                    `有新版本 ${latestTag} · 已開始下載 ${zip.name}（請解壓覆蓋後重開）`,
+                    "warn"
+                  );
+                }
+              }
+            } else {
+              renderVersionStatus(`已跟上最新 ${APP_VERSION}`, "ok");
+            }
+          } catch (_) {
+            renderVersionStatus(`本機 ${APP_VERSION} · 檢查失敗（可稍後再試）`, "warn");
+          }
+        }
+
+        function flashApplied() {
+          clearTimeout(applyTimer);
+          buildUrls();
+          applyBtn.textContent = "已套用";
+          applyTimer = setTimeout(() => {
+            applyBtn.textContent = "確定";
+          }, 1200);
+        }
+
+        autoUpdateCheck.addEventListener("change", () => {
+          localStorage.setItem(autoUpdateKey, autoUpdateCheck.checked ? "1" : "0");
+          if (autoUpdateCheck.checked) checkLatestVersion({ autoInstall: false });
+          else
+            renderVersionStatus(`本機 ${APP_VERSION} · 自動更新已關，仍可按「檢查更新」`, null);
+        });
+        checkUpdateBtn.addEventListener("click", () =>
+          checkLatestVersion({ autoInstall: true })
+        );
+        installUpdateBtn.addEventListener("click", () => installAndReopen());
+        downloadUpdateBtn.addEventListener("click", () => {
+          if (!pendingUpdate || !pendingUpdate.zip) return;
+          startZipDownload(pendingUpdate.zip);
+          renderVersionStatus(
+            `有新版本 ${pendingUpdate.tag} · 已開始下載 ${pendingUpdate.zip.name}`,
+            "warn"
+          );
+        });
+        applyBtn.addEventListener("click", () => flashApplied());
+
+        if (autoUpdateCheck.checked) checkLatestVersion({ autoInstall: false });
+        else renderVersionStatus(`本機 ${APP_VERSION} · 可按「檢查更新」跟上版本`, null);
+
+        const fields = {
+          channel: $("channel"),
+          vcMode: $("vcMode"),
+          ytChannel: $("ytChannel"),
+          ytVideo: $("ytVideo"),
+          ytKey: $("ytKey"),
+          twIcon: $("twIcon"),
+          ytIcon: $("ytIcon"),
+          cdIcon: $("cdIcon"),
+          vcMsIcon: $("vcMsIcon"),
+          stMsIcon: $("stMsIcon"),
+          dateMsIcon: $("dateMsIcon"),
+          timeMsIcon: $("timeMsIcon"),
+          tz: $("tz"),
+          flagCode: $("flagCode"),
+          dateFormat: $("dateFormat"),
+          timeFormat: $("timeFormat"),
+          countdown: $("countdown"),
+          cdMins: $("cdMins"),
+          cdLabel: $("cdLabel"),
+          defaultFontSize: $("defaultFontSize"),
+          defaultColor: $("defaultColor"),
+          defaultIconColor: $("defaultIconColor"),
+          overlayFontSize: $("overlayFontSize"),
+          overlayColor: $("overlayColor"),
+          overlayIconColor: $("overlayIconColor"),
+          overlayShowBg: $("overlayShowBg"),
+          overlayBg: $("overlayBg"),
+          viewersFontSize: $("viewersFontSize"),
+          viewersColor: $("viewersColor"),
+          viewersShowBg: $("viewersShowBg"),
+          viewersBg: $("viewersBg"),
+          countdownFontSize: $("countdownFontSize"),
+          countdownColor: $("countdownColor"),
+          countdownIconColor: $("countdownIconColor"),
+          countdownShowBg: $("countdownShowBg"),
+          countdownBg: $("countdownBg"),
+          gameLabel: $("gameLabel"),
+          gamePlatform: $("gamePlatform"),
+          gameName: $("gameName"),
+          gameIcon: $("gameIcon"),
+          gameIconColor: $("gameIconColor"),
+          gameFontSize: $("gameFontSize"),
+          gameColor: $("gameColor"),
+          gameShowBg: $("gameShowBg"),
+          gameBg: $("gameBg"),
+          chatSource: $("chatSource"),
+          chatLayout: $("chatLayout"),
+          chatStack: $("chatStack"),
+          chatMax: $("chatMax"),
+          chatTtl: $("chatTtl"),
+          chatShowSource: $("chatShowSource"),
+          chatHideStatus: $("chatHideStatus"),
+          chatFontSize: $("chatFontSize"),
+          chatColor: $("chatColor"),
+          chatShowBg: $("chatShowBg"),
+          chatBg: $("chatBg"),
+          chatCss: $("chatCss"),
+          restreamChatUrl: $("restreamChatUrl"),
+        };
+
+        // 所有左右排序：↑↓（列表上＝左邊）
+        function getOrderFromList(listEl) {
+          return Array.from(listEl.querySelectorAll(".mod-row")).map((row) => row.dataset.key);
+        }
+        function applyOrderToList(listEl, order) {
+          const map = Object.fromEntries(
+            Array.from(listEl.querySelectorAll(".mod-row")).map((row) => [row.dataset.key, row])
+          );
+          const seen = new Set();
+          (order || []).forEach((key) => {
+            if (map[key] && !seen.has(key)) {
+              listEl.appendChild(map[key]);
+              seen.add(key);
+            }
+          });
+          Object.keys(map).forEach((key) => {
+            if (!seen.has(key)) listEl.appendChild(map[key]);
+          });
+        }
+        function bindOrderList(listEl) {
+          listEl.addEventListener("click", (ev) => {
+            const btn = ev.target.closest("button[data-dir]");
+            if (!btn) return;
+            const row = btn.closest(".mod-row");
+            if (!row || !listEl.contains(row)) return;
+            if (btn.dataset.dir === "up") {
+              const prev = row.previousElementSibling;
+              if (prev) listEl.insertBefore(row, prev);
+            } else {
+              const next = row.nextElementSibling;
+              if (next) listEl.insertBefore(next, row);
+            }
+            buildUrls();
+          });
+        }
+
+        const modulesEl = $("modules");
+        const vcPlatformsEl = $("vcPlatforms");
+        const getModuleOrder = () => getOrderFromList(modulesEl);
+        const applyModuleOrder = (order) => applyOrderToList(modulesEl, order);
+        const getVcPlatformOrder = () => getOrderFromList(vcPlatformsEl);
+        const applyVcPlatformOrder = (order) => applyOrderToList(vcPlatformsEl, order);
+        bindOrderList(modulesEl);
+        bindOrderList(vcPlatformsEl);
+
+        try {
+          const guessed = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          fields.tz.placeholder = guessed || "Asia/Taipei";
+          if (!fields.tz.value) fields.tz.value = guessed || "Asia/Taipei";
+        } catch (_) {
+          fields.tz.value = "Asia/Taipei";
+        }
+
+        const saved = localStorage.getItem("my_obs_tools_setup");
+        if (saved) {
+          try {
+            const data = JSON.parse(saved);
+            const rawFields = data.fields || {};
+            // 舊版共用底色 → 三條都沿用
+            if (rawFields.bg && !rawFields.overlayBg) {
+              rawFields.overlayBg = rawFields.bg;
+              rawFields.viewersBg = rawFields.bg;
+              rawFields.countdownBg = rawFields.bg;
+              rawFields.chatBg = rawFields.bg;
+            }
+            if (Object.prototype.hasOwnProperty.call(rawFields, "showBg")) {
+              if (!Object.prototype.hasOwnProperty.call(rawFields, "overlayShowBg")) {
+                rawFields.overlayShowBg = rawFields.showBg;
+                rawFields.viewersShowBg = rawFields.showBg;
+                rawFields.countdownShowBg = rawFields.showBg;
+                rawFields.chatShowBg = rawFields.showBg;
+              }
+            }
+            // 舊版共用字級／文字色 → 變成最上方預設
+            if (rawFields.fontSize && !rawFields.defaultFontSize) {
+              rawFields.defaultFontSize = rawFields.fontSize;
+            }
+            if (rawFields.color && !rawFields.defaultColor) {
+              rawFields.defaultColor = rawFields.color;
+            }
+            Object.entries(rawFields).forEach(([k, v]) => {
+              if (!fields[k]) return;
+              if (fields[k].type === "checkbox") {
+                fields[k].checked = v === true || v === "true" || v === 1 || v === "1";
+              } else {
+                fields[k].value = v;
+              }
+            });
+            document.querySelectorAll("#modules input[type=checkbox]").forEach((el) => {
+              if (data.modules && Object.prototype.hasOwnProperty.call(data.modules, el.dataset.key)) {
+                el.checked = !!data.modules[el.dataset.key];
+              }
+            });
+            if (Array.isArray(data.moduleOrder) && data.moduleOrder.length) {
+              applyModuleOrder(data.moduleOrder);
+            }
+            let vcOrder = data.vcPlatformOrder;
+            if ((!vcOrder || !vcOrder.length) && rawFields.vcOrder) {
+              vcOrder = String(rawFields.vcOrder)
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+            }
+            if (Array.isArray(vcOrder) && vcOrder.length) {
+              applyVcPlatformOrder(vcOrder);
+            }
+          } catch (_) {}
+        }
+
+        function resolveStyle(overrideEl, defaultEl) {
+          const ov = (overrideEl.value || "").trim();
+          if (ov) return ov;
+          return (defaultEl.value || "").trim();
+        }
+
+        function styleParams(p, showBgEl, bgEl, fontEl, colorEl, iconColorEl) {
+          const fontSize = resolveStyle(fontEl, fields.defaultFontSize);
+          const color = resolveStyle(colorEl, fields.defaultColor);
+          if (fontSize) p.set("fontSize", fontSize);
+          if (color) p.set("color", color);
+          if (iconColorEl) {
+            const iconColor =
+              (iconColorEl.value || "").trim() ||
+              (fields.defaultIconColor.value || "").trim();
+            if (iconColor) p.set("iconColor", iconColor);
+          }
+          if (showBgEl.checked) {
+            p.set("bg", bgEl.value.trim() || "rgba(0,0,0,0.45)");
+          } else {
+            p.set("bg", "0");
+          }
+        }
+
+        function syncStylePlaceholders() {
+          const fs = fields.defaultFontSize.value || "22";
+          const col = fields.defaultColor.value.trim() || "rgba(255,255,255,0.85)";
+          const iconCol =
+            fields.defaultIconColor.value.trim() || col || "跟文字色";
+          [
+            fields.overlayFontSize,
+            fields.viewersFontSize,
+            fields.countdownFontSize,
+            fields.gameFontSize,
+            fields.chatFontSize,
+          ].forEach((el) => {
+            el.placeholder = `預設 ${fs}`;
+          });
+          [
+            fields.overlayColor,
+            fields.viewersColor,
+            fields.countdownColor,
+            fields.gameColor,
+            fields.chatColor,
+          ].forEach((el) => {
+            el.placeholder = `預設 ${col}`;
+          });
+          [fields.overlayIconColor, fields.countdownIconColor, fields.gameIconColor].forEach((el) => {
+            if (!el) return;
+            el.placeholder = fields.defaultIconColor.value.trim()
+              ? `預設 ${iconCol}`
+              : "用文字色／預設";
+          });
+        }
+
+        function parseColorToHex(raw) {
+          const s = String(raw || "").trim();
+          if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s)) {
+            if (s.length === 4) {
+              return (
+                "#" +
+                s
+                  .slice(1)
+                  .split("")
+                  .map((c) => c + c)
+                  .join("")
+              );
+            }
+            return s.toLowerCase();
+          }
+          const m = s.match(
+            /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i
+          );
+          if (m) {
+            const hex = (n) => Number(n).toString(16).padStart(2, "0");
+            return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`;
+          }
+          return null;
+        }
+
+        function bindColorPickers() {
+          document.querySelectorAll("input[type=color][data-sync]").forEach((pick) => {
+            const text = $(pick.dataset.sync);
+            if (!text) return;
+            const syncPickFromText = () => {
+              const hex = parseColorToHex(text.value);
+              if (hex) pick.value = hex;
+            };
+            syncPickFromText();
+            pick.addEventListener("input", () => {
+              text.value = pick.value;
+              buildUrls();
+            });
+            text.addEventListener("input", syncPickFromText);
+          });
+        }
+
+        function syncBgField(showBgEl, bgEl) {
+          bgEl.disabled = !showBgEl.checked;
+          bgEl.style.opacity = showBgEl.checked ? "1" : "0.5";
+        }
+
+        function syncAllBgFields() {
+          syncBgField(fields.overlayShowBg, fields.overlayBg);
+          syncBgField(fields.viewersShowBg, fields.viewersBg);
+          syncBgField(fields.countdownShowBg, fields.countdownBg);
+          syncBgField(fields.gameShowBg, fields.gameBg);
+          syncBgField(fields.chatShowBg, fields.chatBg);
+        }
+
+        const GAME_HISTORY_KEY = "my_obs_tools_game_history";
+        const GAME_HISTORY_MAX = 12;
+
+        function loadGameHistory() {
+          try {
+            const raw = localStorage.getItem(GAME_HISTORY_KEY);
+            const list = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(list)) return [];
+            return list
+              .map((item) => ({
+                platform: String((item && item.platform) || "").trim(),
+                game: String((item && item.game) || "").trim(),
+              }))
+              .filter((item) => item.platform || item.game);
+          } catch (_) {
+            return [];
+          }
+        }
+
+        function saveGameHistory(list) {
+          localStorage.setItem(GAME_HISTORY_KEY, JSON.stringify(list.slice(0, GAME_HISTORY_MAX)));
+        }
+
+        function rememberCurrentGame(opts = {}) {
+          const platform = fields.gamePlatform.value.trim();
+          const game = fields.gameName.value.trim();
+          if (!platform && !game) return;
+          const next = loadGameHistory().filter(
+            (item) => !(item.platform === platform && item.game === game)
+          );
+          next.unshift({ platform, game });
+          saveGameHistory(next);
+          renderGameHistory();
+          if (opts.toastBtn) {
+            const btn = opts.toastBtn;
+            const label = btn.textContent;
+            btn.textContent = "已記住";
+            setTimeout(() => (btn.textContent = label), 1000);
+          }
+        }
+
+        function renderGameHistory() {
+          const list = loadGameHistory();
+          const wrap = $("gameHistoryList");
+          const suggest = $("gameNameSuggest");
+          if (!wrap) return;
+          wrap.innerHTML = "";
+          if (suggest) {
+            const names = [];
+            list.forEach((item) => {
+              if (item.game && !names.includes(item.game)) names.push(item.game);
+            });
+            suggest.innerHTML = names
+              .map((n) => `<option value="${n.replace(/"/g, "&quot;")}"></option>`)
+              .join("");
+          }
+          if (!list.length) {
+            wrap.innerHTML = '<span class="hint" style="margin:0">尚無紀錄。填好後按「記住目前組合」。</span>';
+            return;
+          }
+          list.forEach((item, idx) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "history";
+            const title = [item.platform, item.game].filter(Boolean).join(" - ") || "（空白）";
+            btn.appendChild(document.createTextNode(title));
+            const meta = document.createElement("span");
+            meta.className = "meta";
+            meta.textContent = "點一下套用 · 右鍵移除此項";
+            btn.appendChild(meta);
+            btn.title = "左鍵套用；右鍵移除此項";
+            btn.addEventListener("click", () => {
+              fields.gamePlatform.value = item.platform;
+              fields.gameName.value = item.game;
+              syncGamePlatformChips();
+              buildUrls();
+            });
+            btn.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              const next = loadGameHistory();
+              next.splice(idx, 1);
+              saveGameHistory(next);
+              renderGameHistory();
+            });
+            wrap.appendChild(btn);
+          });
+        }
+
+        function syncGamePlatformChips() {
+          const cur = fields.gamePlatform.value.trim();
+          document.querySelectorAll("#gamePlatformPresets [data-platform]").forEach((btn) => {
+            btn.classList.toggle("is-active", btn.dataset.platform === cur);
+          });
+        }
+
+        function pageUrl(name) {
+          return new URL(SUBPAGE_BASE + name, location.href);
+        }
+
+        /** 圖片／相對路徑轉成絕對網址，讓 子頁/ 裡的覆蓋也能抓到根目錄 圖片/ */
+        function resolveAssetUrl(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return s;
+          if (/^https?:\/\//i.test(s) || s.startsWith("data:")) return s;
+          if (s.startsWith("圖片/") || s.startsWith("./圖片/")) {
+            return new URL(s.replace(/^\.\//, ""), location.href).href;
+          }
+          if (s.startsWith("../圖片/")) {
+            return new URL(s.slice(3), location.href).href;
+          }
+          if (/\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s)) {
+            return new URL(s.replace(/^\.\//, ""), location.href).href;
+          }
+          return s;
+        }
+
+        function buildOverlayUrl() {
+          const url = pageUrl("overlay.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          if (channel) p.set("login", channel);
+
+          const mods = {};
+          document.querySelectorAll("#modules input[type=checkbox]").forEach((el) => {
+            mods[el.dataset.key] = el.checked;
+            p.set(el.dataset.key, el.checked ? "1" : "0");
+          });
+          const moduleOrder = getModuleOrder();
+          if (moduleOrder.length) p.set("order", moduleOrder.join(","));
+
+          if (fields.tz.value.trim()) p.set("tz", fields.tz.value.trim());
+          if (mods.showTz && fields.flagCode.value.trim()) {
+            p.set("flag", fields.flagCode.value.trim().toLowerCase());
+          }
+          if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
+          if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
+          if (fields.vcMsIcon.value.trim())
+            p.set("vcIcon", resolveAssetUrl(fields.vcMsIcon.value.trim()));
+          if (fields.stMsIcon.value.trim())
+            p.set("stIcon", resolveAssetUrl(fields.stMsIcon.value.trim()));
+          if (fields.dateMsIcon.value.trim())
+            p.set("dateIcon", resolveAssetUrl(fields.dateMsIcon.value.trim()));
+          if (fields.timeMsIcon.value.trim())
+            p.set("timeIcon", resolveAssetUrl(fields.timeMsIcon.value.trim()));
+          styleParams(
+            p,
+            fields.overlayShowBg,
+            fields.overlayBg,
+            fields.overlayFontSize,
+            fields.overlayColor,
+            fields.overlayIconColor
+          );
+          return { href: url.toString(), mods, moduleOrder };
+        }
+
+        function buildCountdownUrl() {
+          const url = pageUrl("countdown.html");
+          const p = url.searchParams;
+          if (fields.cdLabel.value.trim()) p.set("cdLabel", fields.cdLabel.value.trim());
+          if (fields.cdIcon.value.trim())
+            p.set("cdIcon", resolveAssetUrl(fields.cdIcon.value.trim()));
+          if (fields.countdown.value) {
+            const local = new Date(fields.countdown.value);
+            if (!Number.isNaN(local.getTime())) p.set("countdown", local.toISOString());
+          } else if (fields.cdMins.value) {
+            p.set("cdMins", fields.cdMins.value);
+          } else {
+            // 預設給 10 分鐘，方便預覽；正式用請改目標時間或分鐘數
+            p.set("cdMins", "10");
+          }
+          styleParams(
+            p,
+            fields.countdownShowBg,
+            fields.countdownBg,
+            fields.countdownFontSize,
+            fields.countdownColor,
+            fields.countdownIconColor
+          );
+          return url.toString();
+        }
+
+        function buildViewersUrl() {
+          const url = pageUrl("viewers.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = fields.ytChannel.value.trim();
+          const ytVideo = fields.ytVideo.value.trim();
+          const ytKey = fields.ytKey.value.trim();
+
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
+          const vcPlatformOrder = getVcPlatformOrder();
+          if (vcPlatformOrder.length) p.set("vcOrder", vcPlatformOrder.join(","));
+          if (fields.twIcon.value.trim())
+            p.set("twIcon", resolveAssetUrl(fields.twIcon.value.trim()));
+          if (fields.ytIcon.value.trim())
+            p.set("ytIcon", resolveAssetUrl(fields.ytIcon.value.trim()));
+          styleParams(
+            p,
+            fields.viewersShowBg,
+            fields.viewersBg,
+            fields.viewersFontSize,
+            fields.viewersColor
+          );
+          return url.toString();
+        }
+
+        function buildGameUrl() {
+          const url = pageUrl("game.html");
+          const p = url.searchParams;
+          const label = fields.gameLabel.value.trim() || "遊戲名稱";
+          const platform = fields.gamePlatform.value.trim();
+          const game = fields.gameName.value.trim();
+          p.set("gameLabel", label);
+          if (platform) p.set("platform", platform);
+          else if (!game) p.set("platform", "PC");
+          p.set("game", game || "遊戲名");
+          p.set(
+            "gameIcon",
+            resolveAssetUrl(fields.gameIcon.value.trim() || "sports_esports")
+          );
+          styleParams(
+            p,
+            fields.gameShowBg,
+            fields.gameBg,
+            fields.gameFontSize,
+            fields.gameColor,
+            fields.gameIconColor
+          );
+          return url.toString();
+        }
+
+        function buildChatUrl(opts = {}) {
+          const url = pageUrl("chat.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = fields.ytChannel.value.trim();
+          const ytVideo = fields.ytVideo.value.trim();
+          const ytKey = fields.ytKey.value.trim();
+          const split = fields.chatLayout.value === "split";
+          const source =
+            opts.source ||
+            (split ? "twitch" : fields.chatSource.value || "auto");
+
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          p.set("chatSource", source);
+          if (fields.chatStack.value) p.set("stack", fields.chatStack.value);
+          if (fields.chatMax.value) p.set("max", fields.chatMax.value);
+          if (fields.chatTtl.value && Number(fields.chatTtl.value) > 0) {
+            p.set("ttl", String(Math.max(0, parseInt(fields.chatTtl.value, 10) || 0)));
+          }
+          p.set("showSource", fields.chatShowSource.checked ? "1" : "0");
+          if (fields.chatHideStatus.checked) p.set("hideStatus", "1");
+          const css = fields.chatCss.value.trim();
+          if (css) p.set("css", css);
+          if (opts.demo) p.set("demo", "1");
+          styleParams(
+            p,
+            fields.chatShowBg,
+            fields.chatBg,
+            fields.chatFontSize,
+            fields.chatColor
+          );
+          return url.toString();
+        }
+
+        function buildChatReplyUrl() {
+          const url = pageUrl("chat-reply.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = fields.ytChannel.value.trim();
+          const ytVideo = fields.ytVideo.value.trim();
+          const ytKey = fields.ytKey.value.trim();
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          // 回覆視窗一次看兩邊較方便
+          p.set("chatSource", "both");
+          return url.toString();
+        }
+
+        function syncChatPanels() {
+          const split = fields.chatLayout.value === "split";
+          $("chatMergePanel").hidden = split;
+          $("chatSplitPanel").hidden = !split;
+          $("chatSourceWrap").style.visibility = split ? "hidden" : "visible";
+        }
+
+        function buildUrls() {
+          syncStylePlaceholders();
+          syncGamePlatformChips();
+          const { href, mods, moduleOrder } = buildOverlayUrl();
+          const cdHref = buildCountdownUrl();
+          const vcHref = buildViewersUrl();
+          const gameHref = buildGameUrl();
+          const split = fields.chatLayout.value === "split";
+          const chatHref = buildChatUrl({
+            source: split ? "twitch" : fields.chatSource.value || "auto",
+          });
+          const chatHrefTw = buildChatUrl({ source: "twitch" });
+          const chatHrefYt = buildChatUrl({ source: "youtube" });
+          const chatDemoHref = buildChatUrl({
+            source: split ? "twitch" : fields.chatSource.value || "auto",
+            demo: true,
+          });
+          const chatDemoTw = buildChatUrl({ source: "twitch", demo: true });
+          const chatDemoYt = buildChatUrl({ source: "youtube", demo: true });
+
+          $("url").value = href;
+          $("open").href = href;
+          $("preview").src = href;
+
+          $("cdUrl").value = cdHref;
+          $("openCd").href = cdHref;
+          $("previewCd").src = cdHref;
+
+          $("vcUrl").value = vcHref;
+          $("openVc").href = vcHref;
+          $("previewVc").src = vcHref;
+
+          $("gameUrl").value = gameHref;
+          $("openGame").href = gameHref;
+          $("previewGame").src = gameHref;
+
+          syncChatPanels();
+
+          $("chatUrl").value = chatHref;
+          $("openChat").href = chatDemoHref;
+          $("previewChat").src = chatDemoHref;
+
+          $("chatUrlTw").value = chatHrefTw;
+          $("openChatTw").href = chatDemoTw;
+          $("previewChatTw").src = chatDemoTw;
+
+          $("chatUrlYt").value = chatHrefYt;
+          $("openChatYt").href = chatDemoYt;
+          $("previewChatYt").src = chatDemoYt;
+
+          const chatReplyHref = buildChatReplyUrl();
+          $("chatReplyUrl").value = chatReplyHref;
+          $("openChatReply").href = chatReplyHref;
+          const restreamHref =
+            fields.restreamChatUrl.value.trim() || "https://chat.restream.io/";
+          $("openRestreamChat").href = restreamHref;
+
+          localStorage.setItem(
+            "my_obs_tools_setup",
+            JSON.stringify({
+              fields: Object.fromEntries(
+                Object.entries(fields).map(([k, el]) => [
+                  k,
+                  el.type === "checkbox" ? el.checked : el.value,
+                ])
+              ),
+              modules: mods,
+              moduleOrder,
+              vcPlatformOrder: getVcPlatformOrder(),
+            })
+          );
+          return { href, cdHref, vcHref, gameHref, chatHref, chatHrefTw, chatHrefYt, chatReplyHref };
+        }
+
+        async function copyText(text, btn, resetLabel) {
+          try {
+            await navigator.clipboard.writeText(text);
+            btn.textContent = "已複製";
+            setTimeout(() => (btn.textContent = resetLabel), 1200);
+          } catch (_) {
+            // fallback
+          }
+        }
+
+        $("copy").addEventListener("click", async () => {
+          const { href } = buildUrls();
+          $("url").select();
+          await copyText(href, $("copy"), "複製資訊條網址");
+        });
+
+        $("copyCd").addEventListener("click", async () => {
+          const { cdHref } = buildUrls();
+          $("cdUrl").select();
+          await copyText(cdHref, $("copyCd"), "複製倒計時網址");
+        });
+
+        $("copyVc").addEventListener("click", async () => {
+          const { vcHref } = buildUrls();
+          $("vcUrl").select();
+          await copyText(vcHref, $("copyVc"), "複製人數網址");
+        });
+
+        $("copyGame").addEventListener("click", async () => {
+          rememberCurrentGame();
+          const { gameHref } = buildUrls();
+          $("gameUrl").select();
+          await copyText(gameHref, $("copyGame"), "複製遊戲名稱網址");
+        });
+
+        document.querySelectorAll("#gamePlatformPresets [data-platform]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            fields.gamePlatform.value = btn.dataset.platform;
+            syncGamePlatformChips();
+            buildUrls();
+          });
+        });
+
+        $("saveGameHistory").addEventListener("click", () => {
+          rememberCurrentGame({ toastBtn: $("saveGameHistory") });
+          buildUrls();
+        });
+
+        $("clearGameHistory").addEventListener("click", () => {
+          saveGameHistory([]);
+          renderGameHistory();
+        });
+
+        $("copyChat").addEventListener("click", async () => {
+          const { chatHref } = buildUrls();
+          $("chatUrl").select();
+          await copyText(chatHref, $("copyChat"), "複製聊天室網址");
+        });
+        $("copyChatTw").addEventListener("click", async () => {
+          const { chatHrefTw } = buildUrls();
+          $("chatUrlTw").select();
+          await copyText(chatHrefTw, $("copyChatTw"), "複製 TW 網址");
+        });
+        $("copyChatYt").addEventListener("click", async () => {
+          const { chatHrefYt } = buildUrls();
+          $("chatUrlYt").select();
+          await copyText(chatHrefYt, $("copyChatYt"), "複製 YT 網址");
+        });
+        $("copyChatReply").addEventListener("click", async () => {
+          const { chatReplyHref } = buildUrls();
+          $("chatReplyUrl").select();
+          await copyText(chatReplyHref, $("copyChatReply"), "複製回覆視窗網址");
+        });
+
+        Object.values(fields).forEach((el) => {
+          el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
+            if (
+              el === fields.overlayShowBg ||
+              el === fields.viewersShowBg ||
+              el === fields.countdownShowBg ||
+              el === fields.gameShowBg ||
+              el === fields.chatShowBg
+            ) {
+              syncAllBgFields();
+            }
+            buildUrls();
+          });
+        });
+        document.querySelectorAll("#modules input").forEach((el) =>
+          el.addEventListener("change", buildUrls)
+        );
+
+        function parseAccountTxt(text) {
+          const map = {};
+          String(text || "")
+            .split(/\r?\n/)
+            .forEach((line) => {
+              const raw = line.trim();
+              if (!raw || raw.startsWith("#")) return;
+              const i = raw.indexOf("=");
+              if (i < 0) return;
+              map[raw.slice(0, i).trim()] = raw.slice(i + 1).trim();
+            });
+          return map;
+        }
+
+        async function loadAccountTxt() {
+          try {
+            const res = await fetch(new URL(ACCOUNT_TXT, location.href), {
+              cache: "no-store",
+            });
+            if (!res.ok) return;
+            const map = parseAccountTxt(await res.text());
+            const setIf = (el, key) => {
+              if (!el) return;
+              if (Object.prototype.hasOwnProperty.call(map, key)) el.value = map[key];
+            };
+            setIf(fields.channel, "Twitch頻道");
+            setIf(fields.ytChannel, "YouTube頻道");
+            setIf(fields.ytVideo, "YouTube直播影片ID");
+            setIf(fields.ytKey, "YouTube_API_Key");
+          } catch (_) {
+            // file:// 或離線時讀不到 TXT，略過（仍可用頁面／localStorage）
+          }
+        }
+
+        bindColorPickers();
+        syncAllBgFields();
+        renderGameHistory();
+        syncGamePlatformChips();
+        loadAccountTxt().finally(() => buildUrls());
+      })();
+    </script>
+  </body>
+</html>

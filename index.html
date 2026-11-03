@@ -241,15 +241,23 @@
             <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
             <label><input type="checkbox" data-key="date" checked /> 日期</label>
             <label><input type="checkbox" data-key="time" checked /> 時間</label>
-            <label><input type="checkbox" data-key="showTz" /> 時區名稱</label>
+            <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
             <label><input type="checkbox" data-key="cd" /> 倒計時</label>
           </div>
 
           <div class="row">
             <div>
-              <label for="tz">時區</label>
+              <label for="tz">時區（計算用）</label>
               <input id="tz" type="text" placeholder="Asia/Taipei" />
             </div>
+            <div>
+              <label for="flagCode">國旗代碼</label>
+              <input id="flagCode" type="text" value="tw" placeholder="tw" maxlength="2" />
+            </div>
+          </div>
+          <p class="hint">國旗用 ISO 代碼（如 tw、jp、us）。有勾「國旗」就顯示國旗，不再顯示時區文字。</p>
+
+          <div class="row">
             <div>
               <label for="viewersSource">人數來源</label>
               <select id="viewersSource">
@@ -257,19 +265,18 @@
                 <option value="decapi">DecAPI only</option>
               </select>
             </div>
-          </div>
-
-          <div class="row">
             <div>
               <label for="dateFormat">日期格式</label>
               <input id="dateFormat" type="text" value="MM/DD ddd" />
             </div>
+          </div>
+          <div class="row">
             <div>
               <label for="timeFormat">時間格式</label>
               <input id="timeFormat" type="text" value="HH:mm:ss" />
             </div>
           </div>
-          <p class="hint">可用 token：YYYY YY MM DD HH mm ss ddd Z</p>
+          <p class="hint">可用 token：YYYY YY MM DD HH mm ss　ddd＝週一　dddd＝星期一</p>
 
           <h2 style="margin-top: 22px">倒計時</h2>
           <label for="countdown">目標時間（本地）</label>
@@ -336,6 +343,7 @@
         const fields = {
           channel: $("channel"),
           tz: $("tz"),
+          flagCode: $("flagCode"),
           viewersSource: $("viewersSource"),
           dateFormat: $("dateFormat"),
           timeFormat: $("timeFormat"),
@@ -383,6 +391,9 @@
           });
 
           if (fields.tz.value.trim()) p.set("tz", fields.tz.value.trim());
+          if (mods.showTz && fields.flagCode.value.trim()) {
+            p.set("flag", fields.flagCode.value.trim().toLowerCase());
+          }
           if (fields.viewersSource.value) p.set("viewersSource", fields.viewersSource.value);
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());

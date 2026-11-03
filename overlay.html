@@ -34,12 +34,13 @@
         display: inline-flex;
         align-items: center;
         gap: var(--gap);
-        min-height: calc(var(--size) + 8px);
-        padding: 4px var(--pad-x);
+        min-height: calc(var(--size) + 12px);
+        padding: 6px var(--pad-x);
         background: var(--bg);
         border-radius: var(--radius);
         white-space: nowrap;
-        line-height: 1;
+        line-height: 1.15;
+        overflow: visible;
       }
 
       .mod {
@@ -48,6 +49,7 @@
         gap: 6px;
         font-size: var(--size);
         font-weight: 500;
+        overflow: visible;
       }
 
       .mod[hidden] {
@@ -57,8 +59,19 @@
       .icon {
         width: var(--size);
         height: var(--size);
-        opacity: 0.8;
+        opacity: 0.85;
         flex: 0 0 auto;
+        overflow: visible;
+        display: block;
+      }
+
+      .flag-icon {
+        width: calc(var(--size) * 1.15);
+        height: calc(var(--size) * 0.82);
+        object-fit: cover;
+        border-radius: 2px;
+        flex: 0 0 auto;
+        display: block;
       }
 
       .label {
@@ -89,21 +102,23 @@
         <span class="value" id="viewers">—</span>
       </section>
 
-      <section class="mod" id="mod-uptime" hidden>
+      <section class="mod" id="mod-uptime" hidden title="已開台時間">
+        <!-- 直播訊號圖標（與時鐘區隔） -->
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
             fill="currentColor"
-            d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 10.6 3.5 2-1 1.7L11 13V7h2z"
+            d="M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0 3.5c-1.4 0-2.7-.5-3.7-1.3l-1.4 1.4A7.9 7.9 0 0 0 12 20a7.9 7.9 0 0 0 5.1-1.9l-1.4-1.4A5.4 5.4 0 0 1 12 18zm0-12c1.4 0 2.7.5 3.7 1.3l1.4-1.4A7.9 7.9 0 0 0 12 4a7.9 7.9 0 0 0-5.1 1.9l1.4 1.4A5.4 5.4 0 0 1 12 6zm7.1 2.2-1.4 1.4A5.4 5.4 0 0 1 19 12a5.4 5.4 0 0 1-1.3 3.4l1.4 1.4A7.9 7.9 0 0 0 21 12a7.9 7.9 0 0 0-1.9-3.8zM4.9 8.2A7.9 7.9 0 0 0 3 12a7.9 7.9 0 0 0 1.9 3.8l1.4-1.4A5.4 5.4 0 0 1 5 12c0-1.3.5-2.5 1.3-3.4L4.9 8.2z"
           />
         </svg>
         <span class="value" id="uptime">00:00:00</span>
       </section>
 
       <section class="mod" id="mod-date" hidden>
+        <!-- 日曆內縮，避免掛環被裁切 -->
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
             fill="currentColor"
-            d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H6v10h14V10zM6 8h14V6H6v2z"
+            d="M8 3.25h1.5v1.5h5V3.25H16v1.5h2.25A1.75 1.75 0 0 1 20 6.5v12.25A1.75 1.75 0 0 1 18.25 20.5H5.75A1.75 1.75 0 0 1 4 18.75V6.5A1.75 1.75 0 0 1 5.75 4.75H8V3.25zM5.5 9.25h13v9.25H5.5V9.25z"
           />
         </svg>
         <span class="value" id="date"></span>
@@ -113,15 +128,15 @@
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
             fill="currentColor"
-            d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm1 11.7 4.3 2.5-.9 1.6L11 13.4V6h2z"
+            d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5A8.51 8.51 0 0 0 12 3.5zm.75 4.25h-1.5v5.1l4.2 2.45.75-1.3-3.45-2V7.75z"
           />
         </svg>
         <span class="value" id="time"></span>
       </section>
 
-      <section class="mod" id="mod-tz" hidden>
-        <span class="label">TZ</span>
-        <span class="value" id="tz"></span>
+      <section class="mod" id="mod-tz" hidden title="時區／地區">
+        <img class="flag-icon" id="flag" alt="" hidden />
+        <span class="value" id="tz" hidden></span>
       </section>
 
       <section class="mod" id="mod-countdown" hidden>
@@ -178,11 +193,37 @@
         const showUptime = !!channel && flag("st", true);
         const showDate = flag("date", true);
         const showTime = flag("time", true);
-        const showTz = flag("showTz", false);
+        // showTz / flag：顯示國旗（不再顯示 Asia/Taipei 文字）
+        const flagCodeParam = (params.get("flag") || "").trim().toLowerCase();
+        const showTz =
+          flag("showTz", !!flagCodeParam) || flag("flag", !!flagCodeParam);
         const showCountdown = flag(
           "cd",
           !!(params.get("countdown") || params.get("cdMins") || params.get("cdSecs"))
         );
+
+        const TZ_TO_FLAG = {
+          "Asia/Taipei": "tw",
+          "Asia/Tokyo": "jp",
+          "Asia/Hong_Kong": "hk",
+          "Asia/Shanghai": "cn",
+          "Asia/Singapore": "sg",
+          "Asia/Seoul": "kr",
+          "Asia/Bangkok": "th",
+          "Asia/Jakarta": "id",
+          "Asia/Manila": "ph",
+          "Australia/Sydney": "au",
+          "Pacific/Auckland": "nz",
+          "Europe/London": "gb",
+          "Europe/Paris": "fr",
+          "Europe/Berlin": "de",
+          "America/New_York": "us",
+          "America/Chicago": "us",
+          "America/Denver": "us",
+          "America/Los_Angeles": "us",
+          "America/Toronto": "ca",
+          UTC: "un",
+        };
 
         cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
         cssVar("--fg", params.get("color"));
@@ -212,7 +253,22 @@
         els.timeMod.hidden = !showTime;
         els.tzMod.hidden = !showTz;
         els.countdownMod.hidden = !showCountdown;
-        els.tz.textContent = tz;
+
+        const flagEl = document.getElementById("flag");
+        const flagCode =
+          (flagCodeParam || TZ_TO_FLAG[tz] || "").replace(/[^a-z]/g, "").slice(0, 2);
+        if (showTz && flagCode) {
+          flagEl.hidden = false;
+          flagEl.alt = flagCode.toUpperCase();
+          flagEl.src = `https://flagcdn.com/h20/${flagCode}.png`;
+          flagEl.srcset = `https://flagcdn.com/h40/${flagCode}.png 2x`;
+          els.tz.hidden = true;
+        } else if (showTz) {
+          // 找不到對應國旗時才退回文字
+          flagEl.hidden = true;
+          els.tz.hidden = false;
+          els.tz.textContent = tz;
+        }
 
         const cdLabel = params.get("cdLabel") || "";
         if (cdLabel) {
@@ -235,7 +291,28 @@
           return `${pad(h)}:${pad(m)}:${pad(sec)}`;
         }
 
-        // 簡易 format：支援 YYYY MM DD HH mm ss ddd 與常見分隔
+        // 簡易 format：支援 YYYY MM DD HH mm ss ddd/dddd 與常見分隔
+        // ddd=週一、dddd=星期一（固定繁中）
+        const WEEKDAY_SHORT = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+        const WEEKDAY_LONG = [
+          "星期日",
+          "星期一",
+          "星期二",
+          "星期三",
+          "星期四",
+          "星期五",
+          "星期六",
+        ];
+
+        function weekdayIndexInTz(date, timeZone) {
+          const wd = new Intl.DateTimeFormat("en-US", {
+            timeZone,
+            weekday: "short",
+          }).format(date);
+          const map = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+          return map[wd] ?? date.getDay();
+        }
+
         function formatInTz(date, pattern, timeZone) {
           const dtf = new Intl.DateTimeFormat("en-US", {
             timeZone,
@@ -245,7 +322,6 @@
             hour: "2-digit",
             minute: "2-digit",
             second: "2-digit",
-            weekday: "short",
             hour12: false,
             hourCycle: "h23",
           });
@@ -253,7 +329,8 @@
             dtf.formatToParts(date).map((p) => [p.type, p.value])
           );
           // en-US 偶爾給 24:xx，正規化
-          let hour = parts.hour === "24" ? "00" : parts.hour;
+          const hour = parts.hour === "24" ? "00" : parts.hour;
+          const wi = weekdayIndexInTz(date, timeZone);
           const map = {
             YYYY: parts.year,
             YY: parts.year.slice(-2),
@@ -262,11 +339,12 @@
             HH: hour,
             mm: parts.minute,
             ss: parts.second,
-            ddd: parts.weekday,
+            dddd: WEEKDAY_LONG[wi],
+            ddd: WEEKDAY_SHORT[wi],
             Z: timeZone,
           };
           return pattern.replace(
-            /YYYY|YY|MM|DD|HH|mm|ss|ddd|Z/g,
+            /YYYY|YY|MM|DD|HH|mm|ss|dddd|ddd|Z/g,
             (token) => map[token] ?? token
           );
         }

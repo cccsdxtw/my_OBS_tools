@@ -4,16 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OBS Countdown</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
         --fg: rgba(255, 255, 255, 0.85);
-        --muted: rgba(255, 255, 255, 0.55);
+        --muted: rgba(255, 255, 255, 0.7);
         --size: 22px;
-        --pad-x: 10px;
-        --gap: 8px;
+        --bar-h: calc(var(--size) + 16px);
+        --pad-x: 12px;
+        --gap: 10px;
         --radius: 0;
-        --font: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+        --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
+          "PingFang TC", sans-serif;
+        --font-num: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
           monospace;
       }
 
@@ -26,51 +35,58 @@
         margin: 0;
         background: transparent;
         overflow: hidden;
-        font-family: var(--font);
         color: var(--fg);
       }
 
       #bar {
         display: inline-flex;
         align-items: center;
+        justify-content: flex-start;
         gap: var(--gap);
-        min-height: calc(var(--size) + 12px);
-        padding: 6px var(--pad-x);
+        height: var(--bar-h);
+        padding: 0 var(--pad-x);
         background: var(--bg);
         border-radius: var(--radius);
         white-space: nowrap;
         line-height: 1;
-        overflow: visible;
+        overflow: hidden;
       }
 
       .icon {
-        width: var(--size);
-        height: var(--size);
-        opacity: 0.85;
+        width: calc(var(--size) * 0.92);
+        height: calc(var(--size) * 0.92);
+        opacity: 0.9;
         flex: 0 0 auto;
         display: block;
       }
 
       .label,
       .value {
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        justify-content: center;
         height: var(--size);
+        margin: 0;
+        padding: 0;
+        border: 0;
         line-height: 1;
       }
 
       .label {
         color: var(--muted);
-        font-size: calc(var(--size) * 0.78);
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.82);
         font-weight: 600;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.04em;
+        /* 中文字面常偏上，微向下做光學置中 */
+        transform: translateY(0.06em);
       }
 
       .value {
+        font-family: var(--font-num);
         font-size: var(--size);
         font-weight: 500;
         font-variant-numeric: tabular-nums;
+        transform: translateY(0.02em);
       }
     </style>
   </head>

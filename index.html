@@ -212,6 +212,21 @@
         opacity: 0.55;
       }
 
+      .color-pair {
+        display: grid;
+        grid-template-columns: 1fr 2.5rem;
+        gap: 8px;
+        align-items: center;
+        width: 100%;
+      }
+
+      .color-pair input[type="color"] {
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 2px;
+        cursor: pointer;
+      }
+
       .field {
         display: flex;
         align-items: center;
@@ -488,10 +503,25 @@
               </div>
               <div>
                 <label for="defaultColor">預設文字色</label>
-                <input id="defaultColor" type="text" value="rgba(255,255,255,0.85)" />
+                <div class="color-pair">
+                  <input id="defaultColor" type="text" value="rgba(255,255,255,0.85)" />
+                  <input type="color" data-sync="defaultColor" value="#d9d9d9" title="快速選色" />
+                </div>
               </div>
             </div>
-            <p class="hint">各橫列的字級／文字色沒填時，會用這裡的預設。</p>
+            <div class="row">
+              <div>
+                <label for="defaultIconColor">預設圖示色</label>
+                <div class="color-pair">
+                  <input id="defaultIconColor" type="text" placeholder="空白＝跟文字色" />
+                  <input type="color" data-sync="defaultIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              各橫列字級／文字色／圖示色沒填時，會用這裡的預設。圖示色空白＝跟文字色（跟 Google Icons 預覽一樣用 CSS 上色）。
+            </p>
 
             <div class="steps" id="yt-key-guide">
               <h3>YT API Key 怎麼申請（一次即可）</h3>
@@ -567,10 +597,21 @@
               >
             </div>
             <p class="hint">
-              1. 按上面按鈕到 Google Icons 找圖示<br />
+              1. 按上面按鈕到 Google Icons 找圖示（那邊也可先預覽顏色）<br />
               2. 點進圖示後，把名稱貼到下方欄位（例如 <code>Timer</code>、<code>calendar_month</code>）<br />
-              3. 會自動載入 Google Fonts Material Symbols；若貼 <code>https://…</code> 圖片網址則改用圖片
+              3. 圖示顏色用下面「圖示色」選（Material Symbols 用 CSS 上色）；若貼圖片網址則顏色選項不套用
             </p>
+
+            <div class="row">
+              <div>
+                <label for="overlayIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="overlayIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="overlayIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
 
             <div class="checks" id="modules">
               <div class="mod-row" data-key="vc">
@@ -676,7 +717,10 @@
               </div>
               <div>
                 <label for="overlayColor">文字色</label>
-                <input id="overlayColor" type="text" placeholder="用預設" />
+                <div class="color-pair">
+                  <input id="overlayColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="overlayColor" value="#d9d9d9" title="快速選色" />
+                </div>
               </div>
             </div>
             <div class="row">
@@ -688,7 +732,7 @@
                 <input id="overlayBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。底色取消勾選＝透明。</p>
+            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -847,8 +891,18 @@
                 placeholder="Material 名稱如 Timer，或圖片 https://…"
               />
             </div>
+            <div class="row">
+              <div>
+                <label for="countdownIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="countdownIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="countdownIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
             <p class="hint">
-              同上：到 Google Icons 找名稱貼上來（如 <code>Timer</code>），或改貼圖片網址。
+              同上：到 Google Icons 找名稱貼上來（如 <code>Timer</code>）；顏色用「圖示色」選。貼圖片網址則不套用圖示色。
             </p>
             <div class="row">
               <div>
@@ -857,7 +911,10 @@
               </div>
               <div>
                 <label for="countdownColor">文字色</label>
-                <input id="countdownColor" type="text" placeholder="用預設" />
+                <div class="color-pair">
+                  <input id="countdownColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="countdownColor" value="#d9d9d9" title="快速選色" />
+                </div>
               </div>
             </div>
             <div class="row">
@@ -1135,8 +1192,10 @@
           cdLabel: $("cdLabel"),
           defaultFontSize: $("defaultFontSize"),
           defaultColor: $("defaultColor"),
+          defaultIconColor: $("defaultIconColor"),
           overlayFontSize: $("overlayFontSize"),
           overlayColor: $("overlayColor"),
+          overlayIconColor: $("overlayIconColor"),
           overlayShowBg: $("overlayShowBg"),
           overlayBg: $("overlayBg"),
           viewersFontSize: $("viewersFontSize"),
@@ -1145,6 +1204,7 @@
           viewersBg: $("viewersBg"),
           countdownFontSize: $("countdownFontSize"),
           countdownColor: $("countdownColor"),
+          countdownIconColor: $("countdownIconColor"),
           countdownShowBg: $("countdownShowBg"),
           countdownBg: $("countdownBg"),
           chatSource: $("chatSource"),
@@ -1277,11 +1337,17 @@
           return (defaultEl.value || "").trim();
         }
 
-        function styleParams(p, showBgEl, bgEl, fontEl, colorEl) {
+        function styleParams(p, showBgEl, bgEl, fontEl, colorEl, iconColorEl) {
           const fontSize = resolveStyle(fontEl, fields.defaultFontSize);
           const color = resolveStyle(colorEl, fields.defaultColor);
           if (fontSize) p.set("fontSize", fontSize);
           if (color) p.set("color", color);
+          if (iconColorEl) {
+            const iconColor =
+              (iconColorEl.value || "").trim() ||
+              (fields.defaultIconColor.value || "").trim();
+            if (iconColor) p.set("iconColor", iconColor);
+          }
           if (showBgEl.checked) {
             p.set("bg", bgEl.value.trim() || "rgba(0,0,0,0.45)");
           } else {
@@ -1292,6 +1358,8 @@
         function syncStylePlaceholders() {
           const fs = fields.defaultFontSize.value || "22";
           const col = fields.defaultColor.value.trim() || "rgba(255,255,255,0.85)";
+          const iconCol =
+            fields.defaultIconColor.value.trim() || col || "跟文字色";
           [
             fields.overlayFontSize,
             fields.viewersFontSize,
@@ -1307,6 +1375,54 @@
             fields.chatColor,
           ].forEach((el) => {
             el.placeholder = `預設 ${col}`;
+          });
+          [fields.overlayIconColor, fields.countdownIconColor].forEach((el) => {
+            if (!el) return;
+            el.placeholder = fields.defaultIconColor.value.trim()
+              ? `預設 ${iconCol}`
+              : "用文字色／預設";
+          });
+        }
+
+        function parseColorToHex(raw) {
+          const s = String(raw || "").trim();
+          if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s)) {
+            if (s.length === 4) {
+              return (
+                "#" +
+                s
+                  .slice(1)
+                  .split("")
+                  .map((c) => c + c)
+                  .join("")
+              );
+            }
+            return s.toLowerCase();
+          }
+          const m = s.match(
+            /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i
+          );
+          if (m) {
+            const hex = (n) => Number(n).toString(16).padStart(2, "0");
+            return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`;
+          }
+          return null;
+        }
+
+        function bindColorPickers() {
+          document.querySelectorAll("input[type=color][data-sync]").forEach((pick) => {
+            const text = $(pick.dataset.sync);
+            if (!text) return;
+            const syncPickFromText = () => {
+              const hex = parseColorToHex(text.value);
+              if (hex) pick.value = hex;
+            };
+            syncPickFromText();
+            pick.addEventListener("input", () => {
+              text.value = pick.value;
+              buildUrls();
+            });
+            text.addEventListener("input", syncPickFromText);
           });
         }
 
@@ -1351,7 +1467,8 @@
             fields.overlayShowBg,
             fields.overlayBg,
             fields.overlayFontSize,
-            fields.overlayColor
+            fields.overlayColor,
+            fields.overlayIconColor
           );
           return { href: url.toString(), mods, moduleOrder };
         }
@@ -1375,7 +1492,8 @@
             fields.countdownShowBg,
             fields.countdownBg,
             fields.countdownFontSize,
-            fields.countdownColor
+            fields.countdownColor,
+            fields.countdownIconColor
           );
           return url.toString();
         }
@@ -1601,6 +1719,7 @@
           el.addEventListener("change", buildUrls)
         );
 
+        bindColorPickers();
         syncAllBgFields();
         buildUrls();
       })();

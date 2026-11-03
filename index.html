@@ -285,6 +285,12 @@
         width: 100%;
       }
 
+      .checks .mod-row > input.icon-name {
+        grid-column: 1 / -1;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.85rem;
+      }
+
       .checks .mod-row label {
         display: flex;
         align-items: center;
@@ -534,6 +540,23 @@
               <span class="side-title">日期／時間／開台／國旗</span>
             </div>
 
+            <datalist id="materialIconSuggest">
+              <option value="calendar_month"></option>
+              <option value="schedule"></option>
+              <option value="videocam"></option>
+              <option value="timer"></option>
+              <option value="hourglass_empty"></option>
+              <option value="visibility"></option>
+              <option value="person"></option>
+              <option value="favorite"></option>
+              <option value="star"></option>
+              <option value="bolt"></option>
+              <option value="live_tv"></option>
+              <option value="podcasts"></option>
+              <option value="alarm"></option>
+              <option value="nest_clock_farsight_analog"></option>
+            </datalist>
+
             <div class="checks" id="modules">
               <div class="mod-row" data-key="vc">
                 <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條，僅 TW）</label>
@@ -541,6 +564,14 @@
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <input
+                  id="vcMsIcon"
+                  class="icon-name"
+                  type="text"
+                  list="materialIconSuggest"
+                  placeholder="圖示名 visibility"
+                  value="visibility"
+                />
               </div>
               <div class="mod-row" data-key="st">
                 <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
@@ -548,6 +579,14 @@
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <input
+                  id="stMsIcon"
+                  class="icon-name"
+                  type="text"
+                  list="materialIconSuggest"
+                  placeholder="圖示名 videocam"
+                  value="videocam"
+                />
               </div>
               <div class="mod-row" data-key="date">
                 <label><input type="checkbox" data-key="date" checked /> 日期</label>
@@ -555,6 +594,14 @@
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <input
+                  id="dateMsIcon"
+                  class="icon-name"
+                  type="text"
+                  list="materialIconSuggest"
+                  placeholder="圖示名 calendar_month"
+                  value="calendar_month"
+                />
               </div>
               <div class="mod-row" data-key="time">
                 <label><input type="checkbox" data-key="time" checked /> 時間</label>
@@ -562,6 +609,14 @@
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <input
+                  id="timeMsIcon"
+                  class="icon-name"
+                  type="text"
+                  list="materialIconSuggest"
+                  placeholder="圖示名 schedule"
+                  value="schedule"
+                />
               </div>
               <div class="mod-row" data-key="showTz">
                 <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
@@ -572,7 +627,9 @@
               </div>
             </div>
             <p class="hint">
-              用 ↑↓ 調整左右順序（列表上＝資訊條左邊）。TW＋YT 人數請用「② 觀眾人數」；這裡勾選的人數只含 Twitch。
+              用 ↑↓ 調整左右順序（列表上＝資訊條左邊）。圖示貼 Google Material Symbol 名稱即可（如
+              <code>Timer</code>、<code>calendar_month</code>），見
+              <a href="https://fonts.google.com/icons" target="_blank" rel="noopener">Google Icons</a>。
             </p>
 
             <div class="row">
@@ -759,9 +816,18 @@
               </div>
             </div>
             <div class="field">
-              <label for="cdIcon">倒計時圖示網址</label>
-              <input id="cdIcon" type="text" placeholder="空白＝預設碼錶圖示" />
+              <label for="cdIcon">倒計時圖示</label>
+              <input
+                id="cdIcon"
+                type="text"
+                list="materialIconSuggest"
+                value="hourglass_empty"
+                placeholder="Material 名稱如 Timer，或圖片 https://…"
+              />
             </div>
+            <p class="hint">
+              貼 Material 名稱（如 <code>Timer</code>）或圖片網址。名稱會自動載入 Google Fonts Material Symbols。
+            </p>
             <div class="row">
               <div>
                 <label for="countdownFontSize">字級</label>
@@ -1034,6 +1100,10 @@
           twIcon: $("twIcon"),
           ytIcon: $("ytIcon"),
           cdIcon: $("cdIcon"),
+          vcMsIcon: $("vcMsIcon"),
+          stMsIcon: $("stMsIcon"),
+          dateMsIcon: $("dateMsIcon"),
+          timeMsIcon: $("timeMsIcon"),
           tz: $("tz"),
           flagCode: $("flagCode"),
           dateFormat: $("dateFormat"),
@@ -1250,6 +1320,10 @@
           }
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
+          if (fields.vcMsIcon.value.trim()) p.set("vcIcon", fields.vcMsIcon.value.trim());
+          if (fields.stMsIcon.value.trim()) p.set("stIcon", fields.stMsIcon.value.trim());
+          if (fields.dateMsIcon.value.trim()) p.set("dateIcon", fields.dateMsIcon.value.trim());
+          if (fields.timeMsIcon.value.trim()) p.set("timeIcon", fields.timeMsIcon.value.trim());
           styleParams(
             p,
             fields.overlayShowBg,

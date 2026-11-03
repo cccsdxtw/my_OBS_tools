@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
       rel="stylesheet"
     />
-    <link id="ms-symbols" rel="stylesheet" href="" />
+    <script src="material-icons.js"></script>
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -166,15 +166,6 @@
           return /^https?:\/\//i.test(s) || /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s);
         }
 
-        function loadMaterialIcon(name) {
-          const n = normalizeMsName(name);
-          const link = document.getElementById("ms-symbols");
-          if (!link || !n) return;
-          link.href =
-            "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=" +
-            n;
-        }
-
         const cdIconRaw = (params.get("cdIcon") || params.get("icon") || "hourglass_empty").trim();
         const slot = document.getElementById("cd-icon");
         if (slot && cdIconRaw) {
@@ -194,10 +185,12 @@
             span.setAttribute("aria-hidden", "true");
             span.textContent = name;
             slot.appendChild(span);
-            loadMaterialIcon(name);
+            if (window.MyObsMaterialIcons) {
+              window.MyObsMaterialIcons.ensureMaterialSymbols([name]);
+            }
           }
-        } else {
-          loadMaterialIcon("hourglass_empty");
+        } else if (window.MyObsMaterialIcons) {
+          window.MyObsMaterialIcons.ensureMaterialSymbols(["hourglass_empty"]);
         }
 
         function pad(n) {

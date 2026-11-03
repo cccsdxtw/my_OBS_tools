@@ -1492,6 +1492,8 @@
           "game.html",
           "chat.html",
           "chat-reply.html",
+          "material-icons.js",
+          "fonts/MaterialSymbolsOutlined.ttf",
           "README.md",
         ];
         const themeKey = "laji_obs_toolbox_theme";
@@ -1613,10 +1615,17 @@
           for (const name of UPDATE_FILES) {
             const res = await fetch(fileUrlForTag(tag, name), { cache: "no-store" });
             if (!res.ok) throw new Error("fetch " + name + " " + res.status);
-            const text = await res.text();
-            const fileHandle = await dirHandle.getFileHandle(name, { create: true });
+            const parts = name.split("/").filter(Boolean);
+            let dir = dirHandle;
+            for (let i = 0; i < parts.length - 1; i++) {
+              dir = await dir.getDirectoryHandle(parts[i], { create: true });
+            }
+            const fileHandle = await dir.getFileHandle(parts[parts.length - 1], {
+              create: true,
+            });
             const writable = await fileHandle.createWritable();
-            await writable.write(text);
+            const binary = /\.(ttf|otf|woff2?|png|jpe?g|gif|webp|zip)$/i.test(name);
+            await writable.write(binary ? await res.arrayBuffer() : await res.text());
             await writable.close();
           }
         }

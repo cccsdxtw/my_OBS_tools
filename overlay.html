@@ -360,15 +360,26 @@
           let live = false;
           let start = null;
           if (viewersText != null) {
-            const n = parseInt(String(viewersText).trim(), 10);
-            if (!Number.isNaN(n)) {
-              viewers = n;
-              live = n > 0 || (uptimeText && !/offline/i.test(uptimeText));
+            const raw = String(viewersText).trim();
+            if (/offline/i.test(raw)) {
+              live = false;
+              viewers = 0;
+            } else {
+              const n = parseInt(raw, 10);
+              if (!Number.isNaN(n)) {
+                viewers = n;
+                live = true;
+              }
             }
           }
           if (uptimeText) {
-            start = parseDecapiUptime(uptimeText);
-            if (start) live = true;
+            if (/offline/i.test(uptimeText)) {
+              live = false;
+              start = null;
+            } else {
+              start = parseDecapiUptime(uptimeText);
+              if (start) live = true;
+            }
           }
           return { live, viewers, startedAt: start };
         }

@@ -232,20 +232,46 @@
         <section class="card">
           <h2>顯示設定</h2>
 
-          <label for="channel">Twitch 頻道（login）</label>
-          <input id="channel" type="text" placeholder="例如 stinkingbanana" />
-          <p class="hint">要顯示人數或已開台時間才需要填。</p>
-
           <div class="checks" id="modules">
-            <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條）</label>
+            <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條，僅 TW）</label>
             <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
             <label><input type="checkbox" data-key="date" checked /> 日期</label>
             <label><input type="checkbox" data-key="time" checked /> 時間</label>
             <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
           </div>
           <p class="hint">
-            觀眾人數預設用右邊「③ 人數網址」獨立來源（方便分開放）。
-            若要黏在資訊條上，再勾上面的「觀看人數」。
+            TW＋YT 人數請用右邊「③ 人數網址」獨立來源。資訊條勾選的人數只含 Twitch。
+          </p>
+
+          <h2 style="margin-top: 18px">觀眾人數（TW + YT）</h2>
+          <div class="row">
+            <div>
+              <label for="channel">Twitch 頻道（login）</label>
+              <input id="channel" type="text" placeholder="例如 your_channel" />
+            </div>
+            <div>
+              <label for="vcMode">顯示方式</label>
+              <select id="vcMode">
+                <option value="split" selected>分開：TW / YT</option>
+                <option value="total">加總</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="ytChannel">YouTube 頻道</label>
+              <input id="ytChannel" type="text" placeholder="@handle 或 UC…" />
+            </div>
+            <div>
+              <label for="ytVideo">或 YT 直播影片 ID</label>
+              <input id="ytVideo" type="text" placeholder="可留空，自動找 live" />
+            </div>
+          </div>
+          <label for="ytKey">YouTube API Key</label>
+          <input id="ytKey" type="text" placeholder="Google Cloud → YouTube Data API v3" />
+          <p class="hint">
+            YT 人數需要 API Key（申請一次即可，不像 Twitch token 常過期）。
+            有填頻道時會自動找正在直播的影片；也可直接填影片 ID 省 quota。
           </p>
 
           <div class="row">
@@ -260,24 +286,6 @@
           </div>
           <p class="hint">國旗用 ISO 代碼（如 tw、jp、us）。有勾「國旗」就顯示國旗，不再顯示時區文字。</p>
 
-          <div class="row">
-            <div>
-              <label for="viewersSource">人數來源</label>
-              <select id="viewersSource">
-                <option value="auto" selected>auto（免驗證）</option>
-                <option value="decapi">DecAPI only</option>
-                <option value="streamlabs">Streamlabs widget</option>
-              </select>
-            </div>
-            <div>
-              <label for="streamlabsToken">Streamlabs token（可選）</label>
-              <input
-                id="streamlabsToken"
-                type="text"
-                placeholder="若選 Streamlabs 再填"
-              />
-            </div>
-          </div>
           <div class="row">
             <div>
               <label for="dateFormat">日期格式</label>
@@ -346,9 +354,9 @@
             <iframe id="previewCd" title="countdown preview"></iframe>
           </div>
 
-          <h2 style="margin-top: 22px">③ 觀眾人數網址</h2>
+          <h2 style="margin-top: 22px">③ 觀眾人數網址（TW + YT）</h2>
           <textarea id="vcUrl" readonly></textarea>
-          <p class="hint">建議寬度 120–220、高度 40–60。獨立人數來源，可跟資訊條分開放。</p>
+          <p class="hint">建議寬度 220–420、高度 40–60。獨立人數來源，可跟資訊條分開放。</p>
           <div class="actions">
             <button type="button" id="copyVc">複製人數網址</button>
             <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener"
@@ -364,6 +372,7 @@
             舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
             這裡改抓公開實況資料，日常開台不必再跑 OAuth。
             資訊條／倒計時／人數可分成三個瀏覽器來源，分開放位置。
+            人數頁支援 Twitch＋YouTube；YT 需填一次 API Key。
           </div>
         </aside>
       </div>
@@ -378,10 +387,12 @@
         const $ = (id) => document.getElementById(id);
         const fields = {
           channel: $("channel"),
+          vcMode: $("vcMode"),
+          ytChannel: $("ytChannel"),
+          ytVideo: $("ytVideo"),
+          ytKey: $("ytKey"),
           tz: $("tz"),
           flagCode: $("flagCode"),
-          viewersSource: $("viewersSource"),
-          streamlabsToken: $("streamlabsToken"),
           dateFormat: $("dateFormat"),
           timeFormat: $("timeFormat"),
           countdown: $("countdown"),
@@ -437,9 +448,6 @@
           if (mods.showTz && fields.flagCode.value.trim()) {
             p.set("flag", fields.flagCode.value.trim().toLowerCase());
           }
-          // 資訊條只用免驗證來源；Streamlabs 請走獨立人數頁
-          const vs = fields.viewersSource.value;
-          if (vs && vs !== "streamlabs") p.set("viewersSource", vs);
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
           styleParams(p);
@@ -467,16 +475,15 @@
           const url = new URL("viewers.html", location.href);
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
-          const vs = fields.viewersSource.value || "auto";
-          const token = fields.streamlabsToken.value.trim();
+          const ytChannel = fields.ytChannel.value.trim();
+          const ytVideo = fields.ytVideo.value.trim();
+          const ytKey = fields.ytKey.value.trim();
 
-          if (vs === "streamlabs" && token) {
-            p.set("viewersSource", "streamlabs");
-            p.set("streamlabsToken", token);
-          } else {
-            if (channel) p.set("login", channel);
-            p.set("viewersSource", vs === "streamlabs" ? "auto" : vs);
-          }
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
           styleParams(p);
           return url.toString();
         }

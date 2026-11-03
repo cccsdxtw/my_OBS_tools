@@ -341,7 +341,8 @@
         margin-top: 0;
       }
 
-      textarea.url-box {
+      textarea.url-box,
+      textarea.css-box {
         width: 100%;
         min-height: 88px;
         margin-top: 0;
@@ -354,6 +355,14 @@
         line-height: 1.5;
         word-break: break-all;
         resize: vertical;
+      }
+
+      textarea.css-box {
+        min-height: 110px;
+        background: var(--input-bg);
+        color: var(--ink);
+        word-break: normal;
+        white-space: pre;
       }
 
       .preview-wrap {
@@ -690,7 +699,7 @@
               使用最上方的 Twitch／YouTube 帳號。Twitch 用匿名 IRC（免登入）；YouTube 用 Data API 拉 live chat。
             </p>
             <div class="field">
-              <label for="chatSource">來源</label>
+              <label for="chatSource">來源平台</label>
               <select id="chatSource">
                 <option value="auto" selected>auto（有填就連）</option>
                 <option value="both">TW + YT</option>
@@ -700,8 +709,34 @@
             </div>
             <div class="row">
               <div>
+                <label for="chatLayout">版面</label>
+                <select id="chatLayout">
+                  <option value="merge" selected>合併成一個</option>
+                  <option value="split">分開成兩個</option>
+                </select>
+              </div>
+              <div>
+                <label for="chatStack">方向</label>
+                <select id="chatStack">
+                  <option value="bottom" selected>從下到上（新在底部）</option>
+                  <option value="top">從上到下（新在頂部）</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div>
                 <label for="chatMax">最多保留則數</label>
                 <input id="chatMax" type="number" min="5" max="100" value="30" />
+              </div>
+              <div>
+                <label for="chatTtl">過幾秒最舊消失</label>
+                <input id="chatTtl" type="number" min="0" max="600" value="0" placeholder="0＝不限" />
+              </div>
+            </div>
+            <p class="hint">「過幾秒」填 0 或不填＝只依則數清掉，不依時間消失。分開版面時每欄各自計算則數。</p>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="chatShowSource" checked /> 顯示留言來源</label>
               </div>
               <div>
                 <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
@@ -716,7 +751,18 @@
                 <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
-            <p class="hint">OBS 建議寬 360–480、高 500–720；訊息從底部往上堆疊。</p>
+            <div class="field" style="align-items: flex-start">
+              <label for="chatCss">自訂 CSS</label>
+              <textarea
+                id="chatCss"
+                class="css-box"
+                placeholder=".msg { font-size: 20px; }&#10;.plat.tw { color: #a970ff; }"
+              ></textarea>
+            </div>
+            <p class="hint">
+              CSS 會寫進網址參數；太長可能被 OBS 截斷。可用選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `.feed`。
+              OBS 建議寬 360–480（分開可更寬）、高 500–720。
+            </p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -797,10 +843,15 @@
           countdownShowBg: $("countdownShowBg"),
           countdownBg: $("countdownBg"),
           chatSource: $("chatSource"),
+          chatLayout: $("chatLayout"),
+          chatStack: $("chatStack"),
           chatMax: $("chatMax"),
+          chatTtl: $("chatTtl"),
+          chatShowSource: $("chatShowSource"),
           chatHideStatus: $("chatHideStatus"),
           chatShowBg: $("chatShowBg"),
           chatBg: $("chatBg"),
+          chatCss: $("chatCss"),
         };
 
         try {
@@ -941,8 +992,16 @@
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
           if (fields.chatSource.value) p.set("chatSource", fields.chatSource.value);
+          if (fields.chatLayout.value) p.set("layout", fields.chatLayout.value);
+          if (fields.chatStack.value) p.set("stack", fields.chatStack.value);
           if (fields.chatMax.value) p.set("max", fields.chatMax.value);
+          if (fields.chatTtl.value && Number(fields.chatTtl.value) > 0) {
+            p.set("ttl", String(Math.max(0, parseInt(fields.chatTtl.value, 10) || 0)));
+          }
+          p.set("showSource", fields.chatShowSource.checked ? "1" : "0");
           if (fields.chatHideStatus.checked) p.set("hideStatus", "1");
+          const css = fields.chatCss.value.trim();
+          if (css) p.set("css", css);
           styleParams(p, fields.chatShowBg, fields.chatBg);
           return url.toString();
         }

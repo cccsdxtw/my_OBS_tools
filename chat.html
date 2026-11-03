@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <style>
+    <style id="base-style">
       :root {
         --bg: rgba(0, 0, 0, 0.45);
         --fg: rgba(255, 255, 255, 0.92);
@@ -21,9 +21,9 @@
         --pad: 10px;
         --radius: 0;
         --gap: 6px;
+        --col-gap: 12px;
         --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
           "PingFang TC", sans-serif;
-        --max: 30;
       }
 
       * {
@@ -49,14 +49,85 @@
         border-radius: var(--radius);
         display: flex;
         flex-direction: column;
+        min-height: 0;
+      }
+
+      #wrap.stack-bottom {
         justify-content: flex-end;
       }
 
-      #feed {
+      #wrap.stack-top {
+        justify-content: flex-start;
+      }
+
+      #wrap.layout-split {
+        flex-direction: row;
+        align-items: stretch;
+        gap: var(--col-gap);
+      }
+
+      #wrap.layout-split.stack-bottom {
+        align-items: flex-end;
+      }
+
+      #wrap.layout-split.stack-top {
+        align-items: flex-start;
+      }
+
+      .col {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      #wrap.layout-merge .col {
+        display: none;
+      }
+
+      #wrap.layout-merge #col-merge {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+
+      #wrap.layout-split #col-merge {
+        display: none;
+      }
+
+      .col-label {
+        flex: 0 0 auto;
+        font-size: 0.72em;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        opacity: 0.75;
+      }
+
+      #col-tw .col-label {
+        color: var(--tw);
+      }
+
+      #col-yt .col-label {
+        color: var(--yt);
+      }
+
+      .feed {
         display: flex;
         flex-direction: column;
         gap: var(--gap);
         overflow: hidden;
+        min-height: 0;
+        width: 100%;
+      }
+
+      #wrap.stack-bottom .feed {
+        justify-content: flex-end;
+      }
+
+      #wrap.stack-top .feed {
+        justify-content: flex-start;
       }
 
       .msg {
@@ -68,12 +139,33 @@
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
         animation: in 0.2s ease-out;
         word-break: break-word;
+        transition: opacity 0.35s ease, transform 0.35s ease;
+      }
+
+      .msg.fade-out {
+        opacity: 0;
+        transform: translateY(-4px);
       }
 
       @keyframes in {
         from {
           opacity: 0;
           transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      #wrap.stack-top .msg {
+        animation-name: in-top;
+      }
+
+      @keyframes in-top {
+        from {
+          opacity: 0;
+          transform: translateY(-6px);
         }
         to {
           opacity: 1;
@@ -96,6 +188,10 @@
 
       .plat.yt {
         color: var(--yt);
+      }
+
+      body.hide-source .plat {
+        display: none;
       }
 
       .user {
@@ -123,23 +219,36 @@
         color: var(--muted);
         opacity: 0.7;
         pointer-events: none;
+        z-index: 2;
       }
 
       body.hide-status #status {
         display: none;
       }
     </style>
+    <style id="custom-style"></style>
   </head>
   <body>
     <div id="status">connecting…</div>
-    <div id="wrap">
-      <div id="feed" aria-live="polite"></div>
+    <div id="wrap" class="layout-merge stack-bottom">
+      <div class="col" id="col-merge">
+        <div class="feed" id="feed" aria-live="polite"></div>
+      </div>
+      <div class="col" id="col-tw">
+        <div class="col-label">TWITCH</div>
+        <div class="feed" id="feed-tw" aria-live="polite"></div>
+      </div>
+      <div class="col" id="col-yt">
+        <div class="col-label">YOUTUBE</div>
+        <div class="feed" id="feed-yt" aria-live="polite"></div>
+      </div>
     </div>
 
     <script>
       (() => {
         const YT_API = "https://www.googleapis.com/youtube/v3";
         const params = new URLSearchParams(location.search);
+        const wrap = document.getElementById("wrap");
 
         function cssVar(name, value) {
           if (value) document.documentElement.style.setProperty(name, value);
@@ -158,8 +267,22 @@
         }
 
         const maxMsgs = Math.max(5, Math.min(100, parseInt(params.get("max") || "30", 10) || 30));
-        cssVar("--max", String(maxMsgs));
+        // ttl：秒；0／空白＝不依時間消失（只受則數限制）
+        const ttlSec = Math.max(0, parseInt(params.get("ttl") || "0", 10) || 0);
+        const layout = (params.get("layout") || "merge").toLowerCase() === "split" ? "split" : "merge";
+        const stack = (params.get("stack") || "bottom").toLowerCase() === "top" ? "top" : "bottom";
+        const showSource = params.get("showSource") !== "0";
         if (params.get("hideStatus") === "1") document.body.classList.add("hide-status");
+        if (!showSource) document.body.classList.add("hide-source");
+
+        wrap.className = `layout-${layout} stack-${stack}`;
+
+        const customCss = params.get("css") || "";
+        if (customCss) {
+          try {
+            document.getElementById("custom-style").textContent = customCss;
+          } catch (_) {}
+        }
 
         const twitchLogin = (
           params.get("login") ||
@@ -174,9 +297,22 @@
         const ytKey = (params.get("ytKey") || params.get("youtubeKey") || "").trim();
         const sources = (params.get("chatSource") || "auto").toLowerCase(); // auto|twitch|youtube|both
 
-        const feed = document.getElementById("feed");
+        const feedMerge = document.getElementById("feed");
+        const feedTw = document.getElementById("feed-tw");
+        const feedYt = document.getElementById("feed-yt");
         const statusEl = document.getElementById("status");
         const connected = { tw: false, yt: false };
+
+        const wantTw =
+          !!twitchLogin && (sources === "auto" || sources === "twitch" || sources === "both");
+        const wantYt =
+          !!(ytVideoParam || (ytChannel && ytKey)) &&
+          (sources === "auto" || sources === "youtube" || sources === "both");
+
+        if (layout === "split") {
+          document.getElementById("col-tw").style.display = wantTw ? "" : "none";
+          document.getElementById("col-yt").style.display = wantYt ? "" : "none";
+        }
 
         function setStatus() {
           const parts = [];
@@ -185,9 +321,25 @@
           statusEl.textContent = parts.length ? parts.join(" ") : "NO SRC";
         }
 
+        function targetFeed(platform) {
+          if (layout === "split") return platform === "tw" ? feedTw : feedYt;
+          return feedMerge;
+        }
+
+        function trimFeed(feed) {
+          while (feed.children.length > maxMsgs) {
+            if (stack === "top") feed.removeChild(feed.lastChild);
+            else feed.removeChild(feed.firstChild);
+          }
+        }
+
         function addMessage({ platform, user, text }) {
+          const feed = targetFeed(platform);
+          if (!feed) return;
           const row = document.createElement("div");
           row.className = "msg";
+          row.dataset.born = String(Date.now());
+          row.dataset.platform = platform;
           const plat = document.createElement("span");
           plat.className = `plat ${platform}`;
           plat.textContent = platform === "tw" ? "TW" : "YT";
@@ -198,15 +350,27 @@
           t.className = "text";
           t.textContent = text || "";
           row.append(plat, u, t);
-          feed.appendChild(row);
-          while (feed.children.length > maxMsgs) feed.removeChild(feed.firstChild);
+          if (stack === "top") feed.insertBefore(row, feed.firstChild);
+          else feed.appendChild(row);
+          trimFeed(feed);
         }
 
-        const wantTw =
-          !!twitchLogin && (sources === "auto" || sources === "twitch" || sources === "both");
-        const wantYt =
-          !!(ytVideoParam || (ytChannel && ytKey)) &&
-          (sources === "auto" || sources === "youtube" || sources === "both");
+        function expireTick() {
+          if (!ttlSec) return;
+          const cutoff = Date.now() - ttlSec * 1000;
+          document.querySelectorAll(".msg").forEach((el) => {
+            const born = parseInt(el.dataset.born || "0", 10) || 0;
+            if (born && born < cutoff && !el.classList.contains("fade-out")) {
+              el.classList.add("fade-out");
+              setTimeout(() => {
+                try {
+                  el.remove();
+                } catch (_) {}
+              }, 380);
+            }
+          });
+        }
+        if (ttlSec > 0) setInterval(expireTick, 500);
 
         if (!wantTw && !wantYt) {
           statusEl.textContent = "NO SRC";
@@ -242,7 +406,6 @@
                   connected.tw = true;
                   setStatus();
                 }
-                // tags + PRIVMSG
                 const m = line.match(
                   /^(?:@([^ ]+) )?(?::([^ ]+) )?PRIVMSG #[^ ]+ :(.*)$/
                 );

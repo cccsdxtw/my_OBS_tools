@@ -537,23 +537,29 @@
         min-width: 0;
       }
 
-      .apply-mode {
+      .version-controls {
         display: inline-flex;
-        border: 1px solid var(--line);
-        background: var(--input-bg);
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 10px;
       }
 
-      .apply-mode button {
+      .version-controls label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        color: var(--ink);
+      }
+
+      .version-controls #checkUpdateBtn {
+        min-width: 0;
         padding: 8px 12px;
         font-size: 0.88rem;
-        background: transparent;
-        color: var(--muted);
-        border: 0;
-      }
-
-      .apply-mode button.is-active {
-        background: var(--accent);
-        color: #fff;
       }
 
       .apply-status {
@@ -586,7 +592,6 @@
         align-items: center;
       }
 
-      #checkUpdateBtn,
       #downloadUpdateBtn,
       #applyBtn {
         min-width: 7.5rem;
@@ -612,7 +617,6 @@
           width: 100%;
         }
 
-        #checkUpdateBtn,
         #downloadUpdateBtn,
         #applyBtn {
           flex: 1;
@@ -1447,16 +1451,16 @@
     <div class="apply-dock" role="region" aria-label="確定與版本更新">
       <div class="apply-dock-inner">
         <div class="apply-dock-left">
-          <div class="apply-mode" role="group" aria-label="版本更新方式">
-            <button type="button" id="updateModeAuto" class="is-active" aria-pressed="true">
+          <div class="version-controls" role="group" aria-label="版本更新">
+            <label>
+              <input type="checkbox" id="autoUpdateCheck" checked />
               自動更新
-            </button>
-            <button type="button" id="updateModeManual" aria-pressed="false">手動更新</button>
+            </label>
+            <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
           <p class="apply-status" id="versionStatus">本機 v0.1.39</p>
         </div>
         <div class="apply-dock-actions">
-          <button type="button" class="secondary" id="checkUpdateBtn" hidden>檢查更新</button>
           <button type="button" id="downloadUpdateBtn" hidden>下載更新包</button>
           <button type="button" id="applyBtn">確定</button>
         </div>
@@ -1472,21 +1476,29 @@
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
         const themeKey = "laji_obs_toolbox_theme";
-        const versionModeKey = "my_obs_tools_version_update_mode";
+        const autoUpdateKey = "my_obs_tools_auto_version_check";
         const themeToggle = $("themeToggle");
         const applyBtn = $("applyBtn");
         const checkUpdateBtn = $("checkUpdateBtn");
         const downloadUpdateBtn = $("downloadUpdateBtn");
         const versionStatus = $("versionStatus");
         const brandVersion = $("brandVersion");
-        const updateModeAutoBtn = $("updateModeAuto");
-        const updateModeManualBtn = $("updateModeManual");
-        let versionMode = localStorage.getItem(versionModeKey) === "manual" ? "manual" : "auto";
+        const autoUpdateCheck = $("autoUpdateCheck");
         let applyTimer = 0;
         let versionMsg = `本機 ${APP_VERSION}`;
         let versionKind = null;
         let pendingZip = null;
         if (brandVersion) brandVersion.textContent = APP_VERSION;
+
+        function readAutoUpdatePref() {
+          const legacy = localStorage.getItem("my_obs_tools_version_update_mode");
+          const raw = localStorage.getItem(autoUpdateKey);
+          if (raw === "0" || raw === "false") return false;
+          if (raw === "1" || raw === "true") return true;
+          if (legacy === "manual") return false;
+          return true;
+        }
+        autoUpdateCheck.checked = readAutoUpdatePref();
 
         function applyTheme(theme) {
           const next = theme === "dark" ? "dark" : "light";
@@ -1515,16 +1527,6 @@
           versionStatus.classList.toggle("is-ok", versionKind === "ok");
           versionStatus.innerHTML = "";
           versionStatus.appendChild(document.createTextNode(text));
-        }
-
-        function syncVersionModeUi() {
-          const isAuto = versionMode === "auto";
-          updateModeAutoBtn.classList.toggle("is-active", isAuto);
-          updateModeManualBtn.classList.toggle("is-active", !isAuto);
-          updateModeAutoBtn.setAttribute("aria-pressed", isAuto ? "true" : "false");
-          updateModeManualBtn.setAttribute("aria-pressed", isAuto ? "false" : "true");
-          checkUpdateBtn.hidden = isAuto;
-          if (!pendingZip) downloadUpdateBtn.hidden = true;
         }
 
         function parseVer(tag) {
@@ -1635,17 +1637,6 @@
           }
         }
 
-        function setVersionMode(mode) {
-          versionMode = mode === "manual" ? "manual" : "auto";
-          localStorage.setItem(versionModeKey, versionMode);
-          syncVersionModeUi();
-          if (versionMode === "auto") checkLatestVersion({ autoDownload: false });
-          else {
-            clearPendingZip();
-            renderVersionStatus(`本機 ${APP_VERSION} · 按「檢查更新」跟上版本`, null);
-          }
-        }
-
         function flashApplied() {
           clearTimeout(applyTimer);
           buildUrls();
@@ -1655,8 +1646,12 @@
           }, 1200);
         }
 
-        updateModeAutoBtn.addEventListener("click", () => setVersionMode("auto"));
-        updateModeManualBtn.addEventListener("click", () => setVersionMode("manual"));
+        autoUpdateCheck.addEventListener("change", () => {
+          localStorage.setItem(autoUpdateKey, autoUpdateCheck.checked ? "1" : "0");
+          if (autoUpdateCheck.checked) checkLatestVersion({ autoDownload: false });
+          else
+            renderVersionStatus(`本機 ${APP_VERSION} · 自動更新已關，仍可按「檢查更新」`, null);
+        });
         checkUpdateBtn.addEventListener("click", () =>
           checkLatestVersion({ autoDownload: true })
         );
@@ -1670,9 +1665,8 @@
         });
         applyBtn.addEventListener("click", () => flashApplied());
 
-        syncVersionModeUi();
-        if (versionMode === "auto") checkLatestVersion({ autoDownload: false });
-        else renderVersionStatus(`本機 ${APP_VERSION} · 按「檢查更新」跟上版本`, null);
+        if (autoUpdateCheck.checked) checkLatestVersion({ autoDownload: false });
+        else renderVersionStatus(`本機 ${APP_VERSION} · 可按「檢查更新」跟上版本`, null);
 
         const fields = {
           channel: $("channel"),

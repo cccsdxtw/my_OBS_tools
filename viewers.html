@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS Viewer Count</title>
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.85);
+        --size: 22px;
+        --pad-x: 10px;
+        --gap: 8px;
+        --radius: 0;
+        --font: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        font-family: var(--font);
+        color: var(--fg);
+      }
+
+      #bar {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--gap);
+        min-height: calc(var(--size) + 12px);
+        padding: 6px var(--pad-x);
+        background: var(--bg);
+        border-radius: var(--radius);
+        white-space: nowrap;
+        line-height: 1.15;
+      }
+
+      .icon {
+        width: var(--size);
+        height: var(--size);
+        opacity: 0.85;
+        flex: 0 0 auto;
+        display: block;
+      }
+
+      .value {
+        font-size: var(--size);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .error {
+        color: #ff8f8f;
+      }
+
+      /* Streamlabs 整頁嵌入模式 */
+      #sl-frame {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: transparent;
+      }
+
+      body.sl-mode #bar {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar" aria-live="polite">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
+        />
+      </svg>
+      <span class="value" id="viewers">—</span>
+    </div>
+    <iframe id="sl-frame" title="streamlabs viewers" hidden></iframe>
+
+    <script>
+      (() => {
+        const TWITCH_GQL = "https://gql.twitch.tv/gql";
+        const TWITCH_WEB_CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko";
+        const DECAPI_VIEWERS = (login) =>
+          `https://decapi.me/twitch/viewercount/${encodeURIComponent(login)}`;
+        const POLL_MS = 15000;
+
+        const params = new URLSearchParams(location.search);
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        cssVar("--fg", params.get("color"));
+        cssVar("--bg", params.get("bg"));
+        cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
+        cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+
+        const channel = (
+          params.get("login") ||
+          params.get("channel") ||
+          ""
+        ).trim();
+        const source = (params.get("viewersSource") || "auto").toLowerCase();
+        const streamlabsToken = (params.get("streamlabsToken") || "").trim();
+        const viewersEl = document.getElementById("viewers");
+        const slFrame = document.getElementById("sl-frame");
+
+        if (source === "streamlabs" && streamlabsToken) {
+          document.body.classList.add("sl-mode");
+          slFrame.hidden = false;
+          slFrame.src = `https://streamlabs.com/widgets/viewer-count?token=${encodeURIComponent(
+            streamlabsToken
+          )}`;
+          return;
+        }
+
+        if (!channel) {
+          viewersEl.classList.add("error");
+          viewersEl.textContent = "NO CH";
+          return;
+        }
+
+        async function fetchGql() {
+          const res = await fetch(TWITCH_GQL, {
+            method: "POST",
+            headers: {
+              "Client-ID": TWITCH_WEB_CLIENT_ID,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: `query($login:String!){user(login:$login){stream{viewersCount}}}`,
+              variables: { login: channel },
+            }),
+          });
+          if (!res.ok) throw new Error(`gql ${res.status}`);
+          const json = await res.json();
+          const stream = json?.data?.user?.stream;
+          if (!stream) return { live: false, viewers: 0 };
+          return { live: true, viewers: stream.viewersCount ?? 0 };
+        }
+
+        async function fetchDecapi() {
+          const text = (await fetch(DECAPI_VIEWERS(channel)).then((r) => r.text())).trim();
+          if (/offline/i.test(text)) return { live: false, viewers: 0 };
+          const n = parseInt(text, 10);
+          if (Number.isNaN(n)) throw new Error("decapi-parse");
+          return { live: true, viewers: n };
+        }
+
+        async function refresh() {
+          try {
+            let data;
+            if (source === "decapi") data = await fetchDecapi();
+            else {
+              try {
+                data = await fetchGql();
+              } catch (e) {
+                console.warn("GQL failed, fallback DecAPI", e);
+                data = await fetchDecapi();
+              }
+            }
+            viewersEl.classList.remove("error");
+            viewersEl.textContent = data.live ? String(data.viewers) : "0";
+          } catch (err) {
+            console.error(err);
+            viewersEl.classList.add("error");
+            viewersEl.textContent = "ERR";
+          }
+        }
+
+        refresh();
+        setInterval(refresh, POLL_MS);
+      })();
+    </script>
+  </body>
+</html>

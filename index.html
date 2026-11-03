@@ -237,13 +237,16 @@
           <p class="hint">要顯示人數或已開台時間才需要填。</p>
 
           <div class="checks" id="modules">
-            <label><input type="checkbox" data-key="vc" checked /> 觀看人數</label>
+            <label><input type="checkbox" data-key="vc" /> 觀看人數（黏在資訊條）</label>
             <label><input type="checkbox" data-key="st" checked /> 已開台時間</label>
             <label><input type="checkbox" data-key="date" checked /> 日期</label>
             <label><input type="checkbox" data-key="time" checked /> 時間</label>
             <label><input type="checkbox" data-key="showTz" checked /> 國旗</label>
           </div>
-          <p class="hint">以上是「資訊條」overlay。倒計時在下面，會另外產生獨立網址，方便 OBS 分開放。</p>
+          <p class="hint">
+            觀眾人數預設用右邊「③ 人數網址」獨立來源（方便分開放）。
+            若要黏在資訊條上，再勾上面的「觀看人數」。
+          </p>
 
           <div class="row">
             <div>
@@ -261,16 +264,25 @@
             <div>
               <label for="viewersSource">人數來源</label>
               <select id="viewersSource">
-                <option value="auto" selected>auto（GQL，失敗改 DecAPI）</option>
+                <option value="auto" selected>auto（免驗證）</option>
                 <option value="decapi">DecAPI only</option>
+                <option value="streamlabs">Streamlabs widget</option>
               </select>
             </div>
+            <div>
+              <label for="streamlabsToken">Streamlabs token（可選）</label>
+              <input
+                id="streamlabsToken"
+                type="text"
+                placeholder="若選 Streamlabs 再填"
+              />
+            </div>
+          </div>
+          <div class="row">
             <div>
               <label for="dateFormat">日期格式</label>
               <input id="dateFormat" type="text" value="MM/DD ddd" />
             </div>
-          </div>
-          <div class="row">
             <div>
               <label for="timeFormat">時間格式</label>
               <input id="timeFormat" type="text" value="HH:mm:ss" />
@@ -334,11 +346,24 @@
             <iframe id="previewCd" title="countdown preview"></iframe>
           </div>
 
+          <h2 style="margin-top: 22px">③ 觀眾人數網址</h2>
+          <textarea id="vcUrl" readonly></textarea>
+          <p class="hint">建議寬度 120–220、高度 40–60。獨立人數來源，可跟資訊條分開放。</p>
+          <div class="actions">
+            <button type="button" id="copyVc">複製人數網址</button>
+            <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener"
+              >預覽</a
+            >
+          </div>
+          <div class="preview-wrap">
+            <iframe id="previewVc" title="viewers preview"></iframe>
+          </div>
+
           <div class="note">
             <strong>為什麼不用一直驗證？</strong><br />
             舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
             這裡改抓公開實況資料，日常開台不必再跑 OAuth。
-            資訊條與倒計時分開兩個瀏覽器來源，方便你分開放。
+            資訊條／倒計時／人數可分成三個瀏覽器來源，分開放位置。
           </div>
         </aside>
       </div>
@@ -356,6 +381,7 @@
           tz: $("tz"),
           flagCode: $("flagCode"),
           viewersSource: $("viewersSource"),
+          streamlabsToken: $("streamlabsToken"),
           dateFormat: $("dateFormat"),
           timeFormat: $("timeFormat"),
           countdown: $("countdown"),
@@ -411,7 +437,9 @@
           if (mods.showTz && fields.flagCode.value.trim()) {
             p.set("flag", fields.flagCode.value.trim().toLowerCase());
           }
-          if (fields.viewersSource.value) p.set("viewersSource", fields.viewersSource.value);
+          // 資訊條只用免驗證來源；Streamlabs 請走獨立人數頁
+          const vs = fields.viewersSource.value;
+          if (vs && vs !== "streamlabs") p.set("viewersSource", vs);
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
           styleParams(p);
@@ -435,9 +463,28 @@
           return url.toString();
         }
 
+        function buildViewersUrl() {
+          const url = new URL("viewers.html", location.href);
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const vs = fields.viewersSource.value || "auto";
+          const token = fields.streamlabsToken.value.trim();
+
+          if (vs === "streamlabs" && token) {
+            p.set("viewersSource", "streamlabs");
+            p.set("streamlabsToken", token);
+          } else {
+            if (channel) p.set("login", channel);
+            p.set("viewersSource", vs === "streamlabs" ? "auto" : vs);
+          }
+          styleParams(p);
+          return url.toString();
+        }
+
         function buildUrls() {
           const { href, mods } = buildOverlayUrl();
           const cdHref = buildCountdownUrl();
+          const vcHref = buildViewersUrl();
 
           $("url").value = href;
           $("open").href = href;
@@ -446,6 +493,10 @@
           $("cdUrl").value = cdHref;
           $("openCd").href = cdHref;
           $("previewCd").src = cdHref;
+
+          $("vcUrl").value = vcHref;
+          $("openVc").href = vcHref;
+          $("previewVc").src = vcHref;
 
           localStorage.setItem(
             "my_obs_tools_setup",
@@ -456,7 +507,7 @@
               modules: mods,
             })
           );
-          return { href, cdHref };
+          return { href, cdHref, vcHref };
         }
 
         async function copyText(text, btn, resetLabel) {
@@ -479,6 +530,12 @@
           const { cdHref } = buildUrls();
           $("cdUrl").select();
           await copyText(cdHref, $("copyCd"), "複製倒計時網址");
+        });
+
+        $("copyVc").addEventListener("click", async () => {
+          const { vcHref } = buildUrls();
+          $("vcUrl").select();
+          await copyText(vcHref, $("copyVc"), "複製人數網址");
         });
 
         Object.values(fields).forEach((el) => el.addEventListener("input", buildUrls));

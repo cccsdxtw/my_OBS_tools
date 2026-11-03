@@ -936,11 +936,41 @@
           </aside>
         </div>
 
+        <!-- ⑥ 回覆視窗（主播用） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑥ 聊天回覆視窗</h2>
+              <span class="side-title">主播用 · 非 OBS</span>
+            </div>
+            <p class="hint">
+              另開一個瀏覽器視窗看留言並回覆。沿用最上方頻道；Twitch 需貼 chat token，YouTube 回覆需 OAuth access token（API Key 只能讀）。
+              <strong>不要</strong>把這個網址加進 OBS 瀏覽器來源。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑥ 回覆視窗網址</h2>
+              <span class="side-title">用瀏覽器開啟</span>
+            </div>
+            <textarea id="chatReplyUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議用一般視窗／第二螢幕開啟，方便打字回覆。</p>
+            <div class="actions">
+              <button type="button" id="copyChatReply">複製回覆視窗網址</button>
+              <a class="btn secondary" id="openChatReply" href="#" target="_blank" rel="noopener">開啟回覆視窗</a>
+            </div>
+          </aside>
+        </div>
+
         <div class="note">
           <strong>為什麼不用一直驗證？</strong><br />
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
-          這裡改抓公開實況／聊天資料，日常開台不必再跑 OAuth。
-          每一橫列右邊的網址各自加一個 OBS 瀏覽器來源即可。
+          這裡顯示用的覆蓋改抓公開實況／聊天資料，日常開台不必再跑 OAuth。
+          回覆視窗若要發話，才需要各平台的發話權限 token（存在你的瀏覽器本機）。
+          每一橫列右邊的網址各自加一個 OBS 瀏覽器來源即可（回覆視窗除外）。
         </div>
       </div>
 
@@ -1292,6 +1322,22 @@
           return url.toString();
         }
 
+        function buildChatReplyUrl() {
+          const url = new URL("chat-reply.html", location.href);
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = fields.ytChannel.value.trim();
+          const ytVideo = fields.ytVideo.value.trim();
+          const ytKey = fields.ytKey.value.trim();
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          // 回覆視窗一次看兩邊較方便
+          p.set("chatSource", "both");
+          return url.toString();
+        }
+
         function syncChatPanels() {
           const split = fields.chatLayout.value === "split";
           $("chatMergePanel").hidden = split;
@@ -1343,6 +1389,10 @@
           $("openChatYt").href = chatDemoYt;
           $("previewChatYt").src = chatDemoYt;
 
+          const chatReplyHref = buildChatReplyUrl();
+          $("chatReplyUrl").value = chatReplyHref;
+          $("openChatReply").href = chatReplyHref;
+
           localStorage.setItem(
             "my_obs_tools_setup",
             JSON.stringify({
@@ -1357,7 +1407,7 @@
               vcPlatformOrder: getVcPlatformOrder(),
             })
           );
-          return { href, cdHref, vcHref, chatHref, chatHrefTw, chatHrefYt };
+          return { href, cdHref, vcHref, chatHref, chatHrefTw, chatHrefYt, chatReplyHref };
         }
 
         async function copyText(text, btn, resetLabel) {
@@ -1402,6 +1452,11 @@
           const { chatHrefYt } = buildUrls();
           $("chatUrlYt").select();
           await copyText(chatHrefYt, $("copyChatYt"), "複製 YT 網址");
+        });
+        $("copyChatReply").addEventListener("click", async () => {
+          const { chatReplyHref } = buildUrls();
+          $("chatReplyUrl").select();
+          await copyText(chatReplyHref, $("copyChatReply"), "複製回覆視窗網址");
         });
 
         Object.values(fields).forEach((el) => {

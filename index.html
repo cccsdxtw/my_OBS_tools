@@ -78,7 +78,7 @@
 
       main {
         width: min(1180px, calc(100% - 32px));
-        margin: 40px auto 64px;
+        margin: 40px auto 120px;
       }
 
       header h1 {
@@ -481,6 +481,116 @@
         margin-top: 22px;
         color: var(--muted);
         font-size: 0.85rem;
+      }
+
+      .apply-dock {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 40;
+        display: flex;
+        justify-content: center;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+        pointer-events: none;
+        background: linear-gradient(180deg, rgba(16, 22, 18, 0) 0%, rgba(16, 22, 18, 0.55) 100%);
+      }
+
+      html:not([data-theme="dark"]) .apply-dock {
+        background: linear-gradient(180deg, rgba(243, 246, 242, 0) 0%, rgba(243, 246, 242, 0.88) 100%);
+      }
+
+      .apply-dock-inner {
+        pointer-events: auto;
+        width: min(1180px, 100%);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
+        padding: 12px 16px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .apply-dock-left {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 14px;
+        min-width: 0;
+      }
+
+      .apply-mode {
+        display: inline-flex;
+        border: 1px solid var(--line);
+        background: var(--input-bg);
+      }
+
+      .apply-mode button {
+        padding: 8px 12px;
+        font-size: 0.88rem;
+        background: transparent;
+        color: var(--muted);
+        border: 0;
+      }
+
+      .apply-mode button.is-active {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .apply-status {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.35;
+        min-width: 0;
+      }
+
+      .apply-status.is-dirty {
+        color: var(--accent-2);
+        font-weight: 600;
+      }
+
+      .apply-status.is-ok {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      #applyBtn {
+        min-width: 7.5rem;
+        padding: 12px 20px;
+        font-size: 1rem;
+        box-shadow: 0 8px 20px rgba(15, 122, 95, 0.22);
+      }
+
+      #applyBtn.is-dirty {
+        animation: apply-pulse 1.4s ease-in-out infinite;
+      }
+
+      @keyframes apply-pulse {
+        0%,
+        100% {
+          transform: translateY(0);
+          box-shadow: 0 8px 20px rgba(15, 122, 95, 0.22);
+        }
+        50% {
+          transform: translateY(-1px);
+          box-shadow: 0 12px 26px rgba(15, 122, 95, 0.32);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .apply-dock-inner {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        #applyBtn {
+          width: 100%;
+        }
       }
     </style>
   </head>
@@ -1305,12 +1415,36 @@
       </footer>
     </main>
 
+    <div class="apply-dock" role="region" aria-label="套用設定">
+      <div class="apply-dock-inner">
+        <div class="apply-dock-left">
+          <div class="apply-mode" role="group" aria-label="更新方式">
+            <button type="button" id="updateModeAuto" class="is-active" aria-pressed="true">
+              自動更新
+            </button>
+            <button type="button" id="updateModeManual" aria-pressed="false">手動更新</button>
+          </div>
+          <p class="apply-status" id="applyStatus">輸入後會即時更新預覽與網址</p>
+        </div>
+        <button type="button" id="applyBtn">確定</button>
+      </div>
+    </div>
+
     <script>
       (() => {
         const $ = (id) => document.getElementById(id);
 
         const themeKey = "laji_obs_toolbox_theme";
+        const updateModeKey = "my_obs_tools_update_mode";
         const themeToggle = $("themeToggle");
+        const applyBtn = $("applyBtn");
+        const applyStatus = $("applyStatus");
+        const updateModeAutoBtn = $("updateModeAuto");
+        const updateModeManualBtn = $("updateModeManual");
+        let updateMode = localStorage.getItem(updateModeKey) === "manual" ? "manual" : "auto";
+        let isDirty = false;
+        let statusTimer = 0;
+
         function applyTheme(theme) {
           const next = theme === "dark" ? "dark" : "light";
           document.documentElement.setAttribute("data-theme", next);
@@ -1324,6 +1458,83 @@
         themeToggle.addEventListener("click", () => {
           const cur = document.documentElement.getAttribute("data-theme");
           applyTheme(cur === "dark" ? "light" : "dark");
+        });
+
+        function setApplyStatus(text, kind) {
+          applyStatus.textContent = text;
+          applyStatus.classList.toggle("is-dirty", kind === "dirty");
+          applyStatus.classList.toggle("is-ok", kind === "ok");
+        }
+
+        function syncApplyUi() {
+          const isAuto = updateMode === "auto";
+          updateModeAutoBtn.classList.toggle("is-active", isAuto);
+          updateModeManualBtn.classList.toggle("is-active", !isAuto);
+          updateModeAutoBtn.setAttribute("aria-pressed", isAuto ? "true" : "false");
+          updateModeManualBtn.setAttribute("aria-pressed", isAuto ? "false" : "true");
+          applyBtn.classList.toggle("is-dirty", !isAuto && isDirty);
+          applyBtn.textContent = !isAuto && isDirty ? "確定套用" : "確定";
+          if (isAuto) {
+            setApplyStatus("自動更新：輸入後會即時刷新預覽與網址", null);
+          } else if (isDirty) {
+            setApplyStatus("有未套用變更 · 按「確定」才更新預覽與網址", "dirty");
+          } else {
+            setApplyStatus("手動更新：改完後按「確定」套用", null);
+          }
+        }
+
+        function markDirty() {
+          if (updateMode !== "manual") return;
+          isDirty = true;
+          syncApplyUi();
+        }
+
+        function flashApplied() {
+          clearTimeout(statusTimer);
+          setApplyStatus("已更新預覽與網址", "ok");
+          applyBtn.textContent = "已套用";
+          statusTimer = setTimeout(() => {
+            applyBtn.textContent = "確定";
+            syncApplyUi();
+          }, 1200);
+        }
+
+        function requestUpdate(opts) {
+          const force = !!(opts && opts.force);
+          if (!force && updateMode === "manual") {
+            markDirty();
+            return null;
+          }
+          const result = buildUrls();
+          isDirty = false;
+          if (opts && opts.toast) flashApplied();
+          else syncApplyUi();
+          return result;
+        }
+
+        function setUpdateMode(mode) {
+          updateMode = mode === "manual" ? "manual" : "auto";
+          localStorage.setItem(updateModeKey, updateMode);
+          if (updateMode === "auto" && isDirty) {
+            requestUpdate({ force: true, toast: true });
+            return;
+          }
+          syncApplyUi();
+        }
+
+        updateModeAutoBtn.addEventListener("click", () => setUpdateMode("auto"));
+        updateModeManualBtn.addEventListener("click", () => setUpdateMode("manual"));
+        applyBtn.addEventListener("click", () => {
+          requestUpdate({ force: true, toast: true });
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter" || e.isComposing) return;
+          const t = e.target;
+          if (!(t instanceof HTMLInputElement)) return;
+          if (t.type === "checkbox" || t.type === "color" || t.type === "button") return;
+          if (updateMode !== "manual") return;
+          e.preventDefault();
+          requestUpdate({ force: true, toast: true });
         });
 
         const fields = {
@@ -1419,7 +1630,7 @@
               const next = row.nextElementSibling;
               if (next) listEl.insertBefore(next, row);
             }
-            buildUrls();
+            requestUpdate();
           });
         }
 
@@ -1587,7 +1798,7 @@
             syncPickFromText();
             pick.addEventListener("input", () => {
               text.value = pick.value;
-              buildUrls();
+              requestUpdate();
             });
             text.addEventListener("input", syncPickFromText);
           });
@@ -1681,7 +1892,7 @@
               fields.gamePlatform.value = item.platform;
               fields.gameName.value = item.game;
               syncGamePlatformChips();
-              buildUrls();
+              requestUpdate();
             });
             btn.addEventListener("contextmenu", (e) => {
               e.preventDefault();
@@ -1955,26 +2166,26 @@
         }
 
         $("copy").addEventListener("click", async () => {
-          const { href } = buildUrls();
+          const { href } = requestUpdate({ force: true }) || buildUrls();
           $("url").select();
           await copyText(href, $("copy"), "複製資訊條網址");
         });
 
         $("copyCd").addEventListener("click", async () => {
-          const { cdHref } = buildUrls();
+          const { cdHref } = requestUpdate({ force: true }) || buildUrls();
           $("cdUrl").select();
           await copyText(cdHref, $("copyCd"), "複製倒計時網址");
         });
 
         $("copyVc").addEventListener("click", async () => {
-          const { vcHref } = buildUrls();
+          const { vcHref } = requestUpdate({ force: true }) || buildUrls();
           $("vcUrl").select();
           await copyText(vcHref, $("copyVc"), "複製人數網址");
         });
 
         $("copyGame").addEventListener("click", async () => {
           rememberCurrentGame();
-          const { gameHref } = buildUrls();
+          const { gameHref } = requestUpdate({ force: true }) || buildUrls();
           $("gameUrl").select();
           await copyText(gameHref, $("copyGame"), "複製遊戲名稱網址");
         });
@@ -1983,13 +2194,13 @@
           btn.addEventListener("click", () => {
             fields.gamePlatform.value = btn.dataset.platform;
             syncGamePlatformChips();
-            buildUrls();
+            requestUpdate();
           });
         });
 
         $("saveGameHistory").addEventListener("click", () => {
           rememberCurrentGame({ toastBtn: $("saveGameHistory") });
-          buildUrls();
+          requestUpdate();
         });
 
         $("clearGameHistory").addEventListener("click", () => {
@@ -1998,22 +2209,22 @@
         });
 
         $("copyChat").addEventListener("click", async () => {
-          const { chatHref } = buildUrls();
+          const { chatHref } = requestUpdate({ force: true }) || buildUrls();
           $("chatUrl").select();
           await copyText(chatHref, $("copyChat"), "複製聊天室網址");
         });
         $("copyChatTw").addEventListener("click", async () => {
-          const { chatHrefTw } = buildUrls();
+          const { chatHrefTw } = requestUpdate({ force: true }) || buildUrls();
           $("chatUrlTw").select();
           await copyText(chatHrefTw, $("copyChatTw"), "複製 TW 網址");
         });
         $("copyChatYt").addEventListener("click", async () => {
-          const { chatHrefYt } = buildUrls();
+          const { chatHrefYt } = requestUpdate({ force: true }) || buildUrls();
           $("chatUrlYt").select();
           await copyText(chatHrefYt, $("copyChatYt"), "複製 YT 網址");
         });
         $("copyChatReply").addEventListener("click", async () => {
-          const { chatReplyHref } = buildUrls();
+          const { chatReplyHref } = requestUpdate({ force: true }) || buildUrls();
           $("chatReplyUrl").select();
           await copyText(chatReplyHref, $("copyChatReply"), "複製回覆視窗網址");
         });
@@ -2029,11 +2240,11 @@
             ) {
               syncAllBgFields();
             }
-            buildUrls();
+            requestUpdate();
           });
         });
         document.querySelectorAll("#modules input").forEach((el) =>
-          el.addEventListener("change", buildUrls)
+          el.addEventListener("change", () => requestUpdate())
         );
 
         bindColorPickers();
@@ -2041,6 +2252,7 @@
         renderGameHistory();
         syncGamePlatformChips();
         buildUrls();
+        syncApplyUi();
       })();
     </script>
   </body>

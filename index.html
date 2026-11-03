@@ -475,6 +475,18 @@
               填一次即可套用到觀眾人數、資訊條開台時間、聊天室。有填 YouTube 頻道時會自動找 live；要省 quota 可直接填直播影片 ID。
             </p>
 
+            <div class="row">
+              <div>
+                <label for="defaultFontSize">預設字級</label>
+                <input id="defaultFontSize" type="number" min="12" max="64" value="22" />
+              </div>
+              <div>
+                <label for="defaultColor">預設文字色</label>
+                <input id="defaultColor" type="text" value="rgba(255,255,255,0.85)" />
+              </div>
+            </div>
+            <p class="hint">各橫列的字級／文字色沒填時，會用這裡的預設。</p>
+
             <div class="steps" id="yt-key-guide">
               <h3>YT API Key 怎麼申請（一次即可）</h3>
               <ol>
@@ -589,12 +601,12 @@
 
             <div class="row">
               <div>
-                <label for="fontSize">字級（共用）</label>
-                <input id="fontSize" type="number" min="12" max="64" value="22" />
+                <label for="overlayFontSize">字級</label>
+                <input id="overlayFontSize" type="number" min="12" max="64" placeholder="用預設" />
               </div>
               <div>
-                <label for="color">文字色（共用）</label>
-                <input id="color" type="text" value="rgba(255,255,255,0.85)" />
+                <label for="overlayColor">文字色</label>
+                <input id="overlayColor" type="text" placeholder="用預設" />
               </div>
             </div>
             <div class="row">
@@ -606,7 +618,7 @@
                 <input id="overlayBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
-            <p class="hint">這一橫列專用。取消勾選＝透明底；有勾選可自訂顏色（支援 rgba / #hex）。</p>
+            <p class="hint">字級／文字色空白＝用最上方預設。底色取消勾選＝透明。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -685,6 +697,16 @@
             <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。可貼自己的 PNG／SVG／WebP 網址換圖（建議正方形）。</p>
             <div class="row">
               <div>
+                <label for="viewersFontSize">字級</label>
+                <input id="viewersFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="viewersColor">文字色</label>
+                <input id="viewersColor" type="text" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
                 <label><input type="checkbox" id="viewersShowBg" checked /> 顯示底色</label>
               </div>
               <div class="field" style="margin-top: 0">
@@ -692,7 +714,7 @@
                 <input id="viewersBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
-            <p class="hint">這一橫列專用底色，可跟資訊條／倒計時分開設定。</p>
+            <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -742,6 +764,16 @@
             </div>
             <div class="row">
               <div>
+                <label for="countdownFontSize">字級</label>
+                <input id="countdownFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="countdownColor">文字色</label>
+                <input id="countdownColor" type="text" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
                 <label><input type="checkbox" id="countdownShowBg" checked /> 顯示底色</label>
               </div>
               <div class="field" style="margin-top: 0">
@@ -749,7 +781,7 @@
                 <input id="countdownBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
-            <p class="hint">目標時間與「從現在起」擇一。底色僅套用倒計時這條，可自訂顏色。</p>
+            <p class="hint">目標時間與「從現在起」擇一。字級／文字色空白＝用最上方預設。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -824,6 +856,16 @@
             <p class="hint">2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。</p>
             <div class="row">
               <div>
+                <label for="chatFontSize">字級</label>
+                <input id="chatFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="chatColor">文字色</label>
+                <input id="chatColor" type="text" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
                 <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
               </div>
               <div>
@@ -834,6 +876,7 @@
               <label for="chatBg">底色</label>
               <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
             </div>
+            <p class="hint">字級／文字色空白＝用最上方預設。</p>
             <div class="field" style="align-items: flex-start">
               <label for="chatCss">5. 自訂 CSS</label>
               <textarea
@@ -943,12 +986,18 @@
           countdown: $("countdown"),
           cdMins: $("cdMins"),
           cdLabel: $("cdLabel"),
-          fontSize: $("fontSize"),
-          color: $("color"),
+          defaultFontSize: $("defaultFontSize"),
+          defaultColor: $("defaultColor"),
+          overlayFontSize: $("overlayFontSize"),
+          overlayColor: $("overlayColor"),
           overlayShowBg: $("overlayShowBg"),
           overlayBg: $("overlayBg"),
+          viewersFontSize: $("viewersFontSize"),
+          viewersColor: $("viewersColor"),
           viewersShowBg: $("viewersShowBg"),
           viewersBg: $("viewersBg"),
+          countdownFontSize: $("countdownFontSize"),
+          countdownColor: $("countdownColor"),
           countdownShowBg: $("countdownShowBg"),
           countdownBg: $("countdownBg"),
           chatSource: $("chatSource"),
@@ -958,6 +1007,8 @@
           chatTtl: $("chatTtl"),
           chatShowSource: $("chatShowSource"),
           chatHideStatus: $("chatHideStatus"),
+          chatFontSize: $("chatFontSize"),
+          chatColor: $("chatColor"),
           chatShowBg: $("chatShowBg"),
           chatBg: $("chatBg"),
           chatCss: $("chatCss"),
@@ -1036,6 +1087,13 @@
                 rawFields.chatShowBg = rawFields.showBg;
               }
             }
+            // 舊版共用字級／文字色 → 變成最上方預設
+            if (rawFields.fontSize && !rawFields.defaultFontSize) {
+              rawFields.defaultFontSize = rawFields.fontSize;
+            }
+            if (rawFields.color && !rawFields.defaultColor) {
+              rawFields.defaultColor = rawFields.color;
+            }
             Object.entries(rawFields).forEach(([k, v]) => {
               if (!fields[k]) return;
               if (fields[k].type === "checkbox") {
@@ -1065,14 +1123,43 @@
           } catch (_) {}
         }
 
-        function styleParams(p, showBgEl, bgEl) {
-          if (fields.fontSize.value) p.set("fontSize", fields.fontSize.value);
-          if (fields.color.value.trim()) p.set("color", fields.color.value.trim());
+        function resolveStyle(overrideEl, defaultEl) {
+          const ov = (overrideEl.value || "").trim();
+          if (ov) return ov;
+          return (defaultEl.value || "").trim();
+        }
+
+        function styleParams(p, showBgEl, bgEl, fontEl, colorEl) {
+          const fontSize = resolveStyle(fontEl, fields.defaultFontSize);
+          const color = resolveStyle(colorEl, fields.defaultColor);
+          if (fontSize) p.set("fontSize", fontSize);
+          if (color) p.set("color", color);
           if (showBgEl.checked) {
             p.set("bg", bgEl.value.trim() || "rgba(0,0,0,0.45)");
           } else {
             p.set("bg", "0");
           }
+        }
+
+        function syncStylePlaceholders() {
+          const fs = fields.defaultFontSize.value || "22";
+          const col = fields.defaultColor.value.trim() || "rgba(255,255,255,0.85)";
+          [
+            fields.overlayFontSize,
+            fields.viewersFontSize,
+            fields.countdownFontSize,
+            fields.chatFontSize,
+          ].forEach((el) => {
+            el.placeholder = `預設 ${fs}`;
+          });
+          [
+            fields.overlayColor,
+            fields.viewersColor,
+            fields.countdownColor,
+            fields.chatColor,
+          ].forEach((el) => {
+            el.placeholder = `預設 ${col}`;
+          });
         }
 
         function syncBgField(showBgEl, bgEl) {
@@ -1107,7 +1194,13 @@
           }
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
-          styleParams(p, fields.overlayShowBg, fields.overlayBg);
+          styleParams(
+            p,
+            fields.overlayShowBg,
+            fields.overlayBg,
+            fields.overlayFontSize,
+            fields.overlayColor
+          );
           return { href: url.toString(), mods, moduleOrder };
         }
 
@@ -1125,7 +1218,13 @@
             // 預設給 10 分鐘，方便預覽；正式用請改目標時間或分鐘數
             p.set("cdMins", "10");
           }
-          styleParams(p, fields.countdownShowBg, fields.countdownBg);
+          styleParams(
+            p,
+            fields.countdownShowBg,
+            fields.countdownBg,
+            fields.countdownFontSize,
+            fields.countdownColor
+          );
           return url.toString();
         }
 
@@ -1146,7 +1245,13 @@
           if (vcPlatformOrder.length) p.set("vcOrder", vcPlatformOrder.join(","));
           if (fields.twIcon.value.trim()) p.set("twIcon", fields.twIcon.value.trim());
           if (fields.ytIcon.value.trim()) p.set("ytIcon", fields.ytIcon.value.trim());
-          styleParams(p, fields.viewersShowBg, fields.viewersBg);
+          styleParams(
+            p,
+            fields.viewersShowBg,
+            fields.viewersBg,
+            fields.viewersFontSize,
+            fields.viewersColor
+          );
           return url.toString();
         }
 
@@ -1177,7 +1282,13 @@
           const css = fields.chatCss.value.trim();
           if (css) p.set("css", css);
           if (opts.demo) p.set("demo", "1");
-          styleParams(p, fields.chatShowBg, fields.chatBg);
+          styleParams(
+            p,
+            fields.chatShowBg,
+            fields.chatBg,
+            fields.chatFontSize,
+            fields.chatColor
+          );
           return url.toString();
         }
 
@@ -1189,6 +1300,7 @@
         }
 
         function buildUrls() {
+          syncStylePlaceholders();
           const { href, mods, moduleOrder } = buildOverlayUrl();
           const cdHref = buildCountdownUrl();
           const vcHref = buildViewersUrl();

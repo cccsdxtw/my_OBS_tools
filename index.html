@@ -276,9 +276,13 @@
         grid-template-columns: 1fr auto;
         align-items: center;
         gap: 8px;
-        padding: 6px 8px;
+        padding: 8px 10px;
         border: 1px solid var(--line);
         background: var(--input-bg);
+      }
+
+      .checks .mod-row > input[type="text"] {
+        width: 100%;
       }
 
       .checks .mod-row label {
@@ -633,36 +637,52 @@
             </div>
             <p class="hint">使用最上方的 Twitch／YouTube 帳號。</p>
 
-            <div class="row">
-              <div>
-                <label for="vcMode">顯示方式</label>
-                <select id="vcMode">
-                  <option value="split" selected>分開：圖示＋人數</option>
-                  <option value="total">加總</option>
-                </select>
-              </div>
-              <div>
-                <label for="vcOrder">平台左右</label>
-                <select id="vcOrder">
-                  <option value="tw,yt" selected>TW → YT</option>
-                  <option value="yt,tw">YT → TW</option>
-                </select>
-              </div>
+            <div class="field">
+              <label for="vcMode">顯示方式</label>
+              <select id="vcMode">
+                <option value="split" selected>分開：圖示＋人數</option>
+                <option value="total">加總</option>
+              </select>
             </div>
 
-            <div class="row">
-              <div>
-                <label for="twIcon">Twitch 圖示網址</label>
-                <input id="twIcon" type="text" placeholder="空白＝預設 Twitch 圖示" />
+            <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              平台左右順序
+            </p>
+            <div class="checks" id="vcPlatforms">
+              <div class="mod-row" data-key="tw">
+                <label>
+                  Twitch
+                  <span style="font-weight: 500; color: var(--muted); margin-left: 6px">圖示網址</span>
+                </label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <input
+                  id="twIcon"
+                  type="text"
+                  placeholder="空白＝預設 Twitch 圖示"
+                  style="grid-column: 1 / -1; margin-top: 4px"
+                />
               </div>
-              <div>
-                <label for="ytIcon">YouTube 圖示網址</label>
-                <input id="ytIcon" type="text" placeholder="空白＝預設 YouTube 圖示" />
+              <div class="mod-row" data-key="yt">
+                <label>
+                  YouTube
+                  <span style="font-weight: 500; color: var(--muted); margin-left: 6px">圖示網址</span>
+                </label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <input
+                  id="ytIcon"
+                  type="text"
+                  placeholder="空白＝預設 YouTube 圖示"
+                  style="grid-column: 1 / -1; margin-top: 4px"
+                />
               </div>
             </div>
-            <p class="hint">
-              預設已用平台圖示取代 TW／YT 文字。可貼自己的 PNG／SVG／WebP 網址來換圖（建議正方形）。
-            </p>
+            <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。可貼自己的 PNG／SVG／WebP 網址換圖（建議正方形）。</p>
             <div class="row">
               <div>
                 <label><input type="checkbox" id="viewersShowBg" checked /> 顯示底色</label>
@@ -910,7 +930,6 @@
         const fields = {
           channel: $("channel"),
           vcMode: $("vcMode"),
-          vcOrder: $("vcOrder"),
           ytChannel: $("ytChannel"),
           ytVideo: $("ytVideo"),
           ytKey: $("ytKey"),
@@ -944,39 +963,50 @@
           chatCss: $("chatCss"),
         };
 
-        const modulesEl = $("modules");
-        function getModuleOrder() {
-          return Array.from(modulesEl.querySelectorAll(".mod-row")).map((row) => row.dataset.key);
+        // 所有左右排序：↑↓（列表上＝左邊）
+        function getOrderFromList(listEl) {
+          return Array.from(listEl.querySelectorAll(".mod-row")).map((row) => row.dataset.key);
         }
-        function applyModuleOrder(order) {
+        function applyOrderToList(listEl, order) {
           const map = Object.fromEntries(
-            Array.from(modulesEl.querySelectorAll(".mod-row")).map((row) => [row.dataset.key, row])
+            Array.from(listEl.querySelectorAll(".mod-row")).map((row) => [row.dataset.key, row])
           );
           const seen = new Set();
-          order.forEach((key) => {
+          (order || []).forEach((key) => {
             if (map[key] && !seen.has(key)) {
-              modulesEl.appendChild(map[key]);
+              listEl.appendChild(map[key]);
               seen.add(key);
             }
           });
           Object.keys(map).forEach((key) => {
-            if (!seen.has(key)) modulesEl.appendChild(map[key]);
+            if (!seen.has(key)) listEl.appendChild(map[key]);
           });
         }
-        modulesEl.addEventListener("click", (ev) => {
-          const btn = ev.target.closest("button[data-dir]");
-          if (!btn) return;
-          const row = btn.closest(".mod-row");
-          if (!row) return;
-          if (btn.dataset.dir === "up") {
-            const prev = row.previousElementSibling;
-            if (prev) modulesEl.insertBefore(row, prev);
-          } else {
-            const next = row.nextElementSibling;
-            if (next) modulesEl.insertBefore(next, row);
-          }
-          buildUrls();
-        });
+        function bindOrderList(listEl) {
+          listEl.addEventListener("click", (ev) => {
+            const btn = ev.target.closest("button[data-dir]");
+            if (!btn) return;
+            const row = btn.closest(".mod-row");
+            if (!row || !listEl.contains(row)) return;
+            if (btn.dataset.dir === "up") {
+              const prev = row.previousElementSibling;
+              if (prev) listEl.insertBefore(row, prev);
+            } else {
+              const next = row.nextElementSibling;
+              if (next) listEl.insertBefore(next, row);
+            }
+            buildUrls();
+          });
+        }
+
+        const modulesEl = $("modules");
+        const vcPlatformsEl = $("vcPlatforms");
+        const getModuleOrder = () => getOrderFromList(modulesEl);
+        const applyModuleOrder = (order) => applyOrderToList(modulesEl, order);
+        const getVcPlatformOrder = () => getOrderFromList(vcPlatformsEl);
+        const applyVcPlatformOrder = (order) => applyOrderToList(vcPlatformsEl, order);
+        bindOrderList(modulesEl);
+        bindOrderList(vcPlatformsEl);
 
         try {
           const guessed = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1021,6 +1051,16 @@
             });
             if (Array.isArray(data.moduleOrder) && data.moduleOrder.length) {
               applyModuleOrder(data.moduleOrder);
+            }
+            let vcOrder = data.vcPlatformOrder;
+            if ((!vcOrder || !vcOrder.length) && rawFields.vcOrder) {
+              vcOrder = String(rawFields.vcOrder)
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+            }
+            if (Array.isArray(vcOrder) && vcOrder.length) {
+              applyVcPlatformOrder(vcOrder);
             }
           } catch (_) {}
         }
@@ -1102,7 +1142,8 @@
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
-          if (fields.vcOrder.value) p.set("vcOrder", fields.vcOrder.value);
+          const vcPlatformOrder = getVcPlatformOrder();
+          if (vcPlatformOrder.length) p.set("vcOrder", vcPlatformOrder.join(","));
           if (fields.twIcon.value.trim()) p.set("twIcon", fields.twIcon.value.trim());
           if (fields.ytIcon.value.trim()) p.set("ytIcon", fields.ytIcon.value.trim());
           styleParams(p, fields.viewersShowBg, fields.viewersBg);
@@ -1201,6 +1242,7 @@
               ),
               modules: mods,
               moduleOrder,
+              vcPlatformOrder: getVcPlatformOrder(),
             })
           );
           return { href, cdHref, vcHref, chatHref, chatHrefTw, chatHrefYt };

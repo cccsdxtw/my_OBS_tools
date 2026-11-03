@@ -39,7 +39,7 @@
         background: var(--bg);
         border-radius: var(--radius);
         white-space: nowrap;
-        line-height: 1.15;
+        line-height: 1;
       }
 
       .plat {
@@ -52,9 +52,18 @@
         display: none !important;
       }
 
+      .tag,
+      .value {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: var(--size);
+        line-height: 1;
+      }
+
       .tag {
         color: var(--muted);
-        font-size: 0.72em;
+        font-size: calc(var(--size) * 0.72);
         letter-spacing: 0.04em;
         font-weight: 700;
       }

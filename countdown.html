@@ -39,7 +39,7 @@
         background: var(--bg);
         border-radius: var(--radius);
         white-space: nowrap;
-        line-height: 1.15;
+        line-height: 1;
         overflow: visible;
       }
 
@@ -51,11 +51,20 @@
         display: block;
       }
 
+      .label,
+      .value {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: var(--size);
+        line-height: 1;
+      }
+
       .label {
         color: var(--muted);
-        font-size: 0.72em;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+        font-size: calc(var(--size) * 0.78);
+        font-weight: 600;
+        letter-spacing: 0.02em;
       }
 
       .value {

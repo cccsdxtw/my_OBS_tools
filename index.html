@@ -115,7 +115,7 @@
 
       .card-head {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
         gap: 12px;
         margin-bottom: 14px;
@@ -129,6 +129,7 @@
         color: var(--muted);
         font-size: 0.85rem;
         font-weight: 600;
+        line-height: 1;
       }
 
       label {
@@ -136,6 +137,7 @@
         margin: 12px 0 6px;
         font-size: 0.92rem;
         font-weight: 600;
+        line-height: 1.2;
       }
 
       input[type="text"],
@@ -148,12 +150,59 @@
         background: #fbfcfb;
         font: inherit;
         color: var(--ink);
+        line-height: 1.2;
+      }
+
+      .field {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .field > label {
+        margin: 0;
+        flex: 0 0 auto;
+        min-width: 7.5rem;
+        line-height: 1.2;
+      }
+
+      .field > input,
+      .field > select {
+        flex: 1;
+        min-width: 0;
       }
 
       .row {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+        margin-top: 12px;
+      }
+
+      .row > div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .row > div > label {
+        margin: 0;
+        flex: 0 0 auto;
+        max-width: 46%;
+        line-height: 1.2;
+      }
+
+      .row > div > input,
+      .row > div > select {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .row + .hint,
+      .field + .hint {
+        margin-top: 6px;
       }
 
       .checks {
@@ -347,8 +396,10 @@
                 <input id="color" type="text" value="rgba(255,255,255,0.85)" />
               </div>
             </div>
-            <label for="bg">背景色（共用）</label>
-            <input id="bg" type="text" value="rgba(0,0,0,0.45)" />
+            <div class="field">
+              <label for="bg">背景色（共用）</label>
+              <input id="bg" type="text" value="rgba(0,0,0,0.45)" />
+            </div>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -401,8 +452,10 @@
                 <input id="ytVideo" type="text" placeholder="可留空，自動找 live" />
               </div>
             </div>
-            <label for="ytKey">YouTube API Key</label>
-            <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
+            <div class="field">
+              <label for="ytKey">YouTube API Key</label>
+              <input id="ytKey" type="text" placeholder="貼上 AIza… 金鑰" />
+            </div>
 
             <div class="steps" id="yt-key-guide">
               <h3>YT API Key 怎麼申請（一次即可）</h3>
@@ -472,8 +525,10 @@
               <span class="side-title">獨立來源</span>
             </div>
 
-            <label for="countdown">目標時間（本地）</label>
-            <input id="countdown" type="datetime-local" step="1" />
+            <div class="field">
+              <label for="countdown">目標時間（本地）</label>
+              <input id="countdown" type="datetime-local" step="1" />
+            </div>
             <div class="row">
               <div>
                 <label for="cdMins">或：從現在起（分鐘）</label>

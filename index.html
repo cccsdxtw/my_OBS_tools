@@ -549,7 +549,12 @@
         min-width: 0;
       }
 
-      .apply-status.is-dirty {
+      .apply-status a {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .apply-status.is-warn {
         color: var(--accent-2);
         font-weight: 600;
       }
@@ -559,27 +564,22 @@
         font-weight: 600;
       }
 
+      .apply-dock-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      #checkUpdateBtn,
       #applyBtn {
         min-width: 7.5rem;
         padding: 12px 20px;
         font-size: 1rem;
+      }
+
+      #applyBtn {
         box-shadow: 0 8px 20px rgba(15, 122, 95, 0.22);
-      }
-
-      #applyBtn.is-dirty {
-        animation: apply-pulse 1.4s ease-in-out infinite;
-      }
-
-      @keyframes apply-pulse {
-        0%,
-        100% {
-          transform: translateY(0);
-          box-shadow: 0 8px 20px rgba(15, 122, 95, 0.22);
-        }
-        50% {
-          transform: translateY(-1px);
-          box-shadow: 0 12px 26px rgba(15, 122, 95, 0.32);
-        }
       }
 
       @media (max-width: 640px) {
@@ -588,8 +588,13 @@
           align-items: stretch;
         }
 
-        #applyBtn {
+        .apply-dock-actions {
           width: 100%;
+        }
+
+        #checkUpdateBtn,
+        #applyBtn {
+          flex: 1;
         }
       }
     </style>
@@ -1415,18 +1420,21 @@
       </footer>
     </main>
 
-    <div class="apply-dock" role="region" aria-label="套用設定">
+    <div class="apply-dock" role="region" aria-label="確定與版本更新">
       <div class="apply-dock-inner">
         <div class="apply-dock-left">
-          <div class="apply-mode" role="group" aria-label="更新方式">
+          <div class="apply-mode" role="group" aria-label="版本更新方式">
             <button type="button" id="updateModeAuto" class="is-active" aria-pressed="true">
               自動更新
             </button>
             <button type="button" id="updateModeManual" aria-pressed="false">手動更新</button>
           </div>
-          <p class="apply-status" id="applyStatus">輸入後會即時更新預覽與網址</p>
+          <p class="apply-status" id="versionStatus">本機 v0.1.38</p>
         </div>
-        <button type="button" id="applyBtn">確定</button>
+        <div class="apply-dock-actions">
+          <button type="button" class="secondary" id="checkUpdateBtn" hidden>檢查更新</button>
+          <button type="button" id="applyBtn">確定</button>
+        </div>
       </div>
     </div>
 
@@ -1434,16 +1442,22 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
+        const APP_VERSION = "v0.1.38";
+        const RELEASES_API =
+          "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
+        const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
         const themeKey = "laji_obs_toolbox_theme";
-        const updateModeKey = "my_obs_tools_update_mode";
+        const versionModeKey = "my_obs_tools_version_update_mode";
         const themeToggle = $("themeToggle");
         const applyBtn = $("applyBtn");
-        const applyStatus = $("applyStatus");
+        const checkUpdateBtn = $("checkUpdateBtn");
+        const versionStatus = $("versionStatus");
         const updateModeAutoBtn = $("updateModeAuto");
         const updateModeManualBtn = $("updateModeManual");
-        let updateMode = localStorage.getItem(updateModeKey) === "manual" ? "manual" : "auto";
-        let isDirty = false;
-        let statusTimer = 0;
+        let versionMode = localStorage.getItem(versionModeKey) === "manual" ? "manual" : "auto";
+        let applyTimer = 0;
+        let versionMsg = `本機 ${APP_VERSION}`;
+        let versionKind = null;
 
         function applyTheme(theme) {
           const next = theme === "dark" ? "dark" : "light";
@@ -1460,82 +1474,104 @@
           applyTheme(cur === "dark" ? "light" : "dark");
         });
 
-        function setApplyStatus(text, kind) {
-          applyStatus.textContent = text;
-          applyStatus.classList.toggle("is-dirty", kind === "dirty");
-          applyStatus.classList.toggle("is-ok", kind === "ok");
+        function renderVersionStatus(text, kind) {
+          versionMsg = text;
+          versionKind = kind || null;
+          versionStatus.classList.toggle("is-warn", versionKind === "warn");
+          versionStatus.classList.toggle("is-ok", versionKind === "ok");
+          versionStatus.innerHTML = "";
+          versionStatus.appendChild(document.createTextNode(text));
         }
 
-        function syncApplyUi() {
-          const isAuto = updateMode === "auto";
+        function syncVersionModeUi() {
+          const isAuto = versionMode === "auto";
           updateModeAutoBtn.classList.toggle("is-active", isAuto);
           updateModeManualBtn.classList.toggle("is-active", !isAuto);
           updateModeAutoBtn.setAttribute("aria-pressed", isAuto ? "true" : "false");
           updateModeManualBtn.setAttribute("aria-pressed", isAuto ? "false" : "true");
-          applyBtn.classList.toggle("is-dirty", !isAuto && isDirty);
-          applyBtn.textContent = !isAuto && isDirty ? "確定套用" : "確定";
-          if (isAuto) {
-            setApplyStatus("自動更新：輸入後會即時刷新預覽與網址", null);
-          } else if (isDirty) {
-            setApplyStatus("有未套用變更 · 按「確定」才更新預覽與網址", "dirty");
-          } else {
-            setApplyStatus("手動更新：改完後按「確定」套用", null);
+          checkUpdateBtn.hidden = isAuto;
+        }
+
+        function parseVer(tag) {
+          const m = String(tag || "")
+            .trim()
+            .replace(/^v/i, "")
+            .match(/^(\d+)\.(\d+)\.(\d+)/);
+          if (!m) return null;
+          return [Number(m[1]), Number(m[2]), Number(m[3])];
+        }
+
+        function cmpVer(a, b) {
+          for (let i = 0; i < 3; i++) {
+            if (a[i] !== b[i]) return a[i] - b[i];
+          }
+          return 0;
+        }
+
+        async function checkLatestVersion() {
+          renderVersionStatus(`本機 ${APP_VERSION} · 檢查中…`, null);
+          try {
+            const res = await fetch(RELEASES_API, {
+              headers: { Accept: "application/vnd.github+json" },
+            });
+            if (!res.ok) throw new Error("release api " + res.status);
+            const data = await res.json();
+            const latestTag = String(data.tag_name || "").trim();
+            const local = parseVer(APP_VERSION);
+            const remote = parseVer(latestTag);
+            if (!local || !remote || !latestTag) {
+              renderVersionStatus(`本機 ${APP_VERSION} · 無法比對版號`, "warn");
+              return;
+            }
+            const diff = cmpVer(remote, local);
+            if (diff > 0) {
+              versionStatus.classList.toggle("is-warn", true);
+              versionStatus.classList.toggle("is-ok", false);
+              versionKind = "warn";
+              versionMsg = `有新版本 ${latestTag}（本機 ${APP_VERSION}）`;
+              versionStatus.innerHTML = "";
+              versionStatus.appendChild(
+                document.createTextNode(`有新版本 ${latestTag}（本機 ${APP_VERSION}） · `)
+              );
+              const a = document.createElement("a");
+              a.href = data.html_url || RELEASES_PAGE;
+              a.target = "_blank";
+              a.rel = "noopener";
+              a.textContent = "下載更新";
+              versionStatus.appendChild(a);
+            } else {
+              renderVersionStatus(`已跟上最新 ${APP_VERSION}`, "ok");
+            }
+          } catch (_) {
+            renderVersionStatus(`本機 ${APP_VERSION} · 檢查失敗（可稍後再試）`, "warn");
           }
         }
 
-        function markDirty() {
-          if (updateMode !== "manual") return;
-          isDirty = true;
-          syncApplyUi();
+        function setVersionMode(mode) {
+          versionMode = mode === "manual" ? "manual" : "auto";
+          localStorage.setItem(versionModeKey, versionMode);
+          syncVersionModeUi();
+          if (versionMode === "auto") checkLatestVersion();
+          else renderVersionStatus(`本機 ${APP_VERSION} · 按「檢查更新」跟上版本`, null);
         }
 
         function flashApplied() {
-          clearTimeout(statusTimer);
-          setApplyStatus("已更新預覽與網址", "ok");
+          clearTimeout(applyTimer);
+          buildUrls();
           applyBtn.textContent = "已套用";
-          statusTimer = setTimeout(() => {
+          applyTimer = setTimeout(() => {
             applyBtn.textContent = "確定";
-            syncApplyUi();
           }, 1200);
         }
 
-        function requestUpdate(opts) {
-          const force = !!(opts && opts.force);
-          if (!force && updateMode === "manual") {
-            markDirty();
-            return null;
-          }
-          const result = buildUrls();
-          isDirty = false;
-          if (opts && opts.toast) flashApplied();
-          else syncApplyUi();
-          return result;
-        }
+        updateModeAutoBtn.addEventListener("click", () => setVersionMode("auto"));
+        updateModeManualBtn.addEventListener("click", () => setVersionMode("manual"));
+        checkUpdateBtn.addEventListener("click", () => checkLatestVersion());
+        applyBtn.addEventListener("click", () => flashApplied());
 
-        function setUpdateMode(mode) {
-          updateMode = mode === "manual" ? "manual" : "auto";
-          localStorage.setItem(updateModeKey, updateMode);
-          if (updateMode === "auto" && isDirty) {
-            requestUpdate({ force: true, toast: true });
-            return;
-          }
-          syncApplyUi();
-        }
-
-        updateModeAutoBtn.addEventListener("click", () => setUpdateMode("auto"));
-        updateModeManualBtn.addEventListener("click", () => setUpdateMode("manual"));
-        applyBtn.addEventListener("click", () => {
-          requestUpdate({ force: true, toast: true });
-        });
-        document.addEventListener("keydown", (e) => {
-          if (e.key !== "Enter" || e.isComposing) return;
-          const t = e.target;
-          if (!(t instanceof HTMLInputElement)) return;
-          if (t.type === "checkbox" || t.type === "color" || t.type === "button") return;
-          if (updateMode !== "manual") return;
-          e.preventDefault();
-          requestUpdate({ force: true, toast: true });
-        });
+        syncVersionModeUi();
+        if (versionMode === "auto") checkLatestVersion();
+        else renderVersionStatus(`本機 ${APP_VERSION} · 按「檢查更新」跟上版本`, null);
 
         const fields = {
           channel: $("channel"),
@@ -1630,7 +1666,7 @@
               const next = row.nextElementSibling;
               if (next) listEl.insertBefore(next, row);
             }
-            requestUpdate();
+            buildUrls();
           });
         }
 
@@ -1798,7 +1834,7 @@
             syncPickFromText();
             pick.addEventListener("input", () => {
               text.value = pick.value;
-              requestUpdate();
+              buildUrls();
             });
             text.addEventListener("input", syncPickFromText);
           });
@@ -1892,7 +1928,7 @@
               fields.gamePlatform.value = item.platform;
               fields.gameName.value = item.game;
               syncGamePlatformChips();
-              requestUpdate();
+              buildUrls();
             });
             btn.addEventListener("contextmenu", (e) => {
               e.preventDefault();
@@ -2166,26 +2202,26 @@
         }
 
         $("copy").addEventListener("click", async () => {
-          const { href } = requestUpdate({ force: true }) || buildUrls();
+          const { href } = buildUrls();
           $("url").select();
           await copyText(href, $("copy"), "複製資訊條網址");
         });
 
         $("copyCd").addEventListener("click", async () => {
-          const { cdHref } = requestUpdate({ force: true }) || buildUrls();
+          const { cdHref } = buildUrls();
           $("cdUrl").select();
           await copyText(cdHref, $("copyCd"), "複製倒計時網址");
         });
 
         $("copyVc").addEventListener("click", async () => {
-          const { vcHref } = requestUpdate({ force: true }) || buildUrls();
+          const { vcHref } = buildUrls();
           $("vcUrl").select();
           await copyText(vcHref, $("copyVc"), "複製人數網址");
         });
 
         $("copyGame").addEventListener("click", async () => {
           rememberCurrentGame();
-          const { gameHref } = requestUpdate({ force: true }) || buildUrls();
+          const { gameHref } = buildUrls();
           $("gameUrl").select();
           await copyText(gameHref, $("copyGame"), "複製遊戲名稱網址");
         });
@@ -2194,13 +2230,13 @@
           btn.addEventListener("click", () => {
             fields.gamePlatform.value = btn.dataset.platform;
             syncGamePlatformChips();
-            requestUpdate();
+            buildUrls();
           });
         });
 
         $("saveGameHistory").addEventListener("click", () => {
           rememberCurrentGame({ toastBtn: $("saveGameHistory") });
-          requestUpdate();
+          buildUrls();
         });
 
         $("clearGameHistory").addEventListener("click", () => {
@@ -2209,22 +2245,22 @@
         });
 
         $("copyChat").addEventListener("click", async () => {
-          const { chatHref } = requestUpdate({ force: true }) || buildUrls();
+          const { chatHref } = buildUrls();
           $("chatUrl").select();
           await copyText(chatHref, $("copyChat"), "複製聊天室網址");
         });
         $("copyChatTw").addEventListener("click", async () => {
-          const { chatHrefTw } = requestUpdate({ force: true }) || buildUrls();
+          const { chatHrefTw } = buildUrls();
           $("chatUrlTw").select();
           await copyText(chatHrefTw, $("copyChatTw"), "複製 TW 網址");
         });
         $("copyChatYt").addEventListener("click", async () => {
-          const { chatHrefYt } = requestUpdate({ force: true }) || buildUrls();
+          const { chatHrefYt } = buildUrls();
           $("chatUrlYt").select();
           await copyText(chatHrefYt, $("copyChatYt"), "複製 YT 網址");
         });
         $("copyChatReply").addEventListener("click", async () => {
-          const { chatReplyHref } = requestUpdate({ force: true }) || buildUrls();
+          const { chatReplyHref } = buildUrls();
           $("chatReplyUrl").select();
           await copyText(chatReplyHref, $("copyChatReply"), "複製回覆視窗網址");
         });
@@ -2240,11 +2276,11 @@
             ) {
               syncAllBgFields();
             }
-            requestUpdate();
+            buildUrls();
           });
         });
         document.querySelectorAll("#modules input").forEach((el) =>
-          el.addEventListener("change", () => requestUpdate())
+          el.addEventListener("change", buildUrls)
         );
 
         bindColorPickers();
@@ -2252,7 +2288,6 @@
         renderGameHistory();
         syncGamePlatformChips();
         buildUrls();
-        syncApplyUi();
       })();
     </script>
   </body>

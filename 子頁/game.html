@@ -209,21 +209,43 @@
           slot.appendChild(svg);
         }
 
+        function iconLooksEmpty(el) {
+          try {
+            const r = el.getBoundingClientRect();
+            return !r.width || r.width < 2 || !r.height || r.height < 2;
+          } catch (_) {
+            return true;
+          }
+        }
+
         async function mountMaterialIcon(slot, rawName) {
           const name = normalizeMsName(rawName) || "sports_esports";
+          // 預設手把：直接 SVG，避免 file://／OBS／精簡字型缺 glyph 時空白
+          if (name === "sports_esports") {
+            mountDefaultSvgIcon(slot);
+            return;
+          }
           slot.innerHTML = "";
           const span = document.createElement("span");
           span.className = "material-symbols-outlined icon";
           span.setAttribute("aria-hidden", "true");
           span.textContent = name;
           slot.appendChild(span);
-          // Google Fonts 優先 → 快取 → 內建 fonts/；都失敗才 SVG
+          // Google Fonts 優先 → 快取 → 內建 fonts/；量不到寬度就當失敗
+          let source = "local";
           if (ms && ms.ensureMaterialSymbols) {
-            await ms.ensureMaterialSymbols([name]);
+            source = await ms.ensureMaterialSymbols([name]);
           }
-          if (document.fonts && document.fonts.check) {
-            const ok = document.fonts.check(`24px "Material Symbols Outlined"`);
-            if (!ok && name === "sports_esports") mountDefaultSvgIcon(slot);
+          if (document.fonts && document.fonts.load) {
+            try {
+              await document.fonts.load(`500 24px "Material Symbols Outlined"`);
+            } catch (_) {}
+          }
+          // 等一幀再量，給 ligature 字形時間
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          if (iconLooksEmpty(span) || source === "local") {
+            // 本機精簡字型通常沒有完整圖示；量不到就退回手把 SVG
+            mountDefaultSvgIcon(slot);
           }
         }
 

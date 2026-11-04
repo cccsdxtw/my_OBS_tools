@@ -498,6 +498,165 @@
         font-size: 0.85rem;
       }
 
+      .credits {
+        margin-top: 28px;
+        padding: 18px 18px 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .credits-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .credits-head h2 {
+        margin: 0 0 4px;
+        font-size: 1.05rem;
+      }
+
+      .credits-head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      .credits-toggle {
+        flex: 0 0 auto;
+        padding: 6px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .credits-toggle:hover {
+        color: var(--ink);
+        border-color: var(--accent);
+      }
+
+      .credits.is-collapsed .credits-body {
+        display: none;
+      }
+
+      .credit-list {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .credit-card {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--input-bg);
+      }
+
+      .credit-card img {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: var(--steps-bg);
+        flex: 0 0 auto;
+      }
+
+      .credit-card .meta {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .credit-card .name {
+        margin: 0 0 2px;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .credit-card .role {
+        font-weight: 500;
+        color: var(--muted);
+        font-size: 0.92em;
+      }
+
+      .credit-card .desc {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
+      .credit-card .links {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .credit-card a,
+      .sponsor a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .credit-card a:hover,
+      .sponsor a:hover {
+        color: var(--accent-2);
+        text-decoration: underline;
+      }
+
+      .sponsor {
+        margin-top: 12px;
+        padding: 14px 14px 12px;
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        background: var(--steps-bg);
+      }
+
+      .sponsor h3 {
+        margin: 0 0 4px;
+        font-size: 0.95rem;
+      }
+
+      .sponsor p {
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
+      .sponsor .kofi-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: #ff5e5b;
+        color: #fff !important;
+        text-decoration: none !important;
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      .sponsor .kofi-btn:hover {
+        filter: brightness(1.05);
+      }
+
       .apply-dock {
         position: fixed;
         left: 0;
@@ -1493,8 +1652,73 @@
         </div>
       </div>
 
+      <section class="credits" id="credits" aria-label="製作名單與贊助">
+        <div class="credits-head">
+          <div>
+            <h2>製作名單 / 感恩專區</h2>
+            <p>謝謝一起把拉基的 OBS 工具箱做出來的人。</p>
+          </div>
+          <button type="button" class="credits-toggle" id="creditsToggle" aria-expanded="true">
+            收合
+          </button>
+        </div>
+        <div class="credits-body" id="creditsBody">
+          <ul class="credit-list">
+            <li class="credit-card">
+              <img
+                src="https://avatars.githubusercontent.com/u/29847865?v=4"
+                alt="拉基蛋"
+                width="48"
+                height="48"
+                loading="lazy"
+              />
+              <div class="meta">
+                <p class="name">拉基蛋 <span class="role">作者本人</span></p>
+                <p class="desc">說人話的工程師<br />卡在橘子裡的蛋</p>
+                <div class="links">
+                  <a href="https://www.twitch.tv/garbage_egg" target="_blank" rel="noopener"
+                    >Twitch</a
+                  >
+                </div>
+              </div>
+            </li>
+            <li class="credit-card">
+              <img
+                src="https://cursor.com/apple-touch-icon.png"
+                alt="Cursor"
+                width="48"
+                height="48"
+                loading="lazy"
+              />
+              <div class="meta">
+                <p class="name">Cursor <span class="role">協作者</span></p>
+                <p class="desc">好用的 AI</p>
+                <div class="links">
+                  <a href="https://cursor.com" target="_blank" rel="noopener">官網</a>
+                </div>
+              </div>
+            </li>
+          </ul>
+          <div class="sponsor">
+            <h3>贊助</h3>
+            <p>喜歡這套工具的話，歡迎請作者喝杯咖啡。</p>
+            <a
+              class="kofi-btn"
+              href="https://ko-fi.com/cccsdxtw"
+              target="_blank"
+              rel="noopener"
+              >Ko-fi · 贊助</a
+            >
+          </div>
+        </div>
+      </section>
+
       <footer>
-        拉基的OBS工具箱 · Repo：cccsdxtw/my_OBS_tools · Overlay 為透明背景，適合 OBS 瀏覽器來源。
+        拉基的OBS工具箱 · Repo：
+        <a href="https://github.com/cccsdxtw/my_OBS_tools" target="_blank" rel="noopener"
+          >cccsdxtw/my_OBS_tools</a
+        >
+        · Overlay 為透明背景，適合 OBS 瀏覽器來源。
       </footer>
     </main>
 

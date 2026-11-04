@@ -632,41 +632,170 @@
           return s;
         }
 
+        async function ytFetchJson(url, label) {
+          let res;
+          try {
+            res = await fetch(url);
+          } catch (e) {
+            throw new Error(`${label} network (${e && e.message ? e.message : "fetch"})`);
+          }
+          let json = null;
+          try {
+            json = await res.json();
+          } catch (_) {}
+          if (!res.ok) {
+            const reason =
+              json?.error?.errors?.[0]?.reason ||
+              json?.error?.message ||
+              res.statusText ||
+              "";
+            throw new Error(
+              `${label} ${res.status}${reason ? " " + String(reason).slice(0, 80) : ""}`
+            );
+          }
+          return json;
+        }
+
+        const ytLiveCacheKey = `laji_obs_yt_live_cache:${(
+          ytChannel ||
+          ytVideoParam ||
+          "default"
+        ).toLowerCase()}`;
+        function readYtLiveCache() {
+          try {
+            return JSON.parse(localStorage.getItem(ytLiveCacheKey) || "null");
+          } catch (_) {
+            return null;
+          }
+        }
+        function writeYtLiveCache(data) {
+          try {
+            localStorage.setItem(ytLiveCacheKey, JSON.stringify(data));
+          } catch (_) {}
+        }
+        function clearYtLiveCache() {
+          try {
+            localStorage.removeItem(ytLiveCacheKey);
+          } catch (_) {}
+        }
+
         async function resolveYtChannelId() {
           const raw = normalizeHandle(ytChannel);
           if (/^UC[\w-]{22}$/.test(raw)) return raw;
+          const cache = readYtLiveCache();
+          if (cache?.channelId && /^UC[\w-]{22}$/.test(cache.channelId)) {
+            return cache.channelId;
+          }
           const handle = raw.startsWith("@") ? raw.slice(1) : raw;
-          const url = `${YT_API}/channels?part=id&forHandle=${encodeURIComponent(
-            handle
+          try {
+            const url = `${YT_API}/channels?part=id&forHandle=${encodeURIComponent(
+              handle
+            )}&key=${encodeURIComponent(ytKey)}`;
+            const json = await ytFetchJson(url, "yt channel");
+            const id = json?.items?.[0]?.id;
+            if (id) return id;
+          } catch (e) {
+            console.warn(e);
+          }
+          try {
+            const url = `${YT_API}/channels?part=id&forUsername=${encodeURIComponent(
+              handle
+            )}&key=${encodeURIComponent(ytKey)}`;
+            const json = await ytFetchJson(url, "yt username");
+            const id = json?.items?.[0]?.id;
+            if (id) return id;
+          } catch (e) {
+            console.warn(e);
+          }
+          throw new Error("yt channel not found");
+        }
+
+        async function resolveLiveViaUploads(channelId) {
+          const chUrl = `${YT_API}/channels?part=contentDetails&id=${encodeURIComponent(
+            channelId
           )}&key=${encodeURIComponent(ytKey)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`yt channel ${res.status}`);
-          const json = await res.json();
-          const id = json?.items?.[0]?.id;
-          if (!id) throw new Error("yt channel not found");
-          return id;
+          const chJson = await ytFetchJson(chUrl, "yt channel details");
+          const uploads =
+            chJson?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+          if (!uploads) return null;
+          const plUrl = `${YT_API}/playlistItems?part=contentDetails&playlistId=${encodeURIComponent(
+            uploads
+          )}&maxResults=15&key=${encodeURIComponent(ytKey)}`;
+          const plJson = await ytFetchJson(plUrl, "yt uploads");
+          const ids = (plJson?.items || [])
+            .map((it) => it?.contentDetails?.videoId)
+            .filter(Boolean);
+          if (!ids.length) return null;
+          const vUrl = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+            ids.join(",")
+          )}&key=${encodeURIComponent(ytKey)}`;
+          const vJson = await ytFetchJson(vUrl, "yt recent videos");
+          const live = (vJson?.items || []).find((it) => {
+            const d = it?.liveStreamingDetails;
+            return d && d.actualStartTime && !d.actualEndTime;
+          });
+          return live?.id || null;
+        }
+
+        async function resolveLiveViaSearch(channelId) {
+          const url = `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
+            channelId
+          )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`;
+          const json = await ytFetchJson(url, "yt search");
+          return json?.items?.[0]?.id?.videoId || null;
+        }
+
+        async function videoStillLive(videoId) {
+          if (!videoId) return false;
+          const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+            videoId
+          )}&key=${encodeURIComponent(ytKey)}`;
+          const json = await ytFetchJson(url, "yt videos");
+          const details = json?.items?.[0]?.liveStreamingDetails;
+          return !!(details && details.actualStartTime && !details.actualEndTime);
         }
 
         async function resolveLiveVideoId() {
           if (ytVideoParam) return ytVideoParam;
+          const cache = readYtLiveCache();
+          if (cache?.videoId) {
+            try {
+              if (await videoStillLive(cache.videoId)) return cache.videoId;
+            } catch (e) {
+              console.warn(e);
+            }
+            clearYtLiveCache();
+          }
           const channelId = await resolveYtChannelId();
-          const url = `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
-            channelId
-          )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`yt search ${res.status}`);
-          const json = await res.json();
-          return json?.items?.[0]?.id?.videoId || null;
+          let id = null;
+          let lastErr = null;
+          try {
+            id = await resolveLiveViaUploads(channelId);
+          } catch (e) {
+            lastErr = e;
+            console.warn(e);
+          }
+          if (!id) {
+            try {
+              id = await resolveLiveViaSearch(channelId);
+            } catch (e) {
+              lastErr = e;
+              console.warn(e);
+            }
+          }
+          if (!id && lastErr) throw lastErr;
+          if (id) writeYtLiveCache({ channelId, videoId: id, ts: Date.now() });
+          return id;
         }
 
         async function resolveLiveChatId(videoId) {
           const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
             videoId
           )}&key=${encodeURIComponent(ytKey)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`yt videos ${res.status}`);
-          const json = await res.json();
-          return json?.items?.[0]?.liveStreamingDetails?.activeLiveChatId || null;
+          const json = await ytFetchJson(url, "yt videos");
+          const details = json?.items?.[0]?.liveStreamingDetails;
+          if (!details || details.actualEndTime) return null;
+          return details.activeLiveChatId || null;
         }
 
         async function pollYoutube() {

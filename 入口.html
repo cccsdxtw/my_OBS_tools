@@ -1278,8 +1278,35 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              使用最上方的 Twitch／YouTube 帳號。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。
+              預設用最上方「本人」帳號。下面可再加<strong>連動／其他台</strong>的 Twitch、YouTube（逗號或換行分隔）。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。
             </p>
+            <div class="field" style="align-items: flex-start">
+              <label for="chatExtraTw">額外 Twitch（非本人）</label>
+              <textarea
+                id="chatExtraTw"
+                class="css-box"
+                style="min-height: 64px"
+                placeholder="例如&#10;friend_a&#10;friend_b&#10;（逗號或換行；不要填自己）"
+              ></textarea>
+            </div>
+            <div class="field" style="align-items: flex-start">
+              <label for="chatExtraYt">額外 YouTube（非本人）</label>
+              <textarea
+                id="chatExtraYt"
+                class="css-box"
+                style="min-height: 64px"
+                placeholder="例如&#10;@other_channel&#10;UCxxxxxxxx&#10;（逗號或換行；用最上方 API Key）"
+              ></textarea>
+            </div>
+            <div class="field">
+              <label for="chatExtraYtVideo">額外 YT 直播影片 ID（選填）</label>
+              <input
+                id="chatExtraYtVideo"
+                type="text"
+                placeholder="多個用逗號；可留空改自動找 live"
+              />
+            </div>
+            <p class="hint">額外台只影響聊天室；人數／開台仍只用最上方本人帳號。</p>
             <div class="row">
               <div>
                 <label for="chatLayout">1. 版面</label>
@@ -2007,6 +2034,9 @@
           gameColor: $("gameColor"),
           gameShowBg: $("gameShowBg"),
           gameBg: $("gameBg"),
+          chatExtraTw: $("chatExtraTw"),
+          chatExtraYt: $("chatExtraYt"),
+          chatExtraYtVideo: $("chatExtraYtVideo"),
           chatSource: $("chatSource"),
           chatLayout: $("chatLayout"),
           chatStack: $("chatStack"),
@@ -2476,6 +2506,25 @@
           return url.toString();
         }
 
+        function splitList(raw) {
+          return String(raw || "")
+            .split(/[\s,，、;；\n\r]+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+
+        function uniqueKeepOrder(list) {
+          const seen = new Set();
+          const out = [];
+          list.forEach((item) => {
+            const key = String(item).toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push(item);
+          });
+          return out;
+        }
+
         function buildChatUrl(opts = {}) {
           const url = pageUrl("chat.html");
           const p = url.searchParams;
@@ -2483,14 +2532,22 @@
           const ytChannel = fields.ytChannel.value.trim();
           const ytVideo = fields.ytVideo.value.trim();
           const ytKey = fields.ytKey.value.trim();
+          const extraTw = splitList(fields.chatExtraTw.value);
+          const extraYt = splitList(fields.chatExtraYt.value);
+          const extraYtVideo = splitList(fields.chatExtraYtVideo.value);
+          const twLogins = uniqueKeepOrder(
+            [channel, ...extraTw].map((s) => s.toLowerCase()).filter(Boolean)
+          );
+          const ytChannels = uniqueKeepOrder([ytChannel, ...extraYt].filter(Boolean));
+          const ytVideos = uniqueKeepOrder([ytVideo, ...extraYtVideo].filter(Boolean));
           const split = fields.chatLayout.value === "split";
           const source =
             opts.source ||
             (split ? "twitch" : fields.chatSource.value || "auto");
 
-          if (channel) p.set("login", channel);
-          if (ytChannel) p.set("yt", ytChannel);
-          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (twLogins.length) p.set("login", twLogins.join(","));
+          if (ytChannels.length) p.set("yt", ytChannels.join(","));
+          if (ytVideos.length) p.set("ytVideo", ytVideos.join(","));
           if (ytKey) p.set("ytKey", ytKey);
           p.set("chatSource", source);
           if (fields.chatStack.value) p.set("stack", fields.chatStack.value);

@@ -191,10 +191,6 @@
         margin-bottom: 14px;
       }
 
-      .card.is-collapsed > .card-head {
-        margin-bottom: 0;
-      }
-
       .card-head h2 {
         margin: 0;
       }
@@ -206,11 +202,30 @@
         line-height: 1;
       }
 
-      .card-head-actions {
-        display: inline-flex;
+      .band-bar {
+        grid-column: 1 / -1;
+        display: flex;
         align-items: center;
-        gap: 8px;
-        flex: 0 0 auto;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 22px;
+        border-bottom: 1px solid var(--line);
+        background: var(--steps-bg);
+      }
+
+      .band-bar-title {
+        margin: 0;
+        font-size: 1.02rem;
+        font-weight: 700;
+        line-height: 1.3;
+        min-width: 0;
+      }
+
+      .band-bar-title .band-bar-sub {
+        margin-left: 0.45em;
+        color: var(--muted);
+        font-size: 0.82em;
+        font-weight: 600;
       }
 
       .card-toggle {
@@ -231,12 +246,15 @@
         border-color: var(--accent);
       }
 
-      .card.is-collapsed > .card-body {
+      .band.is-collapsed > .band-body {
         display: none;
       }
 
+      .band-body {
+        display: contents;
+      }
+
       .band.is-filtered-out,
-      .card.is-filtered-out,
       .credits.is-filtered-out {
         display: none !important;
       }
@@ -258,12 +276,30 @@
         margin: 0;
         font-size: 0.9rem;
         white-space: nowrap;
+        color: var(--ink);
       }
 
       .page-tools #pageSearch {
         flex: 1 1 220px;
         min-width: 0;
         margin: 0;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 0;
+        background: var(--input-bg);
+        color: var(--ink);
+        font: inherit;
+        line-height: 1.2;
+        caret-color: var(--ink);
+      }
+
+      .page-tools #pageSearch::placeholder {
+        color: var(--muted);
+        opacity: 1;
+      }
+
+      html[data-theme="dark"] .page-tools #pageSearch {
+        color-scheme: dark;
       }
 
       .page-tools-actions {
@@ -298,6 +334,7 @@
 
       input[type="text"],
       input[type="number"],
+      input[type="search"],
       input[type="datetime-local"],
       select {
         width: 100%;
@@ -307,6 +344,12 @@
         font: inherit;
         color: var(--ink);
         line-height: 1.2;
+      }
+
+      input[type="search"]::-webkit-search-decoration,
+      input[type="search"]::-webkit-search-cancel-button,
+      input[type="search"]::-webkit-search-results-button {
+        filter: invert(0.7);
       }
 
       input:disabled {
@@ -2020,7 +2063,7 @@
           applyTheme(cur === "dark" ? "light" : "dark");
         });
 
-        const collapseKey = "laji_obs_toolbox_collapsed";
+        const collapseKey = "laji_obs_toolbox_collapsed_bands";
         function loadCollapsedMap() {
           try {
             return JSON.parse(localStorage.getItem(collapseKey) || "{}") || {};
@@ -2034,13 +2077,17 @@
           } catch (_) {}
         }
         function sectionKey(el) {
+          if (el.classList.contains("band")) {
+            const t = el.querySelector(":scope > .band-bar .band-bar-title");
+            if (t) return t.childNodes[0]?.textContent?.trim() || t.textContent.trim();
+          }
           const h = el.querySelector("h2");
           return (h && h.textContent.trim()) || el.id || "";
         }
         function setCollapsed(el, collapsed, { persist = true } = {}) {
           el.classList.toggle("is-collapsed", collapsed);
           const btn =
-            el.querySelector(":scope > .card-head .card-toggle") ||
+            el.querySelector(":scope > .band-bar .card-toggle") ||
             el.querySelector(":scope > .credits-head .card-toggle") ||
             el.querySelector(".card-toggle");
           if (btn) {
@@ -2055,57 +2102,57 @@
           else delete map[key];
           saveCollapsedMap(map);
         }
-        function ensureCardBody(card) {
-          const head = card.querySelector(":scope > .card-head");
-          if (!head) return null;
-          let body = card.querySelector(":scope > .card-body");
-          if (body) return body;
-          body = document.createElement("div");
-          body.className = "card-body";
-          const move = [];
-          let n = head.nextSibling;
-          while (n) {
-            const next = n.nextSibling;
-            move.push(n);
-            n = next;
+        function ensureBandStructure(band) {
+          let bar = band.querySelector(":scope > .band-bar");
+          let body = band.querySelector(":scope > .band-body");
+          if (!body) {
+            body = document.createElement("div");
+            body.className = "band-body";
+            const move = [];
+            [...band.childNodes].forEach((n) => {
+              if (n.nodeType === 1 && n.classList.contains("band-bar")) return;
+              move.push(n);
+            });
+            move.forEach((n) => body.appendChild(n));
+            band.appendChild(body);
           }
-          move.forEach((node) => body.appendChild(node));
-          card.appendChild(body);
-          return body;
-        }
-        function ensureCardToggle(card) {
-          const head = card.querySelector(":scope > .card-head");
-          if (!head) return null;
-          let btn = head.querySelector(".card-toggle");
-          if (btn) return btn;
-          let actions = head.querySelector(".card-head-actions");
-          if (!actions) {
-            actions = document.createElement("div");
-            actions.className = "card-head-actions";
-            const side = head.querySelector(".side-title");
-            if (side) actions.appendChild(side);
-            head.appendChild(actions);
+          if (!bar) {
+            const firstHead = body.querySelector(".card-head h2");
+            const side = body.querySelector(".card-head .side-title");
+            bar = document.createElement("div");
+            bar.className = "band-bar";
+            const title = document.createElement("p");
+            title.className = "band-bar-title";
+            title.appendChild(
+              document.createTextNode((firstHead && firstHead.textContent.trim()) || "區塊")
+            );
+            if (side && side.textContent.trim()) {
+              const sub = document.createElement("span");
+              sub.className = "band-bar-sub";
+              sub.textContent = side.textContent.trim();
+              title.appendChild(sub);
+            }
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "card-toggle";
+            btn.textContent = "收合";
+            btn.setAttribute("aria-expanded", "true");
+            bar.append(title, btn);
+            band.insertBefore(bar, body);
           }
-          btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "card-toggle";
-          btn.textContent = "收合";
-          btn.setAttribute("aria-expanded", "true");
-          actions.appendChild(btn);
-          return btn;
+          return bar.querySelector(".card-toggle");
         }
         function setupCollapsibles() {
           const map = loadCollapsedMap();
-          document.querySelectorAll(".bands .card").forEach((card) => {
-            ensureCardBody(card);
-            const btn = ensureCardToggle(card);
+          document.querySelectorAll(".bands .band").forEach((band) => {
+            const btn = ensureBandStructure(band);
             if (!btn || btn.dataset.bound === "1") return;
             btn.dataset.bound = "1";
             btn.addEventListener("click", () => {
-              setCollapsed(card, !card.classList.contains("is-collapsed"));
+              setCollapsed(band, !band.classList.contains("is-collapsed"));
             });
-            const key = sectionKey(card);
-            if (key && map[key]) setCollapsed(card, true, { persist: false });
+            const key = sectionKey(band);
+            if (key && map[key]) setCollapsed(band, true, { persist: false });
           });
           const credits = $("credits");
           const creditsToggle = $("creditsToggle");
@@ -2124,7 +2171,7 @@
         }
         function allCollapsibleSections() {
           return [
-            ...document.querySelectorAll(".bands .card"),
+            ...document.querySelectorAll(".bands .band"),
             ...($("credits") ? [$("credits")] : []),
           ];
         }
@@ -2148,19 +2195,13 @@
           const emptyEl = $("pageSearchEmpty");
           let shown = 0;
           document.querySelectorAll(".bands .band").forEach((band) => {
-            const cards = [...band.querySelectorAll(":scope > .card")];
-            let bandHit = false;
-            cards.forEach((card) => {
-              const text = (card.textContent || "").toLowerCase();
-              const hit = !q || text.includes(q);
-              card.classList.toggle("is-filtered-out", !hit);
-              if (hit) {
-                bandHit = true;
-                shown += 1;
-                if (q) setCollapsed(card, false, { persist: false });
-              }
-            });
-            band.classList.toggle("is-filtered-out", !bandHit);
+            const text = (band.textContent || "").toLowerCase();
+            const hit = !q || text.includes(q);
+            band.classList.toggle("is-filtered-out", !hit);
+            if (hit) {
+              shown += 1;
+              if (q) setCollapsed(band, false, { persist: false });
+            }
           });
           const credits = $("credits");
           if (credits) {

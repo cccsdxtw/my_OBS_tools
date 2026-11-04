@@ -108,13 +108,15 @@
 
       .label,
       .value {
-        display: flex;
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
         height: var(--size);
         margin: 0;
         padding: 0;
         border: 0;
         line-height: 1;
+        transform: none;
       }
 
       .label {
@@ -123,26 +125,38 @@
         font-size: calc(var(--size) * 0.82);
         font-weight: 600;
         letter-spacing: 0.04em;
-        transform: translateY(0.06em);
       }
 
       .value {
         font-family: var(--font-zh);
         font-size: var(--size);
         font-weight: 600;
-        transform: translateY(0.02em);
+        gap: 0;
+      }
+
+      .value > * {
+        display: inline-flex;
+        align-items: center;
+        height: 100%;
+        line-height: 1;
+        font-weight: 600;
       }
 
       .sep {
         opacity: 0.55;
-        font-weight: 500;
         margin: 0 0.15em;
       }
 
+      /* 跟遊戲名同一字型／粗細，避免 NS2 用等寬看起來偏細、偏高 */
       .platform {
-        font-family: var(--font-num);
-        font-weight: 500;
-        letter-spacing: 0.02em;
+        font-family: var(--font-zh);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #game-name {
+        font-weight: 600;
       }
     </style>
   </head>

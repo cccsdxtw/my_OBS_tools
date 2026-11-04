@@ -264,24 +264,20 @@
             return;
           }
           if (wantTw) {
-            const bad = twCount === "ERR" || twCount === "FILE";
+            const bad =
+              twCount === "ERR" || twCount === "FILE" || twCount === "403";
             els.tw.classList.toggle("error", bad);
             els.tw.textContent = bad ? String(twCount) : twOk ? String(twCount) : "—";
-            els.tw.title = twCount === "FILE"
-              ? "請用 OBS 瀏覽器來源，或 http:// 開啟；不要用 file:// 直接開"
-              : twCount === "ERR"
-                ? "Twitch 人數抓取失敗"
-                : "";
+            els.tw.title = bad ? twErrTip || "Twitch 人數抓取失敗" : "";
           }
           if (wantYt) {
-            const bad = ytCount === "ERR" || ytCount === "FILE";
+            const bad =
+              ytCount === "ERR" || ytCount === "FILE" || ytCount === "403";
             els.yt.classList.toggle("error", bad);
             els.yt.textContent = bad ? String(ytCount) : ytOk ? String(ytCount) : "—";
-            els.yt.title = ytCount === "FILE"
-              ? "請用 OBS 瀏覽器來源，或 http:// 開啟；不要用 file:// 直接開"
-              : ytCount === "ERR"
-                ? "YouTube 人數抓取失敗（金鑰／配額／找不到直播）"
-                : "";
+            els.yt.title = bad
+              ? ytErrTip || "YouTube 人數抓取失敗（金鑰限制／配額／找不到直播）"
+              : "";
           }
         }
 
@@ -350,7 +346,7 @@
               }
             }
           } catch (err) {
-            twCount = failLabel(err);
+            twCount = failLabel(err, "tw");
           }
         }
 
@@ -370,6 +366,30 @@
           return s;
         }
 
+        async function ytFetchJson(url, label) {
+          let res;
+          try {
+            res = await fetch(url);
+          } catch (e) {
+            throw new Error(`${label} network (${e && e.message ? e.message : "fetch"})`);
+          }
+          let json = null;
+          try {
+            json = await res.json();
+          } catch (_) {}
+          if (!res.ok) {
+            const reason =
+              json?.error?.errors?.[0]?.reason ||
+              json?.error?.message ||
+              res.statusText ||
+              "";
+            throw new Error(
+              `${label} ${res.status}${reason ? " " + String(reason).slice(0, 80) : ""}`
+            );
+          }
+          return json;
+        }
+
         async function resolveYoutubeChannelId() {
           if (ytChannelId) return ytChannelId;
           const raw = normalizeHandle(ytChannel);
@@ -378,16 +398,71 @@
             return ytChannelId;
           }
           const handle = raw.startsWith("@") ? raw.slice(1) : raw;
-          const url = `${YT_API}/channels?part=id&forHandle=${encodeURIComponent(
-            handle
+          // 1) forHandle（新頻道＠）
+          try {
+            const url = `${YT_API}/channels?part=id&forHandle=${encodeURIComponent(
+              handle
+            )}&key=${encodeURIComponent(ytKey)}`;
+            const json = await ytFetchJson(url, "yt channels");
+            const id = json?.items?.[0]?.id;
+            if (id) {
+              ytChannelId = id;
+              return ytChannelId;
+            }
+          } catch (e) {
+            console.warn(e);
+          }
+          // 2) 舊版 forUsername（英文 id）
+          try {
+            const url = `${YT_API}/channels?part=id&forUsername=${encodeURIComponent(
+              handle
+            )}&key=${encodeURIComponent(ytKey)}`;
+            const json = await ytFetchJson(url, "yt username");
+            const id = json?.items?.[0]?.id;
+            if (id) {
+              ytChannelId = id;
+              return ytChannelId;
+            }
+          } catch (e) {
+            console.warn(e);
+          }
+          throw new Error("yt channel not found（可改填 UC… 頻道 ID）");
+        }
+
+        async function resolveLiveViaSearch(channelId) {
+          const url = `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
+            channelId
+          )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`;
+          const json = await ytFetchJson(url, "yt search");
+          return json?.items?.[0]?.id?.videoId || null;
+        }
+
+        async function resolveLiveViaUploads(channelId) {
+          // 避開 search.list（配額高、有時被擋）；改抓上傳清單最近幾支再查 live
+          const chUrl = `${YT_API}/channels?part=contentDetails&id=${encodeURIComponent(
+            channelId
           )}&key=${encodeURIComponent(ytKey)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`yt channels ${res.status}`);
-          const json = await res.json();
-          const id = json?.items?.[0]?.id;
-          if (!id) throw new Error("yt channel not found");
-          ytChannelId = id;
-          return ytChannelId;
+          const chJson = await ytFetchJson(chUrl, "yt channel details");
+          const uploads =
+            chJson?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+          if (!uploads) return null;
+          const plUrl = `${YT_API}/playlistItems?part=contentDetails&playlistId=${encodeURIComponent(
+            uploads
+          )}&maxResults=8&key=${encodeURIComponent(ytKey)}`;
+          const plJson = await ytFetchJson(plUrl, "yt uploads");
+          const ids = (plJson?.items || [])
+            .map((it) => it?.contentDetails?.videoId)
+            .filter(Boolean);
+          if (!ids.length) return null;
+          const vUrl = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+            ids.join(",")
+          )}&key=${encodeURIComponent(ytKey)}`;
+          const vJson = await ytFetchJson(vUrl, "yt recent videos");
+          const live = (vJson?.items || []).find((it) => {
+            const d = it?.liveStreamingDetails;
+            return d && d.actualStartTime && !d.actualEndTime;
+          });
+          return live?.id || null;
         }
 
         async function resolveYoutubeLiveVideoId(force = false) {
@@ -400,13 +475,23 @@
             return ytVideoId;
           }
           const channelId = await resolveYoutubeChannelId();
-          const url = `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
-            channelId
-          )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`yt search ${res.status}`);
-          const json = await res.json();
-          const id = json?.items?.[0]?.id?.videoId || null;
+          let id = null;
+          let lastErr = null;
+          try {
+            id = await resolveLiveViaSearch(channelId);
+          } catch (e) {
+            lastErr = e;
+            console.warn("yt search failed, try uploads", e);
+          }
+          if (!id) {
+            try {
+              id = await resolveLiveViaUploads(channelId);
+            } catch (e) {
+              lastErr = e;
+              console.warn(e);
+            }
+          }
+          if (!id && lastErr) throw lastErr;
           ytVideoId = id;
           lastYtResolve = now;
           return ytVideoId;
@@ -418,9 +503,7 @@
           const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
             videoId
           )}&key=${encodeURIComponent(ytKey)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`yt videos ${res.status}`);
-          const json = await res.json();
+          const json = await ytFetchJson(url, "yt videos");
           const details = json?.items?.[0]?.liveStreamingDetails;
           if (!details) {
             // 可能已下播，強制重找 live
@@ -436,15 +519,10 @@
           if (!wantYt) return;
           try {
             ytCount = await fetchYoutubeViewers();
+            ytErrTip = "";
           } catch (err) {
-            ytCount = failLabel(err);
+            ytCount = failLabel(err, "yt");
           }
-        }
-
-        if (isFileOrigin) {
-          console.warn(
-            "[viewers] 偵測到 file://：瀏覽器會擋 API。請用 OBS 瀏覽器來源，或本機 http 伺服器開啟。"
-          );
         }
 
         async function refresh() {

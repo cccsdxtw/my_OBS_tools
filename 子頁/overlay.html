@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
       rel="stylesheet"
     />
-    <link id="ms-symbols" rel="stylesheet" href="" />
+    <script src="../material-icons.js"></script>
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -200,15 +200,6 @@
           return /^https?:\/\//i.test(s) || /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s);
         }
 
-        function loadMaterialIcons(names) {
-          const list = [...new Set(names.map(normalizeMsName).filter(Boolean))];
-          const link = document.getElementById("ms-symbols");
-          if (!link || !list.length) return;
-          link.href =
-            "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=" +
-            list.join(",");
-        }
-
         function applyIcon(modId, rawParam, fallback) {
           const mod = document.getElementById(modId);
           if (!mod) return fallback;
@@ -246,7 +237,9 @@
           applyIcon("mod-date", params.get("dateIcon") || params.get("iconDate"), "calendar_month"),
           applyIcon("mod-time", params.get("timeIcon") || params.get("iconTime"), "schedule"),
         ].filter(Boolean);
-        loadMaterialIcons(usedMs);
+        if (window.MyObsMaterialIcons && usedMs.length) {
+          window.MyObsMaterialIcons.ensureMaterialSymbols(usedMs);
+        }
 
         function cssVar(name, value) {
           if (value) document.documentElement.style.setProperty(name, value);

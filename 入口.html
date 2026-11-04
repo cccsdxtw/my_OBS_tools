@@ -264,6 +264,24 @@
         display: none !important;
       }
 
+      .band.is-search-hit,
+      .credits.is-search-hit {
+        border-color: var(--accent);
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+          var(--shadow);
+        background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+      }
+
+      .band.is-search-hit > .band-bar {
+        background: color-mix(in srgb, var(--accent) 22%, var(--steps-bg));
+        border-bottom-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      }
+
+      .credits.is-search-hit {
+        background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+      }
+
       .page-tools {
         display: flex;
         flex-wrap: wrap;

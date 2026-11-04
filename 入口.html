@@ -679,13 +679,22 @@
               </div>
             </div>
             <p class="hint">
-              帳號會存瀏覽器 localStorage，按「確定」時一併寫入 <code>資料/帳號.txt</code>（換機可帶這份檔）。自訂圖放
-              <code>圖片/</code>，覆蓋頁在 <code>子頁/</code>。
+              帳號會存瀏覽器 localStorage，按「確定」時一併寫入 <code>資料/帳號.txt</code>（換機可帶這份檔）。別台過來用「匯入
+              帳號.txt」選檔即可。自訂圖放 <code>圖片/</code>，覆蓋頁在 <code>子頁/</code>。
             </p>
             <div class="actions" style="margin-top: 10px">
+              <button type="button" class="secondary" id="importAccountTxtBtn">
+                匯入 帳號.txt
+              </button>
               <button type="button" class="secondary" id="syncAccountTxtBtn">
                 寫入 資料/帳號.txt
               </button>
+              <input
+                type="file"
+                id="importAccountTxtFile"
+                accept=".txt,text/plain"
+                hidden
+              />
             </div>
 
             <div class="row">
@@ -2707,16 +2716,17 @@
           return map;
         }
 
-        function applyAccountMap(map) {
+        function applyAccountMap(map, opts) {
           const keys = [
             "Twitch頻道",
             "YouTube頻道",
             "YouTube直播影片ID",
             "YouTube_API_Key",
           ];
-          // 空白範本不要蓋掉本機已填的 localStorage
+          const force = !!(opts && opts.force);
+          // 自動載入時：空白範本不要蓋掉本機已填的 localStorage
           const hasAny = keys.some((k) => String(map[k] || "").trim());
-          if (!hasAny) return false;
+          if (!force && !hasAny) return false;
           const setIf = (el, key) => {
             if (!el) return;
             if (Object.prototype.hasOwnProperty.call(map, key)) el.value = map[key];
@@ -2744,6 +2754,43 @@
           }
           if (text == null) return;
           applyAccountMap(parseAccountTxt(text));
+        }
+
+        async function importAccountTxtFromFile(file) {
+          if (!file) return { ok: false, reason: "no-file" };
+          const text = await file.text();
+          const map = parseAccountTxt(text);
+          const applied = applyAccountMap(map, { force: true });
+          if (!applied) return { ok: false, reason: "empty" };
+          buildUrls();
+          // 匯入後也寫回本機 資料/（有授權就寫；否則略過，不強制下載）
+          await syncAccountTxtToDisk({ ask: false, downloadFallback: false });
+          return { ok: true };
+        }
+
+        const importAccountTxtBtn = $("importAccountTxtBtn");
+        const importAccountTxtFile = $("importAccountTxtFile");
+        if (importAccountTxtBtn && importAccountTxtFile) {
+          importAccountTxtBtn.addEventListener("click", () => {
+            importAccountTxtFile.value = "";
+            importAccountTxtFile.click();
+          });
+          importAccountTxtFile.addEventListener("change", async () => {
+            const file = importAccountTxtFile.files && importAccountTxtFile.files[0];
+            const old = importAccountTxtBtn.textContent;
+            try {
+              const result = await importAccountTxtFromFile(file);
+              if (result.ok) importAccountTxtBtn.textContent = "已匯入帳號";
+              else if (result.reason === "empty")
+                importAccountTxtBtn.textContent = "檔案是空的";
+              else importAccountTxtBtn.textContent = "匯入失敗";
+            } catch (_) {
+              importAccountTxtBtn.textContent = "匯入失敗";
+            }
+            setTimeout(() => {
+              importAccountTxtBtn.textContent = old;
+            }, 1600);
+          });
         }
 
         const syncAccountTxtBtn = $("syncAccountTxtBtn");

@@ -303,6 +303,14 @@
           return n;
         }
 
+        const isFileOrigin = location.protocol === "file:";
+        function failLabel(err) {
+          // file:// 開本機檔時，瀏覽器常擋 fetch → 看起來像 ERR
+          if (isFileOrigin) return "FILE";
+          console.error(err);
+          return "ERR";
+        }
+
         async function refreshTwitch() {
           if (!wantTw) return;
           try {
@@ -316,8 +324,7 @@
               }
             }
           } catch (err) {
-            console.error(err);
-            twCount = "ERR";
+            twCount = failLabel(err);
           }
         }
 

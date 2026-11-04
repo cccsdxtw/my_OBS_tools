@@ -264,14 +264,24 @@
             return;
           }
           if (wantTw) {
-            els.tw.classList.toggle("error", twCount === "ERR");
-            els.tw.textContent =
-              twCount === "ERR" ? "ERR" : twOk ? String(twCount) : "—";
+            const bad = twCount === "ERR" || twCount === "FILE";
+            els.tw.classList.toggle("error", bad);
+            els.tw.textContent = bad ? String(twCount) : twOk ? String(twCount) : "—";
+            els.tw.title = twCount === "FILE"
+              ? "請用 OBS 瀏覽器來源，或 http:// 開啟；不要用 file:// 直接開"
+              : twCount === "ERR"
+                ? "Twitch 人數抓取失敗"
+                : "";
           }
           if (wantYt) {
-            els.yt.classList.toggle("error", ytCount === "ERR");
-            els.yt.textContent =
-              ytCount === "ERR" ? "ERR" : ytOk ? String(ytCount) : "—";
+            const bad = ytCount === "ERR" || ytCount === "FILE";
+            els.yt.classList.toggle("error", bad);
+            els.yt.textContent = bad ? String(ytCount) : ytOk ? String(ytCount) : "—";
+            els.yt.title = ytCount === "FILE"
+              ? "請用 OBS 瀏覽器來源，或 http:// 開啟；不要用 file:// 直接開"
+              : ytCount === "ERR"
+                ? "YouTube 人數抓取失敗（金鑰／配額／找不到直播）"
+                : "";
           }
         }
 
@@ -304,10 +314,26 @@
         }
 
         const isFileOrigin = location.protocol === "file:";
-        function failLabel(err) {
-          // file:// 開本機檔時，瀏覽器常擋 fetch → 看起來像 ERR
-          if (isFileOrigin) return "FILE";
-          console.error(err);
+        let twErrTip = "";
+        let ytErrTip = "";
+        function failLabel(err, which) {
+          const msg = String((err && err.message) || err || "");
+          console.error(which || "viewers", err);
+          const tip = msg
+            ? msg
+            : isFileOrigin
+              ? "本機 file:// 請求失敗"
+              : "人數抓取失敗";
+          if (which === "yt") ytErrTip = tip;
+          else if (which === "tw") twErrTip = tip;
+          // Google API Key 若限制「網站參照網址」，OBS／file 常會 403
+          if (/403/.test(msg)) {
+            if (which === "yt") {
+              ytErrTip =
+                "YouTube API 403：請到 Google Cloud 把此金鑰的「應用程式限制」先設成「無」(OBS 本機才能用)";
+            }
+            return "403";
+          }
           return "ERR";
         }
 
@@ -411,9 +437,14 @@
           try {
             ytCount = await fetchYoutubeViewers();
           } catch (err) {
-            console.error(err);
-            ytCount = "ERR";
+            ytCount = failLabel(err);
           }
+        }
+
+        if (isFileOrigin) {
+          console.warn(
+            "[viewers] 偵測到 file://：瀏覽器會擋 API。請用 OBS 瀏覽器來源，或本機 http 伺服器開啟。"
+          );
         }
 
         async function refresh() {

@@ -994,8 +994,12 @@
             </div>
             <div class="row">
               <div>
-                <label for="ytVideo">或 YT 直播影片 ID</label>
-                <input id="ytVideo" type="text" placeholder="可留空，自動找 live" />
+                <label for="ytVideo">或 YT 直播影片 ID／網址</label>
+                <input
+                  id="ytVideo"
+                  type="text"
+                  placeholder="可貼 watch?v=… 完整網址，或只填影片 ID"
+                />
               </div>
               <div>
                 <label for="ytKey">YouTube API Key</label>
@@ -1005,7 +1009,9 @@
             <p class="hint">
               帳號會存瀏覽器 localStorage，按「確定」時一併寫入 <code>資料/帳號.txt</code>（換機可帶這份檔）。別台過來用「匯入
               帳號.txt」選檔即可。自訂圖放 <code>圖片/</code>，覆蓋頁在 <code>子頁/</code>。
-              YouTube 若人數一直 ERR：頻道欄改填 <code>UC…</code> 頻道 ID，或填「直播影片 ID」；API 金鑰「應用程式限制」先設無，並啟用 YouTube Data API v3。改完請更新本機資料夾後在 OBS 對瀏覽器來源按重新整理。
+              YouTube 人數若 ERR：最穩是貼直播網址（如
+              <code>https://www.youtube.com/watch?v=xxxx</code>）或影片 ID；頻道也可用
+              <code>UC…</code>。API 金鑰「應用程式限制」先設無，並啟用 YouTube Data API v3。
             </p>
             <div class="actions" style="margin-top: 10px">
               <button type="button" class="secondary" id="importAccountTxtBtn">
@@ -2985,6 +2991,34 @@
           });
         }
 
+        function extractYoutubeVideoId(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return "";
+          if (/^[\w-]{11}$/.test(s)) return s;
+          try {
+            const u = new URL(s);
+            const host = u.hostname.replace(/^www\./, "");
+            if (host === "youtu.be") {
+              const id = u.pathname.split("/").filter(Boolean)[0] || "";
+              return /^[\w-]{11}$/.test(id) ? id : "";
+            }
+            if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+              const v = u.searchParams.get("v");
+              if (v && /^[\w-]{11}$/.test(v)) return v;
+              const parts = u.pathname.split("/").filter(Boolean);
+              if (
+                (parts[0] === "live" || parts[0] === "embed" || parts[0] === "shorts") &&
+                parts[1] &&
+                /^[\w-]{11}$/.test(parts[1])
+              ) {
+                return parts[1];
+              }
+            }
+          } catch (_) {}
+          const m = s.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([\w-]{11})/);
+          return m ? m[1] : s;
+        }
+
         function pageUrl(name) {
           return new URL(SUBPAGE_BASE + name, location.href);
         }
@@ -3076,7 +3110,7 @@
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
           const ytChannel = fields.ytChannel.value.trim();
-          const ytVideo = fields.ytVideo.value.trim();
+          const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
           const ytKey = fields.ytKey.value.trim();
 
           if (channel) p.set("login", channel);
@@ -3149,16 +3183,20 @@
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
           const ytChannel = fields.ytChannel.value.trim();
-          const ytVideo = fields.ytVideo.value.trim();
+          const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
           const ytKey = fields.ytKey.value.trim();
           const extraTw = splitList(fields.chatExtraTw.value);
           const extraYt = splitList(fields.chatExtraYt.value);
-          const extraYtVideo = splitList(fields.chatExtraYtVideo.value);
+          const extraYtVideo = splitList(fields.chatExtraYtVideo.value).map(
+            extractYoutubeVideoId
+          );
           const twLogins = uniqueKeepOrder(
             [channel, ...extraTw].map((s) => s.toLowerCase()).filter(Boolean)
           );
           const ytChannels = uniqueKeepOrder([ytChannel, ...extraYt].filter(Boolean));
-          const ytVideos = uniqueKeepOrder([ytVideo, ...extraYtVideo].filter(Boolean));
+          const ytVideos = uniqueKeepOrder(
+            [ytVideo, ...extraYtVideo].filter(Boolean)
+          );
           const split = fields.chatLayout.value === "split";
           const source =
             opts.source ||
@@ -3194,7 +3232,7 @@
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
           const ytChannel = fields.ytChannel.value.trim();
-          const ytVideo = fields.ytVideo.value.trim();
+          const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
           const ytKey = fields.ytKey.value.trim();
           if (channel) p.set("login", channel);
           if (ytChannel) p.set("yt", ytChannel);

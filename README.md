@@ -31,7 +31,7 @@ material-icons.js  ← Google Fonts 優先、失敗改本機字型
 - **遊戲名稱**：`子頁/game.html`（格式「遊戲名稱： 平台 - 遊戲名」）
 - **聊天室**：`子頁/chat.html`
 - **回覆**：建議用 [Restream Chat](https://chat.restream.io/)；備選 `子頁/chat-reply.html`
-- **帳號**：可改 `資料/帳號.txt`，入口開頁會讀入
+- **帳號**：存 localStorage，並可同步到 `資料/帳號.txt`（換機帶這份檔；入口開頁會讀入）
 
 ## 使用
 

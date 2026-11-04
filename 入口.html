@@ -679,9 +679,14 @@
               </div>
             </div>
             <p class="hint">
-              也可改根目錄 <code>資料/帳號.txt</code>（開頁會讀進來）。自訂圖放 <code>圖片/</code>，覆蓋頁在
-              <code>子頁/</code>。填一次即可套用到觀眾人數、資訊條開台時間、聊天室。
+              帳號會存瀏覽器 localStorage，按「確定」時一併寫入 <code>資料/帳號.txt</code>（換機可帶這份檔）。自訂圖放
+              <code>圖片/</code>，覆蓋頁在 <code>子頁/</code>。
             </p>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" class="secondary" id="syncAccountTxtBtn">
+                寫入 資料/帳號.txt
+              </button>
+            </div>
 
             <div class="row">
               <div>
@@ -1818,13 +1823,110 @@
           }
         }
 
-        function flashApplied() {
+        function buildAccountTxtContent() {
+          return [
+            "# 拉基的OBS工具箱 · 共用帳號",
+            "# 井字號開頭是註解。改完存檔後重新整理「入口」頁即可套用。",
+            "# 此檔與瀏覽器 localStorage 同步，方便換機／多機使用。",
+            "",
+            `Twitch頻道=${fields.channel.value.trim()}`,
+            `YouTube頻道=${fields.ytChannel.value.trim()}`,
+            `YouTube直播影片ID=${fields.ytVideo.value.trim()}`,
+            `YouTube_API_Key=${fields.ytKey.value.trim()}`,
+            "",
+          ].join("\n");
+        }
+
+        async function writeRelativeFile(dirHandle, relativePath, contents) {
+          const parts = String(relativePath).split("/").filter(Boolean);
+          let dir = dirHandle;
+          for (let i = 0; i < parts.length - 1; i++) {
+            dir = await dir.getDirectoryHandle(parts[i], { create: true });
+          }
+          const fileHandle = await dir.getFileHandle(parts[parts.length - 1], {
+            create: true,
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(contents);
+          await writable.close();
+        }
+
+        async function readRelativeFile(dirHandle, relativePath) {
+          const parts = String(relativePath).split("/").filter(Boolean);
+          let dir = dirHandle;
+          for (let i = 0; i < parts.length - 1; i++) {
+            dir = await dir.getDirectoryHandle(parts[i]);
+          }
+          const fileHandle = await dir.getFileHandle(parts[parts.length - 1]);
+          const file = await fileHandle.getFile();
+          return file.text();
+        }
+
+        async function tryGetWritableRoot(ask) {
+          let handle = await loadDirHandle();
+          if (handle) {
+            try {
+              if (await ensureDirPermission(handle, "readwrite")) return handle;
+            } catch (_) {}
+          }
+          if (!ask || !canUseDirPicker()) return null;
+          try {
+            handle = await window.showDirectoryPicker({
+              id: "my-obs-tools-install",
+              mode: "readwrite",
+            });
+            await saveDirHandle(handle);
+            return handle;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function downloadAccountTxtFile(text) {
+          const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "帳號.txt";
+          a.rel = "noopener";
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+
+        /** @returns {'written'|'download'|'skipped'} */
+        async function syncAccountTxtToDisk(opts) {
+          const ask = !!(opts && opts.ask);
+          const downloadFallback = !!(opts && opts.downloadFallback);
+          const text = buildAccountTxtContent();
+          const root = await tryGetWritableRoot(ask);
+          if (root) {
+            try {
+              await writeRelativeFile(root, ACCOUNT_TXT, text);
+              return "written";
+            } catch (_) {}
+          }
+          if (downloadFallback) {
+            downloadAccountTxtFile(text);
+            return "download";
+          }
+          return "skipped";
+        }
+
+        async function flashApplied() {
           clearTimeout(applyTimer);
           buildUrls();
-          applyBtn.textContent = "已套用";
+          const sync = await syncAccountTxtToDisk({
+            ask: true,
+            downloadFallback: true,
+          });
+          if (sync === "written") applyBtn.textContent = "已寫入帳號.txt";
+          else if (sync === "download") applyBtn.textContent = "已下載帳號.txt";
+          else applyBtn.textContent = "已套用";
           applyTimer = setTimeout(() => {
             applyBtn.textContent = "確定";
-          }, 1200);
+          }, 1400);
         }
 
         autoUpdateCheck.addEventListener("change", () => {
@@ -2605,25 +2707,77 @@
           return map;
         }
 
+        function applyAccountMap(map) {
+          const keys = [
+            "Twitch頻道",
+            "YouTube頻道",
+            "YouTube直播影片ID",
+            "YouTube_API_Key",
+          ];
+          // 空白範本不要蓋掉本機已填的 localStorage
+          const hasAny = keys.some((k) => String(map[k] || "").trim());
+          if (!hasAny) return false;
+          const setIf = (el, key) => {
+            if (!el) return;
+            if (Object.prototype.hasOwnProperty.call(map, key)) el.value = map[key];
+          };
+          setIf(fields.channel, "Twitch頻道");
+          setIf(fields.ytChannel, "YouTube頻道");
+          setIf(fields.ytVideo, "YouTube直播影片ID");
+          setIf(fields.ytKey, "YouTube_API_Key");
+          return true;
+        }
+
         async function loadAccountTxt() {
+          let text = null;
           try {
             const res = await fetch(new URL(ACCOUNT_TXT, location.href), {
               cache: "no-store",
             });
-            if (!res.ok) return;
-            const map = parseAccountTxt(await res.text());
-            const setIf = (el, key) => {
-              if (!el) return;
-              if (Object.prototype.hasOwnProperty.call(map, key)) el.value = map[key];
-            };
-            setIf(fields.channel, "Twitch頻道");
-            setIf(fields.ytChannel, "YouTube頻道");
-            setIf(fields.ytVideo, "YouTube直播影片ID");
-            setIf(fields.ytKey, "YouTube_API_Key");
-          } catch (_) {
-            // file:// 或離線時讀不到 TXT，略過（仍可用頁面／localStorage）
+            if (res.ok) text = await res.text();
+          } catch (_) {}
+          if (text == null) {
+            try {
+              const root = await tryGetWritableRoot(false);
+              if (root) text = await readRelativeFile(root, ACCOUNT_TXT);
+            } catch (_) {}
           }
+          if (text == null) return;
+          applyAccountMap(parseAccountTxt(text));
         }
+
+        const syncAccountTxtBtn = $("syncAccountTxtBtn");
+        if (syncAccountTxtBtn) {
+          syncAccountTxtBtn.addEventListener("click", async () => {
+            buildUrls();
+            const sync = await syncAccountTxtToDisk({
+              ask: true,
+              downloadFallback: true,
+            });
+            const old = syncAccountTxtBtn.textContent;
+            if (sync === "written") {
+              syncAccountTxtBtn.textContent = "已寫入 資料/帳號.txt";
+            } else if (sync === "download") {
+              syncAccountTxtBtn.textContent = "已下載，請放到 資料/";
+            } else {
+              syncAccountTxtBtn.textContent = "未寫入";
+            }
+            setTimeout(() => {
+              syncAccountTxtBtn.textContent = old;
+            }, 1600);
+          });
+        }
+
+        // 已授權資料夾時，改帳號欄位會自動同步 TXT（不跳選資料夾）
+        let accountSyncTimer = 0;
+        [fields.channel, fields.ytChannel, fields.ytVideo, fields.ytKey].forEach((el) => {
+          el.addEventListener("input", () => {
+            clearTimeout(accountSyncTimer);
+            accountSyncTimer = setTimeout(() => {
+              syncAccountTxtToDisk({ ask: false, downloadFallback: false });
+            }, 900);
+          });
+        });
 
         bindColorPickers();
         syncAllBgFields();

@@ -422,11 +422,40 @@
           return json;
         }
 
+        const ytCacheKey = `laji_obs_yt_live_cache:${(
+          ytChannel ||
+          ytVideoParam ||
+          "default"
+        ).toLowerCase()}`;
+
+        function readYtCache() {
+          try {
+            return JSON.parse(localStorage.getItem(ytCacheKey) || "null");
+          } catch (_) {
+            return null;
+          }
+        }
+        function writeYtCache(data) {
+          try {
+            localStorage.setItem(ytCacheKey, JSON.stringify(data));
+          } catch (_) {}
+        }
+        function clearYtCache() {
+          try {
+            localStorage.removeItem(ytCacheKey);
+          } catch (_) {}
+        }
+
         async function resolveYoutubeChannelId() {
           if (ytChannelId) return ytChannelId;
           const raw = normalizeHandle(ytChannel);
           if (/^UC[\w-]{22}$/.test(raw)) {
             ytChannelId = raw;
+            return ytChannelId;
+          }
+          const cache = readYtCache();
+          if (cache?.channelId && /^UC[\w-]{22}$/.test(cache.channelId)) {
+            ytChannelId = cache.channelId;
             return ytChannelId;
           }
           const handle = raw.startsWith("@") ? raw.slice(1) : raw;
@@ -470,7 +499,7 @@
         }
 
         async function resolveLiveViaUploads(channelId) {
-          // 避開 search.list（配額高、有時被擋）；改抓上傳清單最近幾支再查 live
+          // 優先用這個：配額低；search.list 一天很容易打爆變 ERR
           const chUrl = `${YT_API}/channels?part=contentDetails&id=${encodeURIComponent(
             channelId
           )}&key=${encodeURIComponent(ytKey)}`;
@@ -480,7 +509,7 @@
           if (!uploads) return null;
           const plUrl = `${YT_API}/playlistItems?part=contentDetails&playlistId=${encodeURIComponent(
             uploads
-          )}&maxResults=8&key=${encodeURIComponent(ytKey)}`;
+          )}&maxResults=15&key=${encodeURIComponent(ytKey)}`;
           const plJson = await ytFetchJson(plUrl, "yt uploads");
           const ids = (plJson?.items || [])
             .map((it) => it?.contentDetails?.videoId)
@@ -497,6 +526,16 @@
           return live?.id || null;
         }
 
+        async function videoStillLive(videoId) {
+          if (!videoId) return false;
+          const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+            videoId
+          )}&key=${encodeURIComponent(ytKey)}`;
+          const json = await ytFetchJson(url, "yt videos");
+          const details = json?.items?.[0]?.liveStreamingDetails;
+          return !!(details && details.actualStartTime && !details.actualEndTime);
+        }
+
         async function resolveYoutubeLiveVideoId(force = false) {
           if (ytVideoParam) {
             ytVideoId = ytVideoParam;
@@ -506,26 +545,47 @@
           if (ytVideoId && !force && now - lastYtResolve < YT_RESOLVE_MS) {
             return ytVideoId;
           }
+
+          // 沿用本機快取的直播 ID（同一場不用每次重找／重貼）
+          if (!force) {
+            const cache = readYtCache();
+            if (cache?.videoId) {
+              try {
+                if (await videoStillLive(cache.videoId)) {
+                  ytVideoId = cache.videoId;
+                  if (cache.channelId) ytChannelId = cache.channelId;
+                  lastYtResolve = now;
+                  return ytVideoId;
+                }
+              } catch (e) {
+                console.warn(e);
+              }
+              clearYtCache();
+            }
+          }
+
           const channelId = await resolveYoutubeChannelId();
           let id = null;
           let lastErr = null;
+          // 先 uploads，後 search（search 配額貴，昨天能用今天 ERR 多半是配額）
           try {
-            id = await resolveLiveViaSearch(channelId);
+            id = await resolveLiveViaUploads(channelId);
           } catch (e) {
             lastErr = e;
-            console.warn("yt search failed, try uploads", e);
+            console.warn(e);
           }
           if (!id) {
             try {
-              id = await resolveLiveViaUploads(channelId);
+              id = await resolveLiveViaSearch(channelId);
             } catch (e) {
               lastErr = e;
-              console.warn(e);
+              console.warn("yt search failed", e);
             }
           }
           if (!id && lastErr) throw lastErr;
           ytVideoId = id;
           lastYtResolve = now;
+          if (id) writeYtCache({ channelId, videoId: id, ts: now });
           return ytVideoId;
         }
 
@@ -537,10 +597,11 @@
           )}&key=${encodeURIComponent(ytKey)}`;
           const json = await ytFetchJson(url, "yt videos");
           const details = json?.items?.[0]?.liveStreamingDetails;
-          if (!details) {
-            // 可能已下播，強制重找 live
+          if (!details || details.actualEndTime) {
+            // 下播了：清快取，下一輪自動再找
             ytVideoId = null;
             lastYtResolve = 0;
+            clearYtCache();
             return 0;
           }
           const n = parseInt(details.concurrentViewers || "0", 10);

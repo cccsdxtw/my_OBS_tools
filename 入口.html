@@ -1009,9 +1009,9 @@
             <p class="hint">
               帳號會存瀏覽器 localStorage，按「確定」時一併寫入 <code>資料/帳號.txt</code>（換機可帶這份檔）。別台過來用「匯入
               帳號.txt」選檔即可。自訂圖放 <code>圖片/</code>，覆蓋頁在 <code>子頁/</code>。
-              YouTube 人數若 ERR：最穩是貼直播網址（如
-              <code>https://www.youtube.com/watch?v=xxxx</code>）或影片 ID；頻道也可用
-              <code>UC…</code>。API 金鑰「應用程式限制」先設無，並啟用 YouTube Data API v3。
+              YouTube 頻道填 <code>@頻道</code> 即可，工具會自動解析成
+              <code>UC…</code> 並自動找正在直播的影片（不必每場重貼影片網址）。影片 ID／watch
+              網址只是備援。金鑰請啟用 YouTube Data API v3，應用程式限制可先設「無」。
             </p>
             <div class="actions" style="margin-top: 10px">
               <button type="button" class="secondary" id="importAccountTxtBtn">
@@ -3019,6 +3019,61 @@
           return m ? m[1] : s;
         }
 
+        const YT_CHANNEL_ID_CACHE_KEY = "laji_obs_yt_channel_ids";
+        function readYtChannelIdCache() {
+          try {
+            return JSON.parse(localStorage.getItem(YT_CHANNEL_ID_CACHE_KEY) || "{}") || {};
+          } catch (_) {
+            return {};
+          }
+        }
+        function writeYtChannelIdCache(map) {
+          try {
+            localStorage.setItem(YT_CHANNEL_ID_CACHE_KEY, JSON.stringify(map));
+          } catch (_) {}
+        }
+        function ytChannelCacheKey(raw) {
+          return String(raw || "")
+            .trim()
+            .replace(/^@/, "")
+            .toLowerCase();
+        }
+        function resolveYtChannelForUrl(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return "";
+          if (/^UC[\w-]{22}$/.test(s)) return s;
+          const cached = readYtChannelIdCache()[ytChannelCacheKey(s)];
+          return cached || s;
+        }
+        async function ensureYtChannelIdResolved() {
+          const raw = fields.ytChannel.value.trim();
+          const key = fields.ytKey.value.trim();
+          if (!raw || !key) return;
+          if (/^UC[\w-]{22}$/.test(raw)) return raw;
+          const ck = ytChannelCacheKey(raw);
+          const map = readYtChannelIdCache();
+          if (map[ck]) return map[ck];
+          const handle = raw.startsWith("@") ? raw.slice(1) : raw;
+          try {
+            const url =
+              "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=" +
+              encodeURIComponent(handle) +
+              "&key=" +
+              encodeURIComponent(key);
+            const res = await fetch(url);
+            if (!res.ok) return "";
+            const json = await res.json();
+            const id = json?.items?.[0]?.id || "";
+            if (!id) return "";
+            map[ck] = id;
+            writeYtChannelIdCache(map);
+            buildUrls();
+            return id;
+          } catch (_) {
+            return "";
+          }
+        }
+
         function pageUrl(name) {
           return new URL(SUBPAGE_BASE + name, location.href);
         }
@@ -3109,7 +3164,7 @@
           const url = pageUrl("viewers.html");
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
-          const ytChannel = fields.ytChannel.value.trim();
+          const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
           const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
           const ytKey = fields.ytKey.value.trim();
 
@@ -3182,11 +3237,11 @@
           const url = pageUrl("chat.html");
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
-          const ytChannel = fields.ytChannel.value.trim();
+          const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
           const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
           const ytKey = fields.ytKey.value.trim();
           const extraTw = splitList(fields.chatExtraTw.value);
-          const extraYt = splitList(fields.chatExtraYt.value);
+          const extraYt = splitList(fields.chatExtraYt.value).map(resolveYtChannelForUrl);
           const extraYtVideo = splitList(fields.chatExtraYtVideo.value).map(
             extractYoutubeVideoId
           );
@@ -3231,7 +3286,7 @@
           const url = pageUrl("chat-reply.html");
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
-          const ytChannel = fields.ytChannel.value.trim();
+          const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
           const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
           const ytKey = fields.ytKey.value.trim();
           if (channel) p.set("login", channel);
@@ -3531,6 +3586,7 @@
 
         // 已授權資料夾時，改帳號欄位會自動同步 TXT（不跳選資料夾）
         let accountSyncTimer = 0;
+        let ytResolveTimer = 0;
         [fields.channel, fields.ytChannel, fields.ytVideo, fields.ytKey].forEach((el) => {
           el.addEventListener("input", () => {
             clearTimeout(accountSyncTimer);
@@ -3539,12 +3595,24 @@
             }, 900);
           });
         });
+        // @頻道 → UC… 解析快取，讓 OBS 網址用 UC（較穩，且不必每場貼影片）
+        [fields.ytChannel, fields.ytKey].forEach((el) => {
+          el.addEventListener("input", () => {
+            clearTimeout(ytResolveTimer);
+            ytResolveTimer = setTimeout(() => {
+              ensureYtChannelIdResolved();
+            }, 500);
+          });
+        });
 
         bindColorPickers();
         syncAllBgFields();
         renderGameHistory();
         syncGamePlatformChips();
-        loadAccountTxt().finally(() => buildUrls());
+        loadAccountTxt().finally(() => {
+          buildUrls();
+          ensureYtChannelIdResolved();
+        });
       })();
     </script>
   </body>

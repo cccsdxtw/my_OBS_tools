@@ -1007,26 +1007,9 @@
               </div>
             </div>
             <p class="hint">
-              帳號會存瀏覽器 localStorage，按「確定」時一併寫入 <code>資料/帳號.txt</code>（換機可帶這份檔）。別台過來用「匯入
-              帳號.txt」選檔即可。自訂圖放 <code>圖片/</code>，覆蓋頁在 <code>子頁/</code>。
-              YouTube 頻道填 <code>@頻道</code> 即可，工具會自動解析成
-              <code>UC…</code> 並自動找正在直播的影片（不必每場重貼影片網址）。影片 ID／watch
-              網址只是備援。金鑰請啟用 YouTube Data API v3，應用程式限制可先設「無」。
+              輸入會即時更新預覽與網址；下方「確定」只是確認回饋，不會備份。換機／備份請用頁面最下方「備份／還原」。
+              YouTube 頻道填 <code>@頻道</code> 即可自動解析成 <code>UC…</code> 並找直播；金鑰請啟用 YouTube Data API v3。
             </p>
-            <div class="actions" style="margin-top: 10px">
-              <button type="button" class="secondary" id="importAccountTxtBtn">
-                匯入 帳號.txt
-              </button>
-              <button type="button" class="secondary" id="syncAccountTxtBtn">
-                寫入 資料/帳號.txt
-              </button>
-              <input
-                type="file"
-                id="importAccountTxtFile"
-                accept=".txt,text/plain"
-                hidden
-              />
-            </div>
 
             <div class="row">
               <div>
@@ -1824,6 +1807,49 @@
         </div>
       </div>
 
+      <div class="bands" style="margin-top: 18px">
+        <div class="band band-solo">
+          <section class="card">
+            <div class="card-head">
+              <h2>備份／還原</h2>
+              <span class="side-title">換機 · 備分設定</span>
+            </div>
+            <p class="hint" style="margin-top: 0">
+              「備份設定」會下載完整 JSON（含各欄位、帳號、版面）。「還原設定」選該檔即可整包回來。
+              若只要帳號，可用下面的 <code>帳號.txt</code>。
+            </p>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" id="backupSetupBtn">備份設定</button>
+              <button type="button" class="secondary" id="restoreSetupBtn">還原設定</button>
+              <input
+                type="file"
+                id="restoreSetupFile"
+                accept=".json,application/json"
+                hidden
+              />
+            </div>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" class="secondary" id="exportAccountTxtBtn">
+                匯出 帳號.txt
+              </button>
+              <button type="button" class="secondary" id="importAccountTxtBtn">
+                匯入 帳號.txt
+              </button>
+              <button type="button" class="secondary" id="syncAccountTxtBtn">
+                寫入 資料/帳號.txt
+              </button>
+              <input
+                type="file"
+                id="importAccountTxtFile"
+                accept=".txt,text/plain"
+                hidden
+              />
+            </div>
+            <p class="hint" id="backupStatus" style="margin-bottom: 0">換電腦時：這邊備份 → 新電腦還原。</p>
+          </section>
+        </div>
+      </div>
+
       <section class="credits" id="credits" aria-label="製作名單與贊助">
         <div class="credits-head">
           <div>
@@ -2575,19 +2601,108 @@
           return "skipped";
         }
 
-        async function flashApplied() {
+        function flashApplied() {
           clearTimeout(applyTimer);
           buildUrls();
-          const sync = await syncAccountTxtToDisk({
-            ask: true,
-            downloadFallback: true,
-          });
-          if (sync === "written") applyBtn.textContent = "已寫入帳號.txt";
-          else if (sync === "download") applyBtn.textContent = "已下載帳號.txt";
-          else applyBtn.textContent = "已套用";
+          applyBtn.textContent = "已確認";
           applyTimer = setTimeout(() => {
             applyBtn.textContent = "確定";
-          }, 1400);
+          }, 1200);
+        }
+
+        function setBackupStatus(text) {
+          const el = $("backupStatus");
+          if (el) el.textContent = text;
+        }
+
+        function collectSetupSnapshot() {
+          buildUrls();
+          let setup = null;
+          try {
+            setup = JSON.parse(localStorage.getItem("my_obs_tools_setup") || "null");
+          } catch (_) {
+            setup = null;
+          }
+          return {
+            app: "my_OBS_tools",
+            version: APP_VERSION,
+            exportedAt: new Date().toISOString(),
+            setup,
+            accountTxt: buildAccountTxtContent(),
+            extras: {
+              ytChannelIds: readYtChannelIdCache(),
+              gameHistory: (() => {
+                try {
+                  return JSON.parse(localStorage.getItem(GAME_HISTORY_KEY) || "[]");
+                } catch (_) {
+                  return [];
+                }
+              })(),
+            },
+          };
+        }
+
+        function downloadJsonFile(obj, filename) {
+          const blob = new Blob([JSON.stringify(obj, null, 2)], {
+            type: "application/json;charset=utf-8",
+          });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = filename;
+          a.rel = "noopener";
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+
+        function applySetupSnapshot(data) {
+          if (!data || typeof data !== "object") throw new Error("invalid");
+          const setup = data.setup || data;
+          if (!setup || typeof setup !== "object") throw new Error("no-setup");
+          const rawFields = { ...(setup.fields || {}) };
+          Object.entries(rawFields).forEach(([k, v]) => {
+            if (!fields[k]) return;
+            if (fields[k].type === "checkbox") {
+              fields[k].checked = v === true || v === "true" || v === 1 || v === "1";
+            } else {
+              fields[k].value = v == null ? "" : String(v);
+            }
+          });
+          document.querySelectorAll("#modules input[type=checkbox]").forEach((el) => {
+            if (
+              setup.modules &&
+              Object.prototype.hasOwnProperty.call(setup.modules, el.dataset.key)
+            ) {
+              el.checked = !!setup.modules[el.dataset.key];
+            }
+          });
+          if (Array.isArray(setup.moduleOrder)) applyModuleOrder(setup.moduleOrder);
+          if (Array.isArray(setup.vcPlatformOrder)) {
+            applyVcPlatformOrder(setup.vcPlatformOrder);
+          }
+          if (data.extras?.ytChannelIds) {
+            writeYtChannelIdCache(data.extras.ytChannelIds);
+          }
+          if (Array.isArray(data.extras?.gameHistory)) {
+            try {
+              localStorage.setItem(
+                GAME_HISTORY_KEY,
+                JSON.stringify(data.extras.gameHistory.slice(0, GAME_HISTORY_MAX))
+              );
+            } catch (_) {}
+          }
+          if (typeof data.accountTxt === "string" && data.accountTxt.trim()) {
+            applyAccountMap(parseAccountTxt(data.accountTxt), { force: true });
+          }
+          syncAllBgFields();
+          syncStylePlaceholders();
+          syncGamePlatformChips();
+          renderGameHistory();
+          syncChatPanels();
+          buildUrls();
+          ensureYtChannelIdResolved();
         }
 
         autoUpdateCheck.addEventListener("change", () => {
@@ -3549,12 +3664,19 @@
             const old = importAccountTxtBtn.textContent;
             try {
               const result = await importAccountTxtFromFile(file);
-              if (result.ok) importAccountTxtBtn.textContent = "已匯入帳號";
-              else if (result.reason === "empty")
+              if (result.ok) {
+                importAccountTxtBtn.textContent = "已匯入帳號";
+                setBackupStatus(`已匯入帳號：${file.name}`);
+              } else if (result.reason === "empty") {
                 importAccountTxtBtn.textContent = "檔案是空的";
-              else importAccountTxtBtn.textContent = "匯入失敗";
+                setBackupStatus("匯入失敗：檔案是空的");
+              } else {
+                importAccountTxtBtn.textContent = "匯入失敗";
+                setBackupStatus("匯入失敗");
+              }
             } catch (_) {
               importAccountTxtBtn.textContent = "匯入失敗";
+              setBackupStatus("匯入失敗");
             }
             setTimeout(() => {
               importAccountTxtBtn.textContent = old;
@@ -3573,10 +3695,13 @@
             const old = syncAccountTxtBtn.textContent;
             if (sync === "written") {
               syncAccountTxtBtn.textContent = "已寫入 資料/帳號.txt";
+              setBackupStatus("已寫入 資料/帳號.txt");
             } else if (sync === "download") {
               syncAccountTxtBtn.textContent = "已下載，請放到 資料/";
+              setBackupStatus("已下載 帳號.txt（請放到 資料/）");
             } else {
               syncAccountTxtBtn.textContent = "未寫入";
+              setBackupStatus("未寫入帳號檔");
             }
             setTimeout(() => {
               syncAccountTxtBtn.textContent = old;
@@ -3584,17 +3709,7 @@
           });
         }
 
-        // 已授權資料夾時，改帳號欄位會自動同步 TXT（不跳選資料夾）
-        let accountSyncTimer = 0;
         let ytResolveTimer = 0;
-        [fields.channel, fields.ytChannel, fields.ytVideo, fields.ytKey].forEach((el) => {
-          el.addEventListener("input", () => {
-            clearTimeout(accountSyncTimer);
-            accountSyncTimer = setTimeout(() => {
-              syncAccountTxtToDisk({ ask: false, downloadFallback: false });
-            }, 900);
-          });
-        });
         // @頻道 → UC… 解析快取，讓 OBS 網址用 UC（較穩，且不必每場貼影片）
         [fields.ytChannel, fields.ytKey].forEach((el) => {
           el.addEventListener("input", () => {
@@ -3604,6 +3719,59 @@
             }, 500);
           });
         });
+
+        const backupSetupBtn = $("backupSetupBtn");
+        const restoreSetupBtn = $("restoreSetupBtn");
+        const restoreSetupFile = $("restoreSetupFile");
+        if (backupSetupBtn) {
+          backupSetupBtn.addEventListener("click", () => {
+            const snap = collectSetupSnapshot();
+            const stamp = new Date().toISOString().slice(0, 10);
+            downloadJsonFile(snap, `my_OBS_tools-backup-${stamp}.json`);
+            setBackupStatus(`已下載備份 ${stamp}（完整設定 JSON）`);
+            const old = backupSetupBtn.textContent;
+            backupSetupBtn.textContent = "已下載備份";
+            setTimeout(() => {
+              backupSetupBtn.textContent = old;
+            }, 1400);
+          });
+        }
+        if (restoreSetupBtn && restoreSetupFile) {
+          restoreSetupBtn.addEventListener("click", () => {
+            restoreSetupFile.value = "";
+            restoreSetupFile.click();
+          });
+          restoreSetupFile.addEventListener("change", async () => {
+            const file = restoreSetupFile.files && restoreSetupFile.files[0];
+            if (!file) return;
+            const old = restoreSetupBtn.textContent;
+            try {
+              const data = JSON.parse(await file.text());
+              applySetupSnapshot(data);
+              setBackupStatus(`已還原：${file.name}`);
+              restoreSetupBtn.textContent = "已還原";
+            } catch (_) {
+              setBackupStatus("還原失敗：檔案格式不對");
+              restoreSetupBtn.textContent = "還原失敗";
+            }
+            setTimeout(() => {
+              restoreSetupBtn.textContent = old;
+            }, 1600);
+          });
+        }
+
+        const exportAccountTxtBtn = $("exportAccountTxtBtn");
+        if (exportAccountTxtBtn) {
+          exportAccountTxtBtn.addEventListener("click", () => {
+            downloadAccountTxtFile(buildAccountTxtContent());
+            setBackupStatus("已下載 帳號.txt");
+            const old = exportAccountTxtBtn.textContent;
+            exportAccountTxtBtn.textContent = "已匯出";
+            setTimeout(() => {
+              exportAccountTxtBtn.textContent = old;
+            }, 1400);
+          });
+        }
 
         bindColorPickers();
         syncAllBgFields();

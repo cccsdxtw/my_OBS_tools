@@ -1798,12 +1798,105 @@
           </aside>
         </div>
 
+        <!-- ⑧ 贊助條 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑧ 贊助條</h2>
+              <span class="side-title">TW 小奇點 · YT 超留</span>
+            </div>
+            <p class="hint">
+              自動抓 <strong>Twitch Cheer／小奇點</strong>（聊天 IRC，免 OAuth）與
+              <strong>YouTube 超級留言</strong>（用最上方帳號＋API Key）。不支援 Ko-fi。
+              本場累計會顯示在條上；可設目標進度條。
+            </p>
+            <div class="row">
+              <div>
+                <label for="spGoal">目標金額（選填）</label>
+                <input id="spGoal" type="number" min="0" step="1" placeholder="0＝不顯示進度條" />
+              </div>
+              <div>
+                <label for="spGoalCurrency">目標幣別</label>
+                <select id="spGoalCurrency">
+                  <option value="TWD" selected>TWD</option>
+                  <option value="USD">USD</option>
+                  <option value="JPY">JPY</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="spGoalLabel">目標標籤</label>
+                <input id="spGoalLabel" type="text" value="本場目標" placeholder="本場目標" />
+              </div>
+              <div>
+                <label for="spBitsRate">小奇點換算（每 100 bits）</label>
+                <input
+                  id="spBitsRate"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value="0"
+                  placeholder="0＝不計入目標"
+                />
+              </div>
+            </div>
+            <p class="hint">換算例：填 1 → 每 100 bits 算目標幣 1 元。只影響進度條，TW bits 總數仍分開顯示。</p>
+            <div class="row">
+              <div>
+                <label for="spMax">最近幾筆</label>
+                <input id="spMax" type="number" min="3" max="20" value="8" />
+              </div>
+              <div>
+                <label for="spFontSize">字級</label>
+                <input id="spFontSize" type="number" min="12" max="48" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="spColor">文字色</label>
+                <input id="spColor" type="text" placeholder="用預設" />
+              </div>
+              <div>
+                <label><input type="checkbox" id="spHideStatus" checked /> 隱藏連線狀態</label>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="spShowBg" checked /> 顯示底色</label>
+              </div>
+              <div>
+                <label for="spBg">底色</label>
+                <input id="spBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑧ 贊助條網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="spUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 700–1100、高度 70–120。預覽含示範小奇點／超留。</p>
+            <div class="actions">
+              <button type="button" id="copySp">複製贊助條網址</button>
+              <a class="btn secondary" id="openSp" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap" style="min-height: 100px">
+              <iframe id="previewSp" title="sponsor preview" style="height: 100px"></iframe>
+            </div>
+          </aside>
+        </div>
+
         <div class="note">
           <strong>為什麼不用一直驗證？</strong><br />
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          ①②③⑤⑥ 右邊網址各自加 OBS 瀏覽器來源即可（⑦ 回覆除外）。
+          ①②③⑤⑥⑧ 右邊網址各自加 OBS 瀏覽器來源即可（⑦ 回覆除外）。
         </div>
       </div>
 
@@ -1959,6 +2052,7 @@
           "子頁/game.html",
           "子頁/chat.html",
           "子頁/chat-reply.html",
+          "子頁/sponsor.html",
           "資料/帳號.txt",
           "圖片/說明.txt",
           "README.md",
@@ -2790,6 +2884,16 @@
           chatBg: $("chatBg"),
           chatCss: $("chatCss"),
           restreamChatUrl: $("restreamChatUrl"),
+          spGoal: $("spGoal"),
+          spGoalCurrency: $("spGoalCurrency"),
+          spGoalLabel: $("spGoalLabel"),
+          spBitsRate: $("spBitsRate"),
+          spMax: $("spMax"),
+          spFontSize: $("spFontSize"),
+          spColor: $("spColor"),
+          spHideStatus: $("spHideStatus"),
+          spShowBg: $("spShowBg"),
+          spBg: $("spBg"),
         };
 
         // 所有左右排序：↑↓（列表上＝左邊）
@@ -2936,6 +3040,7 @@
             fields.countdownFontSize,
             fields.gameFontSize,
             fields.chatFontSize,
+            fields.spFontSize,
           ].forEach((el) => {
             el.placeholder = `預設 ${fs}`;
           });
@@ -2945,6 +3050,7 @@
             fields.countdownColor,
             fields.gameColor,
             fields.chatColor,
+            fields.spColor,
           ].forEach((el) => {
             el.placeholder = `預設 ${col}`;
           });
@@ -3009,6 +3115,7 @@
           syncBgField(fields.countdownShowBg, fields.countdownBg);
           syncBgField(fields.gameShowBg, fields.gameBg);
           syncBgField(fields.chatShowBg, fields.chatBg);
+          syncBgField(fields.spShowBg, fields.spBg);
         }
 
         const GAME_HISTORY_KEY = "my_obs_tools_game_history";
@@ -3420,6 +3527,30 @@
           $("chatSourceWrap").style.visibility = split ? "hidden" : "visible";
         }
 
+        function buildSponsorUrl(opts = {}) {
+          const url = pageUrl("sponsor.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
+          const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
+          const ytKey = fields.ytKey.value.trim();
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          const goal = parseFloat(fields.spGoal.value);
+          if (goal && goal > 0) p.set("goal", String(goal));
+          if (fields.spGoalCurrency.value) p.set("goalCurrency", fields.spGoalCurrency.value);
+          if (fields.spGoalLabel.value.trim()) p.set("goalLabel", fields.spGoalLabel.value.trim());
+          const bitsRate = parseFloat(fields.spBitsRate.value);
+          if (bitsRate && bitsRate > 0) p.set("bitsRate", String(bitsRate));
+          if (fields.spMax.value) p.set("max", fields.spMax.value);
+          if (fields.spHideStatus.checked) p.set("hideStatus", "1");
+          if (opts.demo) p.set("demo", "1");
+          styleParams(p, fields.spShowBg, fields.spBg, fields.spFontSize, fields.spColor);
+          return url.toString();
+        }
+
         function buildUrls() {
           syncStylePlaceholders();
           syncGamePlatformChips();
@@ -3477,6 +3608,12 @@
             fields.restreamChatUrl.value.trim() || "https://chat.restream.io/";
           $("openRestreamChat").href = restreamHref;
 
+          const spHref = buildSponsorUrl();
+          const spDemoHref = buildSponsorUrl({ demo: true });
+          $("spUrl").value = spHref;
+          $("openSp").href = spDemoHref;
+          $("previewSp").src = spDemoHref;
+
           localStorage.setItem(
             "my_obs_tools_setup",
             JSON.stringify({
@@ -3491,7 +3628,17 @@
               vcPlatformOrder: getVcPlatformOrder(),
             })
           );
-          return { href, cdHref, vcHref, gameHref, chatHref, chatHrefTw, chatHrefYt, chatReplyHref };
+          return {
+            href,
+            cdHref,
+            vcHref,
+            gameHref,
+            chatHref,
+            chatHrefTw,
+            chatHrefYt,
+            chatReplyHref,
+            spHref,
+          };
         }
 
         async function copyText(text, btn, resetLabel) {
@@ -3567,6 +3714,11 @@
           $("chatReplyUrl").select();
           await copyText(chatReplyHref, $("copyChatReply"), "複製回覆視窗網址");
         });
+        $("copySp").addEventListener("click", async () => {
+          const { spHref } = buildUrls();
+          $("spUrl").select();
+          await copyText(spHref, $("copySp"), "複製贊助條網址");
+        });
 
         Object.values(fields).forEach((el) => {
           el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
@@ -3575,7 +3727,8 @@
               el === fields.viewersShowBg ||
               el === fields.countdownShowBg ||
               el === fields.gameShowBg ||
-              el === fields.chatShowBg
+              el === fields.chatShowBg ||
+              el === fields.spShowBg
             ) {
               syncAllBgFields();
             }

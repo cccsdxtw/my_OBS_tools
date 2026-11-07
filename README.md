@@ -4,7 +4,7 @@ OBS 統合工具：觀看人數、已開台時間、日期／時間、國旗、�
 
 預設免 Twitch OAuth，不用再把會過期的 Access Token 塞進網址重驗證。
 
-資訊條／倒計時／人數／遊戲名稱／聊天室是**獨立網址**，OBS 可分開放多個瀏覽器來源。
+資訊條／倒計時／人數／遊戲名稱／聊天室／贊助條是**獨立網址**，OBS 可分開放多個瀏覽器來源。
 
 ## 目錄
 
@@ -30,6 +30,7 @@ material-icons.js  ← Google Fonts 優先、失敗改本機字型
 - **倒計時**：`子頁/countdown.html`
 - **遊戲名稱**：`子頁/game.html`（格式「遊戲名稱： 平台 - 遊戲名」）
 - **聊天室**：`子頁/chat.html`
+- **贊助條**：`子頁/sponsor.html`（Twitch 小奇點 IRC＋YouTube 超留；可設目標進度條）
 - **回覆**：建議用 [Restream Chat](https://chat.restream.io/)；備選 `子頁/chat-reply.html`
 - **帳號**：存 localStorage，並可同步到 `資料/帳號.txt`（換機帶這份檔；入口開頁會讀入）
 
@@ -44,6 +45,7 @@ material-icons.js  ← Google Fonts 優先、失敗改本機字型
    - 觀眾人數 `子頁/viewers.html`
    - 遊戲名稱 `子頁/game.html`
    - 聊天室 `子頁/chat.html`
+   - 贊助條 `子頁/sponsor.html`（TW 小奇點／YT 超留）
 
 也可從 [Releases](https://github.com/cccsdxtw/my_OBS_tools/releases) 下載打包檔，解壓後開 `入口.html`。
 

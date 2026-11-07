@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS 贊助條 · TW 小奇點 + YT 超留</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.55);
+        --tw: #bf94ff;
+        --yt: #ff6b6b;
+        --bar: #3dcf9a;
+        --size: 18px;
+        --pad-x: 12px;
+        --pad-y: 8px;
+        --radius: 0;
+        --gap: 10px;
+        --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
+          "PingFang TC", sans-serif;
+        --font-num: "JetBrains Mono", "Cascadia Mono", "Consolas", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        color: var(--fg);
+        font-family: var(--font-zh);
+      }
+
+      #bar {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: calc(var(--size) + 16px);
+        padding: var(--pad-y) var(--pad-x);
+        background: var(--bg);
+        border-radius: var(--radius);
+        line-height: 1.2;
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        gap: var(--gap);
+        flex-wrap: wrap;
+        white-space: nowrap;
+      }
+
+      .totals {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: var(--size);
+        font-weight: 700;
+      }
+
+      .tot.tw {
+        color: var(--tw);
+      }
+      .tot.yt {
+        color: var(--yt);
+      }
+
+      .tot span.num {
+        font-family: var(--font-num);
+        font-weight: 700;
+      }
+
+      .goal-wrap {
+        flex: 1;
+        min-width: 120px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .goal-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: calc(var(--size) * 0.72);
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .goal-track {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        overflow: hidden;
+      }
+
+      .goal-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--bar);
+        transition: width 0.35s ease;
+      }
+
+      #status {
+        margin-left: auto;
+        font-size: calc(var(--size) * 0.7);
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      body.hide-status #status {
+        display: none;
+      }
+
+      .feed {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+        min-height: calc(var(--size) * 1.1);
+      }
+
+      .evt {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.35em;
+        padding: 2px 8px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: calc(var(--size) * 0.88);
+        font-weight: 600;
+        white-space: nowrap;
+        animation: pop 0.35s ease;
+      }
+
+      .evt.tw {
+        box-shadow: inset 3px 0 0 var(--tw);
+      }
+      .evt.yt {
+        box-shadow: inset 3px 0 0 var(--yt);
+      }
+
+      .evt .who {
+        color: var(--fg);
+      }
+      .evt .amt {
+        font-family: var(--font-num);
+        font-weight: 700;
+      }
+      .evt.tw .amt {
+        color: var(--tw);
+      }
+      .evt.yt .amt {
+        color: var(--yt);
+      }
+      .evt .msg {
+        color: var(--muted);
+        font-weight: 500;
+        max-width: 14em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      @keyframes pop {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar" aria-live="polite">
+      <div class="top">
+        <div class="totals">
+          <div class="tot tw" id="totTw" hidden>TW <span class="num" id="twBits">0</span> bits</div>
+          <div class="tot yt" id="totYt" hidden>YT <span class="num" id="ytMoney">—</span></div>
+        </div>
+        <div class="goal-wrap" id="goalWrap" hidden>
+          <div class="goal-meta">
+            <span id="goalLabel">本場目標</span>
+            <span id="goalText">0 / 0</span>
+          </div>
+          <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+        </div>
+        <div id="status">…</div>
+      </div>
+      <div class="feed" id="feed"></div>
+    </div>
+
+    <script>
+      (() => {
+        const YT_API = "https://www.googleapis.com/youtube/v3";
+        const params = new URLSearchParams(location.search);
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        cssVar("--fg", params.get("color"));
+        const bgParam = (params.get("bg") || "").trim();
+        if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {
+          cssVar("--bg", "transparent");
+        } else {
+          cssVar("--bg", bgParam);
+        }
+        if (params.get("hideStatus") === "1") document.body.classList.add("hide-status");
+
+        const twitchLogin = (
+          params.get("login") ||
+          params.get("twitch") ||
+          params.get("channel") ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+        const ytChannel = (params.get("yt") || params.get("youtube") || params.get("ytChannel") || "").trim();
+        const ytKey = (params.get("ytKey") || params.get("youtubeKey") || "").trim();
+
+        function extractYoutubeVideoId(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return "";
+          if (/^[\w-]{11}$/.test(s)) return s;
+          try {
+            const u = new URL(s);
+            const host = u.hostname.replace(/^www\./, "");
+            if (host === "youtu.be") {
+              const id = u.pathname.split("/").filter(Boolean)[0] || "";
+              return /^[\w-]{11}$/.test(id) ? id : "";
+            }
+            if (
+              host === "youtube.com" ||
+              host === "m.youtube.com" ||
+              host === "music.youtube.com"
+            ) {
+              const v = u.searchParams.get("v");
+              if (v && /^[\w-]{11}$/.test(v)) return v;
+              const parts = u.pathname.split("/").filter(Boolean);
+              if (
+                (parts[0] === "live" || parts[0] === "embed" || parts[0] === "shorts") &&
+                parts[1] &&
+                /^[\w-]{11}$/.test(parts[1])
+              ) {
+                return parts[1];
+              }
+            }
+          } catch (_) {}
+          const m = s.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([\w-]{11})/);
+          return m ? m[1] : s;
+        }
+
+        const ytVideoParam = extractYoutubeVideoId(params.get("ytVideo") || "");
+        const wantTw = !!twitchLogin;
+        const wantYt = !!(ytVideoParam || (ytChannel && ytKey));
+        const demo = params.get("demo") === "1";
+        const maxEvents = Math.max(3, Math.min(20, parseInt(params.get("max") || "8", 10) || 8));
+        const goal = Math.max(0, Number(params.get("goal") || 0) || 0);
+        const bitsRate = Math.max(0, Number(params.get("bitsRate") || 0) || 0); // 每 100 bits → 多少目標幣
+        const goalCurrency = (params.get("goalCurrency") || "TWD").trim() || "TWD";
+        const goalLabel = (params.get("goalLabel") || "本場目標").trim() || "本場目標";
+
+        const els = {
+          totTw: document.getElementById("totTw"),
+          totYt: document.getElementById("totYt"),
+          twBits: document.getElementById("twBits"),
+          ytMoney: document.getElementById("ytMoney"),
+          goalWrap: document.getElementById("goalWrap"),
+          goalLabel: document.getElementById("goalLabel"),
+          goalText: document.getElementById("goalText"),
+          goalFill: document.getElementById("goalFill"),
+          feed: document.getElementById("feed"),
+          status: document.getElementById("status"),
+        };
+
+        els.totTw.hidden = !wantTw && !demo;
+        els.totYt.hidden = !wantYt && !demo;
+        if (goal > 0) {
+          els.goalWrap.hidden = false;
+          els.goalLabel.textContent = goalLabel;
+        }
+
+        const connected = { tw: false, yt: false };
+        let twBitsTotal = 0;
+        /** @type {Record<string, number>} currency -> major units */
+        const ytByCurrency = {};
+        const events = [];
+
+        function refreshStatus() {
+          if (demo && !wantTw && !wantYt) {
+            els.status.textContent = "DEMO";
+            return;
+          }
+          const parts = [];
+          if (wantTw) parts.push(connected.tw ? "TW●" : "TW○");
+          if (wantYt) parts.push(connected.yt ? "YT●" : "YT○");
+          if (demo) parts.push("DEMO");
+          els.status.textContent = parts.length ? parts.join(" ") : "NO SRC";
+        }
+
+        function formatYtTotals() {
+          const keys = Object.keys(ytByCurrency);
+          if (!keys.length) return "0";
+          return keys
+            .map((c) => {
+              const n = ytByCurrency[c];
+              if (c === "TWD") return `NT$${Math.round(n)}`;
+              if (c === "USD") return `$${n.toFixed(2)}`;
+              return `${c} ${n.toFixed(2)}`;
+            })
+            .join(" · ");
+        }
+
+        function goalProgressValue() {
+          // 目標條：YT 該幣別 +（可選）bits 換算
+          let sum = ytByCurrency[goalCurrency] || 0;
+          if (bitsRate > 0) sum += (twBitsTotal * bitsRate) / 100; // bitsRate = 每 100 bits 多少該幣
+          return sum;
+        }
+
+        function renderTotals() {
+          els.twBits.textContent = String(twBitsTotal);
+          els.ytMoney.textContent = formatYtTotals();
+          if (goal > 0) {
+            const cur = goalProgressValue();
+            const pct = Math.max(0, Math.min(100, (cur / goal) * 100));
+            els.goalFill.style.width = pct.toFixed(1) + "%";
+            const curLabel =
+              goalCurrency === "TWD"
+                ? `NT$${Math.round(cur)}`
+                : `${goalCurrency} ${cur.toFixed(0)}`;
+            const goalLabelAmt =
+              goalCurrency === "TWD" ? `NT$${Math.round(goal)}` : `${goalCurrency} ${goal}`;
+            els.goalText.textContent = `${curLabel} / ${goalLabelAmt}`;
+          }
+        }
+
+        function pushEvent(evt) {
+          events.unshift(evt);
+          while (events.length > maxEvents) events.pop();
+          els.feed.innerHTML = "";
+          events.forEach((e) => {
+            const row = document.createElement("div");
+            row.className = `evt ${e.platform}`;
+            const who = document.createElement("span");
+            who.className = "who";
+            who.textContent = e.user || "anon";
+            const amt = document.createElement("span");
+            amt.className = "amt";
+            amt.textContent = e.amountText;
+            row.append(who, amt);
+            if (e.message) {
+              const msg = document.createElement("span");
+              msg.className = "msg";
+              msg.textContent = e.message;
+              row.appendChild(msg);
+            }
+            els.feed.appendChild(row);
+          });
+        }
+
+        function addTwBits(user, bits, message) {
+          const n = Math.max(0, parseInt(bits, 10) || 0);
+          if (!n) return;
+          twBitsTotal += n;
+          pushEvent({
+            platform: "tw",
+            user,
+            amountText: `${n} bits`,
+            message: (message || "").replace(/Cheer\d+/gi, "").trim(),
+          });
+          renderTotals();
+        }
+
+        function addYtSuper(user, amountDisplay, amountMicros, currency, message) {
+          const cur = (currency || "TWD").toUpperCase();
+          const major = amountMicros != null ? Number(amountMicros) / 1e6 : 0;
+          if (!Number.isNaN(major) && major > 0) {
+            ytByCurrency[cur] = (ytByCurrency[cur] || 0) + major;
+          }
+          pushEvent({
+            platform: "yt",
+            user,
+            amountText: amountDisplay || `${cur} ${major}`,
+            message: (message || "").trim(),
+          });
+          renderTotals();
+        }
+
+        // ----- Twitch IRC cheers -----
+        function connectTwitch() {
+          if (!wantTw) return;
+          const nick = `justinfan${Math.floor(10000 + Math.random() * 80000)}`;
+          let ws;
+          let closed = false;
+          let retry = 0;
+
+          function connect() {
+            ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
+            ws.addEventListener("open", () => {
+              ws.send("PASS SCHMOOPIIE");
+              ws.send(`NICK ${nick}`);
+              ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands");
+              ws.send(`JOIN #${twitchLogin}`);
+            });
+            ws.addEventListener("message", (ev) => {
+              String(ev.data || "")
+                .split("\r\n")
+                .forEach((line) => {
+                  if (!line) return;
+                  if (line.startsWith("PING")) {
+                    ws.send("PONG :tmi.twitch.tv");
+                    return;
+                  }
+                  if (line.includes(" JOIN #")) {
+                    connected.tw = true;
+                    refreshStatus();
+                  }
+                  const m = line.match(
+                    /^(?:@([^ ]+) )?(?::([^ ]+) )?PRIVMSG #[^ ]+ :(.*)$/
+                  );
+                  if (!m) return;
+                  const tags = {};
+                  if (m[1]) {
+                    m[1].split(";").forEach((kv) => {
+                      const i = kv.indexOf("=");
+                      if (i > -1) tags[kv.slice(0, i)] = kv.slice(i + 1);
+                    });
+                  }
+                  const bits = tags.bits;
+                  if (!bits) return;
+                  const user =
+                    decodeURIComponent((tags["display-name"] || "").replace(/\\s/g, " ")) ||
+                    (m[2] || "").split("!")[0] ||
+                    "twitch";
+                  addTwBits(user, bits, m[3] || "");
+                });
+            });
+            ws.addEventListener("close", () => {
+              connected.tw = false;
+              refreshStatus();
+              if (closed) return;
+              retry = Math.min(retry + 1, 6);
+              setTimeout(connect, 1000 * retry);
+            });
+            ws.addEventListener("error", () => {
+              try {
+                ws.close();
+              } catch (_) {}
+            });
+          }
+          connect();
+          window.addEventListener("beforeunload", () => {
+            closed = true;
+            try {
+              ws && ws.close();
+            } catch (_) {}
+          });
+        }
+
+        // ----- YouTube super chat (reuse live resolve) -----
+        async function ytFetchJson(url, label) {
+          let res;
+          try {
+            res = await fetch(url);
+          } catch (e) {
+            throw new Error(`${label} network`);
+          }
+          let json = null;
+          try {
+            json = await res.json();
+          } catch (_) {}
+          if (!res.ok) {
+            throw new Error(`${label} ${res.status}`);
+          }
+          return json;
+        }
+
+        function normalizeHandle(input) {
+          let s = String(input || "").trim();
+          if (s.startsWith("http://") || s.startsWith("https://")) {
+            try {
+              const u = new URL(s);
+              const parts = u.pathname.split("/").filter(Boolean);
+              if (parts[0] === "channel" && parts[1]) return parts[1];
+              if (parts[0]?.startsWith("@")) return parts[0];
+              if (parts[0]) return parts[0];
+            } catch (_) {}
+          }
+          return s;
+        }
+
+        const ytLiveCacheKey = `laji_obs_yt_live_cache:${(
+          ytChannel ||
+          ytVideoParam ||
+          "default"
+        ).toLowerCase()}`;
+
+        function readYtLiveCache() {
+          try {
+            return JSON.parse(localStorage.getItem(ytLiveCacheKey) || "null");
+          } catch (_) {
+            return null;
+          }
+        }
+        function writeYtLiveCache(data) {
+          try {
+            localStorage.setItem(ytLiveCacheKey, JSON.stringify(data));
+          } catch (_) {}
+        }
+        function clearYtLiveCache() {
+          try {
+            localStorage.removeItem(ytLiveCacheKey);
+          } catch (_) {}
+        }
+
+        async function resolveYtChannelId() {
+          const raw = normalizeHandle(ytChannel);
+          if (/^UC[\w-]{22}$/.test(raw)) return raw;
+          const cache = readYtLiveCache();
+          if (cache?.channelId && /^UC[\w-]{22}$/.test(cache.channelId)) return cache.channelId;
+          const handle = raw.startsWith("@") ? raw.slice(1) : raw;
+          const url = `${YT_API}/channels?part=id&forHandle=${encodeURIComponent(
+            handle
+          )}&key=${encodeURIComponent(ytKey)}`;
+          const json = await ytFetchJson(url, "yt channel");
+          const id = json?.items?.[0]?.id;
+          if (!id) throw new Error("yt channel not found");
+          return id;
+        }
+
+        async function resolveLiveViaUploads(channelId) {
+          const chJson = await ytFetchJson(
+            `${YT_API}/channels?part=contentDetails&id=${encodeURIComponent(
+              channelId
+            )}&key=${encodeURIComponent(ytKey)}`,
+            "yt channel details"
+          );
+          const uploads = chJson?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+          if (!uploads) return null;
+          const plJson = await ytFetchJson(
+            `${YT_API}/playlistItems?part=contentDetails&playlistId=${encodeURIComponent(
+              uploads
+            )}&maxResults=15&key=${encodeURIComponent(ytKey)}`,
+            "yt uploads"
+          );
+          const ids = (plJson?.items || [])
+            .map((it) => it?.contentDetails?.videoId)
+            .filter(Boolean);
+          if (!ids.length) return null;
+          const vJson = await ytFetchJson(
+            `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+              ids.join(",")
+            )}&key=${encodeURIComponent(ytKey)}`,
+            "yt recent videos"
+          );
+          const live = (vJson?.items || []).find((it) => {
+            const d = it?.liveStreamingDetails;
+            return d && d.actualStartTime && !d.actualEndTime;
+          });
+          return live?.id || null;
+        }
+
+        async function resolveLiveVideoId() {
+          if (ytVideoParam) return ytVideoParam;
+          const cache = readYtLiveCache();
+          if (cache?.videoId) {
+            try {
+              const vJson = await ytFetchJson(
+                `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+                  cache.videoId
+                )}&key=${encodeURIComponent(ytKey)}`,
+                "yt videos"
+              );
+              const d = vJson?.items?.[0]?.liveStreamingDetails;
+              if (d && d.actualStartTime && !d.actualEndTime) return cache.videoId;
+            } catch (_) {}
+            clearYtLiveCache();
+          }
+          const channelId = await resolveYtChannelId();
+          let id = null;
+          try {
+            id = await resolveLiveViaUploads(channelId);
+          } catch (e) {
+            console.warn(e);
+          }
+          if (!id) {
+            const json = await ytFetchJson(
+              `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
+                channelId
+              )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`,
+              "yt search"
+            );
+            id = json?.items?.[0]?.id?.videoId || null;
+          }
+          if (id) writeYtLiveCache({ channelId, videoId: id, ts: Date.now() });
+          return id;
+        }
+
+        async function resolveLiveChatId(videoId) {
+          const json = await ytFetchJson(
+            `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+              videoId
+            )}&key=${encodeURIComponent(ytKey)}`,
+            "yt videos"
+          );
+          const d = json?.items?.[0]?.liveStreamingDetails;
+          if (!d || d.actualEndTime) return null;
+          return d.activeLiveChatId || null;
+        }
+
+        async function pollYoutube() {
+          if (!wantYt) return;
+          if (!ytKey && !ytVideoParam) return;
+          let chatId = null;
+          let pageToken = "";
+          let seen = new Set();
+          let fail = 0;
+
+          async function ensure() {
+            const videoId = await resolveLiveVideoId();
+            if (!videoId) throw new Error("yt offline");
+            chatId = await resolveLiveChatId(videoId);
+            if (!chatId) throw new Error("yt no live chat");
+            connected.yt = true;
+            refreshStatus();
+            fail = 0;
+          }
+
+          async function tick() {
+            try {
+              if (!chatId) await ensure();
+              const url = new URL(`${YT_API}/liveChat/messages`);
+              url.searchParams.set("liveChatId", chatId);
+              url.searchParams.set("part", "snippet,authorDetails");
+              url.searchParams.set("maxResults", "20");
+              url.searchParams.set("key", ytKey);
+              if (pageToken) url.searchParams.set("pageToken", pageToken);
+              const res = await fetch(url);
+              if (!res.ok) {
+                if (res.status === 403 || res.status === 404) {
+                  chatId = null;
+                  connected.yt = false;
+                  refreshStatus();
+                  clearYtLiveCache();
+                }
+                throw new Error("yt chat " + res.status);
+              }
+              const json = await res.json();
+              pageToken = json.nextPageToken || pageToken;
+              const wait = Math.max(2500, Number(json.pollingIntervalMillis || 5000));
+              (json.items || []).forEach((item) => {
+                const id = item.id;
+                if (!id || seen.has(id)) return;
+                seen.add(id);
+                if (seen.size > 500) seen = new Set(Array.from(seen).slice(-200));
+                const type = item.snippet?.type || "";
+                if (type !== "superChatEvent" && type !== "superStickerEvent") return;
+                const details =
+                  item.snippet?.superChatDetails || item.snippet?.superStickerDetails || {};
+                const user = item.authorDetails?.displayName || "youtube";
+                addYtSuper(
+                  user,
+                  details.amountDisplayString || "",
+                  details.amountMicros,
+                  details.currency,
+                  details.userComment || item.snippet?.displayMessage || ""
+                );
+              });
+              setTimeout(tick, wait);
+            } catch (err) {
+              console.warn(err);
+              connected.yt = false;
+              refreshStatus();
+              fail += 1;
+              chatId = fail >= 3 ? null : chatId;
+              setTimeout(tick, Math.min(15000, 3000 * fail));
+            }
+          }
+          tick();
+        }
+
+        function startDemo() {
+          const samples = [
+            () => addTwBits("NightOwl", 100, "加油"),
+            () => addYtSuper("貓奴", "NT$50", 50e6, "TWD", "超留測試"),
+            () => addTwBits("Tea", 500, "Cheer500 POG"),
+            () => addYtSuper("小白", "NT$100", 100e6, "TWD", "晚上好"),
+          ];
+          samples.forEach((fn, i) => setTimeout(fn, 400 + i * 900));
+          let i = 0;
+          setInterval(() => {
+            samples[i % samples.length]();
+            i += 1;
+          }, 3200);
+        }
+
+        if (!wantTw && !wantYt && !demo) {
+          els.status.textContent = "NO SRC";
+          return;
+        }
+        renderTotals();
+        refreshStatus();
+        if (demo) startDemo();
+        else {
+          connectTwitch();
+          pollYoutube();
+        }
+      })();
+    </script>
+  </body>
+</html>

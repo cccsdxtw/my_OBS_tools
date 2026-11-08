@@ -74,6 +74,9 @@
       .tot.yt {
         color: var(--yt);
       }
+      .tot.combined {
+        color: var(--bar);
+      }
 
       .tot span.num {
         font-family: var(--font-num);
@@ -184,6 +187,9 @@
     <div id="bar" aria-live="polite">
       <div class="top">
         <div class="totals">
+          <div class="tot combined" id="totCombined" hidden>
+            合計 <span class="num" id="combinedMoney">—</span>
+          </div>
           <div class="tot tw" id="totTw" hidden>TW <span class="num" id="twBits">0</span> bits</div>
           <div class="tot yt" id="totYt" hidden>YT <span class="num" id="ytMoney">—</span></div>
         </div>
@@ -267,11 +273,48 @@
         const demo = params.get("demo") === "1";
         const maxEvents = Math.max(3, Math.min(20, parseInt(params.get("max") || "8", 10) || 8));
         const goal = Math.max(0, Number(params.get("goal") || 0) || 0);
-        const bitsRate = Math.max(0, Number(params.get("bitsRate") || 0) || 0); // 每 100 bits → 多少目標幣
+        const combine = params.get("combine") === "1";
+        const bitsRate = combine
+          ? Math.max(0, Number(params.get("bitsRate") || 0) || 0)
+          : 0; // 每 100 bits → 多少目標幣（僅合併時）
         const goalCurrency = (params.get("goalCurrency") || "TWD").trim() || "TWD";
         const goalLabel = (params.get("goalLabel") || "本場目標").trim() || "本場目標";
 
+        function parseTimeMs(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return null;
+          const t = Date.parse(s);
+          return Number.isNaN(t) ? null : t;
+        }
+
+        const windowStartMs = parseTimeMs(params.get("start") || params.get("from"));
+        const durationMins = Math.max(0, parseInt(params.get("duration") || "0", 10) || 0);
+        let windowEndMs = parseTimeMs(params.get("end") || params.get("until"));
+        if (windowEndMs == null && windowStartMs != null && durationMins > 0) {
+          windowEndMs = windowStartMs + durationMins * 60 * 1000;
+        } else if (windowEndMs == null && windowStartMs == null && durationMins > 0) {
+          // 無開始時間時：以頁面載入當下當開始，再加時長
+          windowEndMs = Date.now() + durationMins * 60 * 1000;
+        }
+
+        function inCountWindow(tsMs) {
+          if (demo) return true;
+          const t = tsMs == null || Number.isNaN(tsMs) ? Date.now() : tsMs;
+          if (windowStartMs != null && t < windowStartMs) return false;
+          if (windowEndMs != null && t >= windowEndMs) return false;
+          return true;
+        }
+
+        function windowPhase(now = Date.now()) {
+          if (demo) return "demo";
+          if (windowStartMs != null && now < windowStartMs) return "wait";
+          if (windowEndMs != null && now >= windowEndMs) return "done";
+          return "active";
+        }
+
         const els = {
+          totCombined: document.getElementById("totCombined"),
+          combinedMoney: document.getElementById("combinedMoney"),
           totTw: document.getElementById("totTw"),
           totYt: document.getElementById("totYt"),
           twBits: document.getElementById("twBits"),
@@ -284,8 +327,12 @@
           status: document.getElementById("status"),
         };
 
-        els.totTw.hidden = !wantTw && !demo;
-        els.totYt.hidden = !wantYt && !demo;
+        const showTw = wantTw || demo;
+        const showYt = wantYt || demo;
+        // 合併時多顯示「合計」；TW／YT 明細仍分開列，方便核對
+        els.totCombined.hidden = !(combine && (showTw || showYt));
+        els.totTw.hidden = !showTw;
+        els.totYt.hidden = !showYt;
         if (goal > 0) {
           els.goalWrap.hidden = false;
           els.goalLabel.textContent = goalLabel;
@@ -303,46 +350,50 @@
             return;
           }
           const parts = [];
+          const phase = windowPhase();
+          if (phase === "wait") parts.push("未開始");
+          else if (phase === "done") parts.push("已結束");
+          else if (windowStartMs != null || windowEndMs != null) parts.push("計時中");
           if (wantTw) parts.push(connected.tw ? "TW●" : "TW○");
           if (wantYt) parts.push(connected.yt ? "YT●" : "YT○");
+          if (combine) parts.push("合併");
           if (demo) parts.push("DEMO");
           els.status.textContent = parts.length ? parts.join(" ") : "NO SRC";
+        }
+
+        function formatMoney(amount, currency) {
+          const c = currency || goalCurrency;
+          if (c === "TWD") return `NT$${Math.round(amount)}`;
+          if (c === "USD") return `$${Number(amount).toFixed(2)}`;
+          return `${c} ${Number(amount).toFixed(2)}`;
         }
 
         function formatYtTotals() {
           const keys = Object.keys(ytByCurrency);
           if (!keys.length) return "0";
-          return keys
-            .map((c) => {
-              const n = ytByCurrency[c];
-              if (c === "TWD") return `NT$${Math.round(n)}`;
-              if (c === "USD") return `$${n.toFixed(2)}`;
-              return `${c} ${n.toFixed(2)}`;
-            })
-            .join(" · ");
+          return keys.map((c) => formatMoney(ytByCurrency[c], c)).join(" · ");
         }
 
         function goalProgressValue() {
-          // 目標條：YT 該幣別 +（可選）bits 換算
           let sum = ytByCurrency[goalCurrency] || 0;
-          if (bitsRate > 0) sum += (twBitsTotal * bitsRate) / 100; // bitsRate = 每 100 bits 多少該幣
+          if (combine && bitsRate > 0) sum += (twBitsTotal * bitsRate) / 100;
           return sum;
         }
 
         function renderTotals() {
           els.twBits.textContent = String(twBitsTotal);
           els.ytMoney.textContent = formatYtTotals();
+          if (combine) {
+            els.combinedMoney.textContent = formatMoney(goalProgressValue(), goalCurrency);
+          }
           if (goal > 0) {
             const cur = goalProgressValue();
             const pct = Math.max(0, Math.min(100, (cur / goal) * 100));
             els.goalFill.style.width = pct.toFixed(1) + "%";
-            const curLabel =
-              goalCurrency === "TWD"
-                ? `NT$${Math.round(cur)}`
-                : `${goalCurrency} ${cur.toFixed(0)}`;
-            const goalLabelAmt =
-              goalCurrency === "TWD" ? `NT$${Math.round(goal)}` : `${goalCurrency} ${goal}`;
-            els.goalText.textContent = `${curLabel} / ${goalLabelAmt}`;
+            els.goalText.textContent = `${formatMoney(cur, goalCurrency)} / ${formatMoney(
+              goal,
+              goalCurrency
+            )}`;
           }
         }
 
@@ -370,7 +421,8 @@
           });
         }
 
-        function addTwBits(user, bits, message) {
+        function addTwBits(user, bits, message, tsMs) {
+          if (!inCountWindow(tsMs)) return;
           const n = Math.max(0, parseInt(bits, 10) || 0);
           if (!n) return;
           twBitsTotal += n;
@@ -383,7 +435,8 @@
           renderTotals();
         }
 
-        function addYtSuper(user, amountDisplay, amountMicros, currency, message) {
+        function addYtSuper(user, amountDisplay, amountMicros, currency, message, tsMs) {
+          if (!inCountWindow(tsMs)) return;
           const cur = (currency || "TWD").toUpperCase();
           const major = amountMicros != null ? Number(amountMicros) / 1e6 : 0;
           if (!Number.isNaN(major) && major > 0) {
@@ -397,6 +450,8 @@
           });
           renderTotals();
         }
+
+        setInterval(refreshStatus, 1000);
 
         // ----- Twitch IRC cheers -----
         function connectTwitch() {
@@ -444,7 +499,10 @@
                     decodeURIComponent((tags["display-name"] || "").replace(/\\s/g, " ")) ||
                     (m[2] || "").split("!")[0] ||
                     "twitch";
-                  addTwBits(user, bits, m[3] || "");
+                  const tsMs = tags["tmi-sent-ts"]
+                    ? parseInt(tags["tmi-sent-ts"], 10)
+                    : Date.now();
+                  addTwBits(user, bits, m[3] || "", tsMs);
                 });
             });
             ws.addEventListener("close", () => {
@@ -670,12 +728,16 @@
                 const details =
                   item.snippet?.superChatDetails || item.snippet?.superStickerDetails || {};
                 const user = item.authorDetails?.displayName || "youtube";
+                const published = item.snippet?.publishedAt
+                  ? Date.parse(item.snippet.publishedAt)
+                  : Date.now();
                 addYtSuper(
                   user,
                   details.amountDisplayString || "",
                   details.amountMicros,
                   details.currency,
-                  details.userComment || item.snippet?.displayMessage || ""
+                  details.userComment || item.snippet?.displayMessage || "",
+                  published
                 );
               });
               setTimeout(tick, wait);
@@ -692,11 +754,12 @@
         }
 
         function startDemo() {
+          const now = Date.now();
           const samples = [
-            () => addTwBits("NightOwl", 100, "加油"),
-            () => addYtSuper("貓奴", "NT$50", 50e6, "TWD", "超留測試"),
-            () => addTwBits("Tea", 500, "Cheer500 POG"),
-            () => addYtSuper("小白", "NT$100", 100e6, "TWD", "晚上好"),
+            () => addTwBits("NightOwl", 100, "加油", now),
+            () => addYtSuper("貓奴", "NT$50", 50e6, "TWD", "超留測試", now),
+            () => addTwBits("Tea", 500, "Cheer500 POG", now),
+            () => addYtSuper("小白", "NT$100", 100e6, "TWD", "晚上好", now),
           ];
           samples.forEach((fn, i) => setTimeout(fn, 400 + i * 900));
           let i = 0;

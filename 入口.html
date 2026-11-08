@@ -1808,7 +1808,60 @@
             <p class="hint">
               自動抓 <strong>Twitch Cheer／小奇點</strong>（聊天 IRC，免 OAuth）與
               <strong>YouTube 超級留言</strong>（用最上方帳號＋API Key）。不支援 Ko-fi。
-              本場累計會顯示在條上；可設目標進度條。
+              只計算你指定的時段內事件；時段外不計入。
+            </p>
+            <div class="row">
+              <div>
+                <label for="spStart">開始時間（本地）</label>
+                <input id="spStart" type="datetime-local" step="1" />
+              </div>
+              <div>
+                <label for="spEndMode">結束方式</label>
+                <select id="spEndMode">
+                  <option value="end" selected>指定結束時間</option>
+                  <option value="duration">從開始起算時長</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="spEndRow">
+              <div>
+                <label for="spEnd">結束時間（本地）</label>
+                <input id="spEnd" type="datetime-local" step="1" />
+              </div>
+              <div></div>
+            </div>
+            <div class="row" id="spDurationRow" hidden>
+              <div>
+                <label for="spDuration">時長（分鐘）</label>
+                <input id="spDuration" type="number" min="1" step="1" placeholder="例如 180＝3 小時" />
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              空白開始＝網頁一開就開始算；空白結束＝不設截止。時間用你電腦的本地時區（台灣通常是 UTC+8）。
+              Twitch 只能算「開著覆蓋之後」收到的 Cheer；YouTube 超留可依訊息時間過濾。
+            </p>
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="spCombine" /> 小奇點＋超留一起算進同一目標</label
+                >
+              </div>
+              <div>
+                <label for="spBitsRate">小奇點換算（每 100 bits）</label>
+                <input
+                  id="spBitsRate"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value="0"
+                  placeholder="合併時才用"
+                />
+              </div>
+            </div>
+            <p class="hint">
+              勾選合併才把 bits 換算進目標／合計。例：填 1 → 每 100 bits＝目標幣 1 元。不勾則 TW／YT
+              分開顯示，目標只算超留。
             </p>
             <div class="row">
               <div>
@@ -1829,19 +1882,8 @@
                 <label for="spGoalLabel">目標標籤</label>
                 <input id="spGoalLabel" type="text" value="本場目標" placeholder="本場目標" />
               </div>
-              <div>
-                <label for="spBitsRate">小奇點換算（每 100 bits）</label>
-                <input
-                  id="spBitsRate"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value="0"
-                  placeholder="0＝不計入目標"
-                />
-              </div>
+              <div></div>
             </div>
-            <p class="hint">換算例：填 1 → 每 100 bits 算目標幣 1 元。只影響進度條，TW bits 總數仍分開顯示。</p>
             <div class="row">
               <div>
                 <label for="spMax">最近幾筆</label>
@@ -2884,6 +2926,11 @@
           chatBg: $("chatBg"),
           chatCss: $("chatCss"),
           restreamChatUrl: $("restreamChatUrl"),
+          spStart: $("spStart"),
+          spEndMode: $("spEndMode"),
+          spEnd: $("spEnd"),
+          spDuration: $("spDuration"),
+          spCombine: $("spCombine"),
           spGoal: $("spGoal"),
           spGoalCurrency: $("spGoalCurrency"),
           spGoalLabel: $("spGoalLabel"),
@@ -3527,7 +3574,16 @@
           $("chatSourceWrap").style.visibility = split ? "hidden" : "visible";
         }
 
+        function syncSponsorEndMode() {
+          const duration = fields.spEndMode.value === "duration";
+          $("spEndRow").hidden = duration;
+          $("spDurationRow").hidden = !duration;
+          fields.spBitsRate.disabled = !fields.spCombine.checked;
+          fields.spBitsRate.style.opacity = fields.spCombine.checked ? "1" : "0.5";
+        }
+
         function buildSponsorUrl(opts = {}) {
+          syncSponsorEndMode();
           const url = pageUrl("sponsor.html");
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
@@ -3538,12 +3594,26 @@
           if (ytChannel) p.set("yt", ytChannel);
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
+          if (fields.spStart.value) {
+            const local = new Date(fields.spStart.value);
+            if (!Number.isNaN(local.getTime())) p.set("start", local.toISOString());
+          }
+          if (fields.spEndMode.value === "duration") {
+            const mins = parseInt(fields.spDuration.value, 10);
+            if (mins && mins > 0) p.set("duration", String(mins));
+          } else if (fields.spEnd.value) {
+            const local = new Date(fields.spEnd.value);
+            if (!Number.isNaN(local.getTime())) p.set("end", local.toISOString());
+          }
+          if (fields.spCombine.checked) {
+            p.set("combine", "1");
+            const bitsRate = parseFloat(fields.spBitsRate.value);
+            if (bitsRate && bitsRate > 0) p.set("bitsRate", String(bitsRate));
+          }
           const goal = parseFloat(fields.spGoal.value);
           if (goal && goal > 0) p.set("goal", String(goal));
           if (fields.spGoalCurrency.value) p.set("goalCurrency", fields.spGoalCurrency.value);
           if (fields.spGoalLabel.value.trim()) p.set("goalLabel", fields.spGoalLabel.value.trim());
-          const bitsRate = parseFloat(fields.spBitsRate.value);
-          if (bitsRate && bitsRate > 0) p.set("bitsRate", String(bitsRate));
           if (fields.spMax.value) p.set("max", fields.spMax.value);
           if (fields.spHideStatus.checked) p.set("hideStatus", "1");
           if (opts.demo) p.set("demo", "1");

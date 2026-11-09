@@ -1864,13 +1864,23 @@
                 />
               </div>
             </div>
-            <div class="field" id="chatPanelImgRow">
-              <label for="chatPanelImg">留言區底圖網址</label>
-              <input
-                id="chatPanelImg"
-                type="text"
-                placeholder="空白＝不用圖；可貼 圖片/xxx.png 或網址"
-              />
+            <div class="row" id="chatPanelImgRow">
+              <div>
+                <label for="chatPanelImg">留言區底圖網址</label>
+                <input
+                  id="chatPanelImg"
+                  type="text"
+                  placeholder="空白＝不用圖；可貼 圖片/xxx.png 或網址"
+                />
+              </div>
+              <div>
+                <label for="chatPanelFit">底圖顯示</label>
+                <select id="chatPanelFit">
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
             </div>
 
             <div class="row">
@@ -1910,9 +1920,20 @@
                 />
               </div>
             </div>
+            <div class="row" id="chatMsgFitRow">
+              <div>
+                <label for="chatMsgFit">單則底圖顯示</label>
+                <select id="chatMsgFit">
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+              <div></div>
+            </div>
             <p class="hint">
-              底圖／單則底：勾選後才套用。外推＝內容內縮像素，用來避開圖框周圍裝飾；可只填一邊（上右下左用空白分隔，例如
-              <code>12 16</code>）。
+              底圖／單則底：勾選後才套用。外推＝內容內縮像素，避開圖框周圍裝飾（例如
+              <code>12 16</code>）。顯示方式：拉伸＝拉滿框（可能變形）；完整顯示＝整張都看得到（可能留邊）；裁切＝填滿但可能切掉邊緣。
             </p>
 
             <div class="field" style="align-items: flex-start">
@@ -3256,10 +3277,12 @@
           chatBg: $("chatBg"),
           chatShowPanelImg: $("chatShowPanelImg"),
           chatPanelImg: $("chatPanelImg"),
+          chatPanelFit: $("chatPanelFit"),
           chatPanelInset: $("chatPanelInset"),
           chatShowMsgBg: $("chatShowMsgBg"),
           chatMsgImg: $("chatMsgImg"),
           chatMsgBgColor: $("chatMsgBgColor"),
+          chatMsgFit: $("chatMsgFit"),
           chatMsgInset: $("chatMsgInset"),
           chatCss: $("chatCss"),
           restreamChatUrl: $("restreamChatUrl"),
@@ -4133,6 +4156,8 @@
             if (panelImg) p.set("panelImg", resolveAssetUrl(panelImg));
             const panelInset = normalizeInsetParam(fields.chatPanelInset.value);
             if (panelInset) p.set("panelInset", panelInset);
+            const panelFit = (fields.chatPanelFit.value || "stretch").trim();
+            if (panelFit && panelFit !== "stretch") p.set("panelFit", panelFit);
           }
           if (fields.chatShowMsgBg.checked) {
             const msgImg = fields.chatMsgImg.value.trim();
@@ -4142,6 +4167,8 @@
             else if (!msgImg) p.set("msgBg", "rgba(0,0,0,0.35)");
             const msgInset = normalizeInsetParam(fields.chatMsgInset.value);
             if (msgInset) p.set("msgInset", msgInset);
+            const msgFit = (fields.chatMsgFit.value || "stretch").trim();
+            if (msgFit && msgFit !== "stretch") p.set("msgFit", msgFit);
           }
           const css = fields.chatCss.value.trim();
           if (css) p.set("css", css);
@@ -4194,10 +4221,14 @@
           if (panelRow) panelRow.style.opacity = panelOn ? "1" : "0.45";
           if (msgRow) msgRow.style.opacity = msgOn ? "1" : "0.45";
           fields.chatPanelImg.disabled = !panelOn;
+          fields.chatPanelFit.disabled = !panelOn;
           fields.chatPanelInset.disabled = !panelOn;
           fields.chatMsgImg.disabled = !msgOn;
           fields.chatMsgBgColor.disabled = !msgOn;
+          fields.chatMsgFit.disabled = !msgOn;
           fields.chatMsgInset.disabled = !msgOn;
+          const msgFitRow = $("chatMsgFitRow");
+          if (msgFitRow) msgFitRow.style.opacity = msgOn ? "1" : "0.45";
         }
 
         function buildChatReplyUrl() {

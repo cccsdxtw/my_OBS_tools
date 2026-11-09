@@ -1812,8 +1812,8 @@
             </p>
             <div class="row">
               <div>
-                <label for="spStart">開始時間（本地）</label>
-                <input id="spStart" type="datetime-local" step="1" />
+                <label for="spStart">開始時間（年→分）</label>
+                <input id="spStart" type="datetime-local" step="60" />
               </div>
               <div>
                 <label for="spEndMode">結束方式</label>
@@ -1825,8 +1825,8 @@
             </div>
             <div class="row" id="spEndRow">
               <div>
-                <label for="spEnd">結束時間（本地）</label>
-                <input id="spEnd" type="datetime-local" step="1" />
+                <label for="spEnd">結束時間（年→分）</label>
+                <input id="spEnd" type="datetime-local" step="60" />
               </div>
               <div></div>
             </div>
@@ -1838,7 +1838,7 @@
               <div></div>
             </div>
             <p class="hint">
-              空白開始＝網頁一開就開始算；空白結束＝不設截止。時間用你電腦的本地時區（台灣通常是 UTC+8）。
+              精度：年／月／日／時／分（不到秒）。空白開始＝網頁一開就開始算；空白結束＝不設截止。時間用你電腦本地時區（台灣通常 UTC+8）。
               Twitch 只能算「開著覆蓋之後」收到的 Cheer；YouTube 超留可依訊息時間過濾。
             </p>
             <div class="row">

@@ -1948,6 +1948,28 @@
               5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
               每頁建議寬 360–480、高 500–720。
             </p>
+
+            <div class="row">
+              <div>
+                <label for="chatStyleName">樣式預設名稱</label>
+                <input
+                  id="chatStyleName"
+                  type="text"
+                  placeholder="例如：粉框完整顯示"
+                  maxlength="40"
+                />
+              </div>
+              <div style="display: flex; align-items: flex-end">
+                <button type="button" id="saveChatStyleBtn" class="secondary">
+                  儲存目前樣式
+                </button>
+              </div>
+            </div>
+            <div class="chip-row" id="chatStyleList" aria-label="聊天室樣式預設"></div>
+            <p class="hint">
+              樣式含底圖／單則底／外推／顯示方式／圖示與顏色／字級／底色／CSS
+              等外觀；不含頻道帳號。點一下套用，右鍵刪除。會一併進頁面最下方備份。
+            </p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -3080,6 +3102,7 @@
                   return [];
                 }
               })(),
+              chatStyles: loadChatStyles(),
             },
           };
         }
@@ -3135,6 +3158,21 @@
               );
             } catch (_) {}
           }
+          if (Array.isArray(data.extras?.chatStyles)) {
+            try {
+              saveChatStyles(
+                data.extras.chatStyles
+                  .filter((s) => s && s.name && s.fields)
+                  .map((s) => ({
+                    id: String(s.id || newChatStyleId()),
+                    name: String(s.name || "").trim().slice(0, 40),
+                    savedAt: String(s.savedAt || new Date().toISOString()),
+                    fields: s.fields && typeof s.fields === "object" ? s.fields : {},
+                  }))
+                  .filter((s) => s.name)
+              );
+            } catch (_) {}
+          }
           if (Array.isArray(setup.sponsorFunds) && setup.sponsorFunds.length) {
             sponsorFunds = normalizeSponsorFunds(setup.sponsorFunds);
           } else {
@@ -3165,6 +3203,7 @@
           syncStylePlaceholders();
           syncGamePlatformChips();
           renderGameHistory();
+          renderChatStyles();
           syncChatPanels();
           buildUrls();
           ensureYtChannelIdResolved();
@@ -3734,6 +3773,172 @@
 
         const GAME_HISTORY_KEY = "my_obs_tools_game_history";
         const GAME_HISTORY_MAX = 12;
+        const CHAT_STYLE_KEY = "my_obs_tools_chat_styles";
+        const CHAT_STYLE_MAX = 24;
+        const CHAT_STYLE_FIELD_KEYS = [
+          "chatLayout",
+          "chatStack",
+          "chatMax",
+          "chatTtl",
+          "chatShowSource",
+          "chatTwIcon",
+          "chatYtIcon",
+          "chatTwIconColor",
+          "chatYtIconColor",
+          "chatHideStatus",
+          "chatFontSize",
+          "chatColor",
+          "chatShowBg",
+          "chatBg",
+          "chatShowPanelImg",
+          "chatPanelImg",
+          "chatPanelFit",
+          "chatPanelInset",
+          "chatShowMsgBg",
+          "chatMsgImg",
+          "chatMsgBgColor",
+          "chatMsgFit",
+          "chatMsgInset",
+          "chatCss",
+        ];
+
+        function newChatStyleId() {
+          return `cs_${Date.now().toString(36)}_${Math.random()
+            .toString(36)
+            .slice(2, 7)}`;
+        }
+
+        function loadChatStyles() {
+          try {
+            const raw = localStorage.getItem(CHAT_STYLE_KEY);
+            const list = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(list)) return [];
+            return list
+              .filter((s) => s && s.name && s.fields)
+              .map((s) => ({
+                id: String(s.id || newChatStyleId()),
+                name: String(s.name || "").trim().slice(0, 40),
+                savedAt: String(s.savedAt || ""),
+                fields: s.fields && typeof s.fields === "object" ? s.fields : {},
+              }))
+              .filter((s) => s.name);
+          } catch (_) {
+            return [];
+          }
+        }
+
+        function saveChatStyles(list) {
+          localStorage.setItem(
+            CHAT_STYLE_KEY,
+            JSON.stringify(list.slice(0, CHAT_STYLE_MAX))
+          );
+        }
+
+        function collectChatStyleFields() {
+          const out = {};
+          CHAT_STYLE_FIELD_KEYS.forEach((key) => {
+            const el = fields[key];
+            if (!el) return;
+            out[key] = el.type === "checkbox" ? !!el.checked : el.value;
+          });
+          return out;
+        }
+
+        function applyChatStyleFields(styleFields) {
+          if (!styleFields || typeof styleFields !== "object") return;
+          CHAT_STYLE_FIELD_KEYS.forEach((key) => {
+            if (!Object.prototype.hasOwnProperty.call(styleFields, key)) return;
+            const el = fields[key];
+            if (!el) return;
+            const v = styleFields[key];
+            if (el.type === "checkbox") {
+              el.checked = v === true || v === "true" || v === 1 || v === "1";
+            } else {
+              el.value = v == null ? "" : String(v);
+            }
+          });
+          // 色盤跟文字同步
+          document
+            .querySelectorAll(
+              'input[type=color][data-sync="chatTwIconColor"], input[type=color][data-sync="chatYtIconColor"]'
+            )
+            .forEach((pick) => {
+              const text = $(pick.dataset.sync);
+              if (!text) return;
+              const hex = parseColorToHex(text.value);
+              if (hex) pick.value = hex;
+            });
+          syncChatPanels();
+          buildUrls();
+        }
+
+        function rememberChatStyle(opts = {}) {
+          const nameInput = $("chatStyleName");
+          const name = (nameInput && nameInput.value.trim()) || "";
+          if (!name) {
+            if (opts.toastBtn) {
+              const btn = opts.toastBtn;
+              const label = btn.textContent;
+              btn.textContent = "先填名稱";
+              setTimeout(() => (btn.textContent = label), 1200);
+            }
+            if (nameInput) nameInput.focus();
+            return;
+          }
+          const next = loadChatStyles().filter(
+            (s) => s.name.toLowerCase() !== name.toLowerCase()
+          );
+          next.unshift({
+            id: newChatStyleId(),
+            name,
+            savedAt: new Date().toISOString(),
+            fields: collectChatStyleFields(),
+          });
+          saveChatStyles(next);
+          renderChatStyles();
+          if (opts.toastBtn) {
+            const btn = opts.toastBtn;
+            const label = btn.textContent;
+            btn.textContent = "已儲存";
+            setTimeout(() => (btn.textContent = label), 1200);
+          }
+        }
+
+        function renderChatStyles() {
+          const wrap = $("chatStyleList");
+          if (!wrap) return;
+          const list = loadChatStyles();
+          wrap.innerHTML = "";
+          if (!list.length) {
+            wrap.innerHTML =
+              '<span class="hint" style="margin:0">尚無樣式。調好外觀後填名稱再按「儲存目前樣式」。</span>';
+            return;
+          }
+          list.forEach((item, idx) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "history";
+            btn.appendChild(document.createTextNode(item.name));
+            const meta = document.createElement("span");
+            meta.className = "meta";
+            meta.textContent = "點一下套用 · 右鍵刪除";
+            btn.appendChild(meta);
+            btn.title = "左鍵套用；右鍵刪除";
+            btn.addEventListener("click", () => {
+              applyChatStyleFields(item.fields);
+              const nameInput = $("chatStyleName");
+              if (nameInput) nameInput.value = item.name;
+            });
+            btn.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              const next = loadChatStyles();
+              next.splice(idx, 1);
+              saveChatStyles(next);
+              renderChatStyles();
+            });
+            wrap.appendChild(btn);
+          });
+        }
 
         function loadGameHistory() {
           try {
@@ -4489,6 +4694,22 @@
           renderGameHistory();
         });
 
+        const saveChatStyleBtn = $("saveChatStyleBtn");
+        if (saveChatStyleBtn) {
+          saveChatStyleBtn.addEventListener("click", () => {
+            rememberChatStyle({ toastBtn: saveChatStyleBtn });
+          });
+        }
+        const chatStyleName = $("chatStyleName");
+        if (chatStyleName) {
+          chatStyleName.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              rememberChatStyle({ toastBtn: saveChatStyleBtn });
+            }
+          });
+        }
+
         $("copyChat").addEventListener("click", async () => {
           const { chatHref } = buildUrls();
           $("chatUrl").select();
@@ -4785,6 +5006,7 @@
         bindColorPickers();
         syncAllBgFields();
         renderGameHistory();
+        renderChatStyles();
         syncGamePlatformChips();
         if (!sponsorFunds.length) seedSponsorFundsFromLegacy();
         if (!sponsorManuals.length) seedSponsorManualsFromLegacy();

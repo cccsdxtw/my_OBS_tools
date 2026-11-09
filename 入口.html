@@ -1954,24 +1954,26 @@
               Twitch 後台看得到的歷史 Cheer，<strong>公開 API／就算有授權也拿不到逐筆明細</strong>（EventSub
               只推即時）。關掉覆蓋期間漏算的，請用下方「手動補登」。已自動計入的會本機記住（重整不丟）。
             </p>
+            <div class="card-head" style="margin-top: 4px">
+              <h2 style="font-size: 0.95rem; margin: 0">手動補登（一筆一筆加）</h2>
+              <span class="side-title">漏算／後台補</span>
+            </div>
             <div class="row">
               <div>
-                <label for="spManualBits">手動補登 TW bits</label>
-                <input
-                  id="spManualBits"
-                  type="number"
-                  step="1"
-                  placeholder="0＝不補；可填關掉時漏算的"
-                />
+                <label for="spManualPlatform">平台</label>
+                <select id="spManualPlatform">
+                  <option value="tw" selected>TW bits</option>
+                  <option value="yt">YT 金額</option>
+                </select>
               </div>
               <div>
-                <label for="spManualYt">手動補登 YT 金額</label>
-                <input id="spManualYt" type="number" step="1" placeholder="0＝不補" />
+                <label for="spManualAmount">數量</label>
+                <input id="spManualAmount" type="number" min="0" step="1" placeholder="例如 100" />
               </div>
             </div>
             <div class="row">
               <div>
-                <label for="spManualYtCurrency">手動 YT 幣別</label>
+                <label for="spManualYtCurrency">YT 幣別</label>
                 <select id="spManualYtCurrency">
                   <option value="TWD" selected>TWD</option>
                   <option value="USD">USD</option>
@@ -1979,14 +1981,25 @@
                 </select>
               </div>
               <div>
-                <label for="spManualNote">手動補登備註</label>
-                <input id="spManualNote" type="text" placeholder="例如：後台補登／開場前" />
+                <label for="spManualFund">進哪個基金</label>
+                <select id="spManualFund"></select>
               </div>
             </div>
+            <div class="field">
+              <label for="spManualNote">備註</label>
+              <input id="spManualNote" type="text" placeholder="例如：後台補登／開場前" />
+            </div>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" id="spManualAdd">確認加入補登</button>
+            </div>
+            <div id="spManualList" class="checks" style="margin-top: 8px"></div>
             <p class="hint">
-              手動數字會加在自動累計之上（寫進網址）。直播中也可在 OBS 對瀏覽器來源按「互動」，在條上用
-              「＋手動」再加一筆。
+              填好按「確認加入」才會進清單並寫進網址；可加很多筆、可刪。改完請<strong>重新複製贊助條網址</strong>到
+              OBS（或覆蓋來源後重新整理）。直播中也可在 OBS「互動」用條上的「＋手動」。
             </p>
+            <!-- 舊版單一補登欄位相容 -->
+            <input id="spManualBits" type="hidden" value="" />
+            <input id="spManualYt" type="hidden" value="" />
             <div class="row">
               <div>
                 <label
@@ -2028,8 +2041,9 @@
               <button type="button" class="secondary" id="spAddFund">新增基金</button>
             </div>
             <p class="hint">
-              每筆基金各自累計。留言／Cheer <strong>含該關鍵字</strong>才進該基金（逗號分隔；空白＝用名稱）。
-              <strong>同一筆只會進一個基金</strong>（同時符合多個時：關鍵字較長者優先，一樣長則清單較前面的）。只有一個基金且關鍵字空白＝全部進它。手動補登可指定基金。
+              每筆基金各自累計。關鍵字可填<strong>多個</strong>（逗號／頓號／換行都行，例如
+              <code>唱歌,唱歌基金,sing</code>）；空白＝用基金名稱。
+              <strong>同一筆只會進一個基金</strong>（同時符合時：關鍵字較長者優先）。只有一個基金且關鍵字空白＝全部進它。
             </p>
             <!-- 舊版單目標欄位：還原設定相容，畫面隱藏 -->
             <input id="spGoal" type="hidden" value="" />
@@ -2988,7 +3002,23 @@
             sponsorFunds = [];
             seedSponsorFundsFromLegacy();
           }
+          if (Array.isArray(setup.sponsorManuals)) {
+            sponsorManuals = setup.sponsorManuals
+              .filter((m) => m && m.amount)
+              .map((m) => ({
+                id: String(m.id || newManualId()),
+                platform: m.platform === "yt" ? "yt" : "tw",
+                amount: Number(m.amount) || 0,
+                currency: String(m.currency || "TWD"),
+                fundId: String(m.fundId || ""),
+                fundName: String(m.fundName || ""),
+                note: String(m.note || ""),
+              }));
+          } else {
+            seedSponsorManualsFromLegacy();
+          }
           renderSponsorFunds();
+          renderSponsorManuals();
           if (typeof data.accountTxt === "string" && data.accountTxt.trim()) {
             applyAccountMap(parseAccountTxt(data.accountTxt), { force: true });
           }
@@ -3111,7 +3141,10 @@
           spCombine: $("spCombine"),
           spManualBits: $("spManualBits"),
           spManualYt: $("spManualYt"),
+          spManualPlatform: $("spManualPlatform"),
+          spManualAmount: $("spManualAmount"),
           spManualYtCurrency: $("spManualYtCurrency"),
+          spManualFund: $("spManualFund"),
           spManualNote: $("spManualNote"),
           spKeywords: $("spKeywords"),
           spKeywordMode: $("spKeywordMode"),
@@ -3129,9 +3162,97 @@
 
         /** @type {Array<{id:string,name:string,goal:string,keywords:string}>} */
         let sponsorFunds = [];
+        /** @type {Array<{id:string,platform:string,amount:number,currency:string,fundId:string,fundName:string,note:string}>} */
+        let sponsorManuals = [];
 
         function newFundId() {
           return "f" + Math.random().toString(36).slice(2, 9);
+        }
+        function newManualId() {
+          return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        }
+
+        function syncManualFundOptions() {
+          const sel = fields.spManualFund;
+          if (!sel) return;
+          const prev = sel.value;
+          const funds = readSponsorFundsFromDom();
+          sel.innerHTML = "";
+          funds.forEach((f) => {
+            const opt = document.createElement("option");
+            opt.value = f.id;
+            opt.textContent = f.name;
+            sel.appendChild(opt);
+          });
+          if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+        }
+
+        function renderSponsorManuals() {
+          const list = $("spManualList");
+          if (!list) return;
+          list.innerHTML = "";
+          if (!sponsorManuals.length) {
+            const empty = document.createElement("p");
+            empty.className = "hint";
+            empty.style.margin = "0";
+            empty.textContent = "尚未加入任何手動補登。";
+            list.appendChild(empty);
+            return;
+          }
+          sponsorManuals.forEach((item, idx) => {
+            const row = document.createElement("div");
+            row.className = "mod-row";
+            row.dataset.id = item.id;
+            const label = document.createElement("label");
+            const amt =
+              item.platform === "tw"
+                ? `${item.amount} bits`
+                : `${item.currency || "TWD"} ${item.amount}`;
+            label.textContent = `${idx + 1}. [${item.platform === "tw" ? "TW" : "YT"}] ${amt} → ${
+              item.fundName || "基金"
+            }${item.note ? " · " + item.note : ""}`;
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "secondary";
+            del.textContent = "刪";
+            del.addEventListener("click", () => {
+              sponsorManuals = sponsorManuals.filter((m) => m.id !== item.id);
+              renderSponsorManuals();
+              buildUrls();
+            });
+            row.append(label, del);
+            list.appendChild(row);
+          });
+        }
+
+        function seedSponsorManualsFromLegacy() {
+          if (sponsorManuals.length) return;
+          const bits = parseInt(fields.spManualBits.value, 10);
+          const yt = parseFloat(fields.spManualYt.value);
+          const funds = normalizeSponsorFunds(sponsorFunds);
+          const fund = funds[0];
+          if (bits && bits !== 0) {
+            sponsorManuals.push({
+              id: newManualId(),
+              platform: "tw",
+              amount: bits,
+              currency: "",
+              fundId: fund ? fund.id : "",
+              fundName: fund ? fund.name : "",
+              note: (fields.spManualNote.value || "").trim() || "舊版補登",
+            });
+          }
+          if (yt && yt !== 0) {
+            sponsorManuals.push({
+              id: newManualId(),
+              platform: "yt",
+              amount: yt,
+              currency: fields.spManualYtCurrency.value || "TWD",
+              fundId: fund ? fund.id : "",
+              fundName: fund ? fund.name : "",
+              note: (fields.spManualNote.value || "").trim() || "舊版補登",
+            });
+          }
         }
 
         function normalizeSponsorFunds(list) {
@@ -3178,7 +3299,12 @@
               <span class="side-title" style="min-width:2.2em">${idx + 1}.</span>
               <input data-k="name" type="text" placeholder="基金名稱（如：唱歌基金）" />
               <input data-k="goal" type="number" min="0" step="1" placeholder="目標金額" style="max-width:7em" />
-              <input data-k="keywords" type="text" placeholder="關鍵字（空白＝用名稱）" />
+              <textarea
+                data-k="keywords"
+                rows="2"
+                placeholder="多個關鍵字：唱歌, 唱歌基金（空白＝用名稱）"
+                style="grid-column: 1 / -1; width: 100%; resize: vertical"
+              ></textarea>
               <button type="button" class="secondary sp-fund-del" title="刪除">刪</button>
             `;
             row.querySelector("[data-k=name]").value = fund.name;
@@ -3186,6 +3312,7 @@
             row.querySelector("[data-k=keywords]").value = fund.keywords;
             list.appendChild(row);
           });
+          syncManualFundOptions();
         }
 
         function seedSponsorFundsFromLegacy() {
@@ -3315,6 +3442,19 @@
             }
             if (Array.isArray(data.sponsorFunds) && data.sponsorFunds.length) {
               sponsorFunds = normalizeSponsorFunds(data.sponsorFunds);
+            }
+            if (Array.isArray(data.sponsorManuals)) {
+              sponsorManuals = data.sponsorManuals
+                .filter((m) => m && m.amount)
+                .map((m) => ({
+                  id: String(m.id || newManualId()),
+                  platform: m.platform === "yt" ? "yt" : "tw",
+                  amount: Number(m.amount) || 0,
+                  currency: String(m.currency || "TWD"),
+                  fundId: String(m.fundId || ""),
+                  fundName: String(m.fundName || ""),
+                  note: String(m.note || ""),
+                }));
             }
           } catch (_) {}
         }
@@ -3926,18 +4066,24 @@
             const bitsRate = parseFloat(fields.spBitsRate.value);
             if (bitsRate && bitsRate > 0) p.set("bitsRate", String(bitsRate));
           }
-          const manualBits = parseInt(fields.spManualBits.value, 10);
-          if (manualBits && manualBits !== 0) p.set("manualBits", String(manualBits));
-          const manualYt = parseFloat(fields.spManualYt.value);
-          if (manualYt && manualYt !== 0) {
-            p.set("manualYt", String(manualYt));
-            if (fields.spManualYtCurrency.value) {
-              p.set("manualYtCurrency", fields.spManualYtCurrency.value);
-            }
-          }
-          if (fields.spManualNote.value.trim()) p.set("manualNote", fields.spManualNote.value.trim());
           if (fields.spGoalCurrency.value) p.set("goalCurrency", fields.spGoalCurrency.value);
           funds.forEach((fund) => p.append("fund", encodeFundParam(fund)));
+          sponsorManuals.forEach((m) => {
+            const fundName = (m.fundName || "").replace(/\|/g, "｜");
+            const note = (m.note || "").replace(/\|/g, "｜");
+            // platform|amount|currency|fundName|note|id
+            p.append(
+              "manual",
+              [
+                m.platform === "yt" ? "yt" : "tw",
+                String(m.amount),
+                m.platform === "yt" ? m.currency || "TWD" : "",
+                fundName,
+                note,
+                m.id || "",
+              ].join("|")
+            );
+          });
           // 舊版單目標相容（僅一筆時順便帶上）
           if (funds.length === 1) {
             const g = parseFloat(funds[0].goal);
@@ -4034,6 +4180,7 @@
               moduleOrder,
               vcPlatformOrder: getVcPlatformOrder(),
               sponsorFunds: readSponsorFundsFromDom(),
+              sponsorManuals,
             })
           );
           return {
@@ -4145,7 +4292,10 @@
           renderSponsorFunds();
           buildUrls();
         });
-        $("spFundsList").addEventListener("input", () => buildUrls());
+        $("spFundsList").addEventListener("input", () => {
+          syncManualFundOptions();
+          buildUrls();
+        });
         $("spFundsList").addEventListener("click", (ev) => {
           const btn = ev.target.closest(".sp-fund-del");
           if (!btn) return;
@@ -4159,6 +4309,36 @@
           }
           renderSponsorFunds();
           buildUrls();
+        });
+        $("spManualAdd").addEventListener("click", () => {
+          const amount = Number(fields.spManualAmount.value);
+          if (!amount || amount <= 0) {
+            fields.spManualAmount.focus();
+            return;
+          }
+          const funds = readSponsorFundsFromDom();
+          const fundId = fields.spManualFund.value || (funds[0] && funds[0].id) || "";
+          const fund = funds.find((f) => f.id === fundId) || funds[0];
+          const platform = fields.spManualPlatform.value === "yt" ? "yt" : "tw";
+          sponsorManuals.push({
+            id: newManualId(),
+            platform,
+            amount,
+            currency: platform === "yt" ? fields.spManualYtCurrency.value || "TWD" : "",
+            fundId: fund ? fund.id : "",
+            fundName: fund ? fund.name : "",
+            note: fields.spManualNote.value.trim(),
+          });
+          fields.spManualAmount.value = "";
+          fields.spManualNote.value = "";
+          renderSponsorManuals();
+          buildUrls();
+          const btn = $("spManualAdd");
+          const old = btn.textContent;
+          btn.textContent = "已加入";
+          setTimeout(() => {
+            btn.textContent = old;
+          }, 1000);
         });
 
         Object.values(fields).forEach((el) => {
@@ -4373,7 +4553,9 @@
         renderGameHistory();
         syncGamePlatformChips();
         if (!sponsorFunds.length) seedSponsorFundsFromLegacy();
+        if (!sponsorManuals.length) seedSponsorManualsFromLegacy();
         renderSponsorFunds();
+        renderSponsorManuals();
         loadAccountTxt().finally(() => {
           buildUrls();
           ensureYtChannelIdResolved();

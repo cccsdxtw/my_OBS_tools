@@ -342,16 +342,6 @@
           ? Math.max(0, Number(params.get("bitsRate") || 0) || 0)
           : 0; // 每 100 bits → 多少目標幣（僅合併時）
         const goalCurrency = (params.get("goalCurrency") || "TWD").trim() || "TWD";
-        const manualBitsUrl = parseInt(params.get("manualBits") || "0", 10) || 0;
-        const manualYtUrl = Number(params.get("manualYt") || 0) || 0;
-        const manualYtCurrency = (
-          params.get("manualYtCurrency") ||
-          params.get("manualCurrency") ||
-          goalCurrency
-        )
-          .trim()
-          .toUpperCase() || goalCurrency;
-        const manualNoteUrl = (params.get("manualNote") || "手動補登").trim() || "手動補登";
 
         function splitKeywords(raw) {
           return String(raw || "")
@@ -359,6 +349,59 @@
             .map((s) => s.trim())
             .filter(Boolean);
         }
+
+        // manual=platform|amount|currency|fundName|note|id （可多筆）
+        // 舊版相容：manualBits / manualYt
+        function parseManualEntries() {
+          const list = [];
+          params.getAll("manual").forEach((raw, i) => {
+            const parts = String(raw || "").split("|");
+            const platform = (parts[0] || "").trim().toLowerCase() === "yt" ? "yt" : "tw";
+            const amount = Number(parts[1] || 0) || 0;
+            if (!amount) return;
+            list.push({
+              id: (parts[5] || "").trim() || `manual:url:${i}:${platform}:${amount}`,
+              platform,
+              amount,
+              currency: ((parts[2] || goalCurrency).trim() || goalCurrency).toUpperCase(),
+              fundName: (parts[3] || "").trim(),
+              note: (parts[4] || "").trim() || "手動補登",
+            });
+          });
+          const legacyBits = parseInt(params.get("manualBits") || "0", 10) || 0;
+          const legacyYt = Number(params.get("manualYt") || 0) || 0;
+          const legacyCur = (
+            params.get("manualYtCurrency") ||
+            params.get("manualCurrency") ||
+            goalCurrency
+          )
+            .trim()
+            .toUpperCase() || goalCurrency;
+          const legacyNote = (params.get("manualNote") || "手動補登").trim() || "手動補登";
+          if (legacyBits) {
+            list.push({
+              id: `manual:legacy:tw:${legacyBits}`,
+              platform: "tw",
+              amount: legacyBits,
+              currency: "",
+              fundName: "",
+              note: legacyNote,
+            });
+          }
+          if (legacyYt) {
+            list.push({
+              id: `manual:legacy:yt:${legacyYt}`,
+              platform: "yt",
+              amount: legacyYt,
+              currency: legacyCur,
+              fundName: "",
+              note: legacyNote,
+            });
+          }
+          return list;
+        }
+
+        const manualEntries = parseManualEntries();
 
         function parseFunds() {
           const rawList = params.getAll("fund").filter(Boolean);
@@ -478,8 +521,10 @@
           manualMsg: document.getElementById("manualMsg"),
         };
 
-        const showTw = wantTw || demo || !!manualBitsUrl;
-        const showYt = wantYt || demo || !!manualYtUrl;
+        const showTw =
+          wantTw || demo || manualEntries.some((m) => m.platform === "tw");
+        const showYt =
+          wantYt || demo || manualEntries.some((m) => m.platform === "yt");
         els.totCombined.hidden = !(combine && (showTw || showYt));
         els.totTw.hidden = !showTw;
         els.totYt.hidden = !showYt;
@@ -542,6 +587,7 @@
               combine ? "1" : "0",
               bitsRate || 0,
               funds.map((f) => `${f.name}:${f.goal}:${f.keywords.join(",")}`).join(";"),
+              manualEntries.map((m) => `${m.id}:${m.platform}:${m.amount}`).join(","),
             ].join(":");
 
         function savePersist() {
@@ -606,7 +652,7 @@
           if (wantYt) parts.push(connected.yt ? "YT●" : "YT○");
           if (combine) parts.push("合併");
           if (funds.length > 1) parts.push(`${funds.length}基金`);
-          if (manualBitsUrl || manualYtUrl) parts.push("手動網址");
+          if (manualEntries.length) parts.push(`手動${manualEntries.length}`);
           if (persistKey && (twBitsTotal > 0 || Object.keys(ytByCurrency).length)) {
             parts.push("已記住");
           }
@@ -621,37 +667,31 @@
           return `${c} ${Number(amount).toFixed(2)}`;
         }
 
-        function ytTotalsWithManual() {
-          const map = { ...ytByCurrency };
-          if (manualYtUrl) {
-            map[manualYtCurrency] = (map[manualYtCurrency] || 0) + manualYtUrl;
-          }
-          return map;
-        }
-
         function formatYtTotals() {
-          const map = ytTotalsWithManual();
-          const keys = Object.keys(map);
+          const keys = Object.keys(ytByCurrency);
           if (!keys.length) return "0";
-          return keys.map((c) => formatMoney(map[c], c)).join(" · ");
+          return keys.map((c) => formatMoney(ytByCurrency[c], c)).join(" · ");
         }
 
         function displayTwBits() {
-          return twBitsTotal + manualBitsUrl;
+          return twBitsTotal;
         }
 
         function fundBits(fundId) {
           const st = fundState[fundId] || { twBits: 0, yt: 0 };
-          let bits = st.twBits;
-          if (fundId === funds[0]?.id) bits += manualBitsUrl;
-          return bits;
+          return st.twBits;
         }
 
         function fundYt(fundId) {
           const st = fundState[fundId] || { twBits: 0, yt: 0 };
-          let yt = st.yt;
-          if (fundId === funds[0]?.id && manualYtCurrency === goalCurrency) yt += manualYtUrl;
-          return yt;
+          return st.yt;
+        }
+
+        function resolveFundIdByName(name) {
+          const n = String(name || "").trim();
+          if (!n) return funds[0]?.id || "";
+          const hit = funds.find((f) => f.name === n || f.id === n);
+          return hit ? hit.id : funds[0]?.id || "";
         }
 
         function fundProgressValue(fundId) {
@@ -814,22 +854,28 @@
           return true;
         }
 
-        function ensureUrlManualFeed() {
-          if (!manualBitsUrl && !manualYtUrl) return;
-          const id = `manual:url:${manualBitsUrl}:${manualYtUrl}:${manualYtCurrency}`;
-          if (events.some((e) => e.id === id)) return;
-          const parts = [];
-          if (manualBitsUrl) parts.push(`${manualBitsUrl} bits`);
-          if (manualYtUrl) parts.push(formatMoney(manualYtUrl, manualYtCurrency));
-          events.unshift({
-            platform: manualBitsUrl && !manualYtUrl ? "tw" : "yt",
-            user: "手動",
-            amountText: parts.join(" + ") || "補登",
-            message: manualNoteUrl,
-            fundName: funds[0] ? funds[0].name : "",
-            id,
+        function applyUrlManualEntries() {
+          manualEntries.forEach((m) => {
+            const fundId = resolveFundIdByName(m.fundName);
+            const id = `manual:url:${m.id}`;
+            if (m.platform === "tw") {
+              addTwBits("手動", m.amount, m.note, Date.now(), id, {
+                force: true,
+                fundId,
+              });
+            } else {
+              addYtSuper(
+                "手動",
+                formatMoney(m.amount, m.currency || goalCurrency),
+                m.amount * 1e6,
+                m.currency || goalCurrency,
+                m.note,
+                Date.now(),
+                id,
+                { force: true, fundId }
+              );
+            }
           });
-          while (events.length > maxEvents) events.pop();
         }
 
         els.manualToggle.addEventListener("click", () => {
@@ -868,8 +914,8 @@
         });
 
         loadPersist();
-        events = events.filter((e) => !String((e && e.id) || "").startsWith("manual:url:"));
-        ensureUrlManualFeed();
+        // 網址手動補登：用穩定 id，重整不重複加
+        applyUrlManualEntries();
         setInterval(refreshStatus, 1000);
 
         // ----- Twitch IRC cheers -----
@@ -1207,7 +1253,7 @@
           }, 3200);
         }
 
-        if (!wantTw && !wantYt && !demo && !manualBitsUrl && !manualYtUrl) {
+        if (!wantTw && !wantYt && !demo && !manualEntries.length) {
           els.status.textContent = "NO SRC";
           // 仍可開＋手動，方便只做補登測試
         }

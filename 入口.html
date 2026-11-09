@@ -1839,8 +1839,41 @@
             </div>
             <p class="hint">
               精度：年／月／日／時／分。空白開始＝網頁一開就開始算；空白結束＝不設截止（本地時區）。
-              Twitch <strong>無法補抓關掉覆蓋期間</strong>的歷史 Cheer；但<strong>已計入的會本機記住</strong>（OBS
-              重整不丟，同一台電腦）。YouTube 超留可依訊息時間過濾。
+              Twitch 後台看得到的歷史 Cheer，<strong>公開 API／就算有授權也拿不到逐筆明細</strong>（EventSub
+              只推即時）。關掉覆蓋期間漏算的，請用下方「手動補登」。已自動計入的會本機記住（重整不丟）。
+            </p>
+            <div class="row">
+              <div>
+                <label for="spManualBits">手動補登 TW bits</label>
+                <input
+                  id="spManualBits"
+                  type="number"
+                  step="1"
+                  placeholder="0＝不補；可填關掉時漏算的"
+                />
+              </div>
+              <div>
+                <label for="spManualYt">手動補登 YT 金額</label>
+                <input id="spManualYt" type="number" step="1" placeholder="0＝不補" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="spManualYtCurrency">手動 YT 幣別</label>
+                <select id="spManualYtCurrency">
+                  <option value="TWD" selected>TWD</option>
+                  <option value="USD">USD</option>
+                  <option value="JPY">JPY</option>
+                </select>
+              </div>
+              <div>
+                <label for="spManualNote">手動補登備註</label>
+                <input id="spManualNote" type="text" placeholder="例如：後台補登／開場前" />
+              </div>
+            </div>
+            <p class="hint">
+              手動數字會加在自動累計之上（寫進網址）。直播中也可在 OBS 對瀏覽器來源按「互動」，在條上用
+              「＋手動」再加一筆。
             </p>
             <div class="row">
               <div>
@@ -1860,7 +1893,7 @@
               </div>
             </div>
             <p class="hint">
-              逗號或空白分隔。只計算留言／Cheer 文字有符合的；沒留言、或字對不上就不計入。
+              逗號或空白分隔。只計算留言／Cheer 文字有符合的；沒留言、或字對不上就不計入。手動補登不受關鍵字限制。
             </p>
             <div class="row">
               <div>
@@ -2952,6 +2985,10 @@
           spEnd: $("spEnd"),
           spDuration: $("spDuration"),
           spCombine: $("spCombine"),
+          spManualBits: $("spManualBits"),
+          spManualYt: $("spManualYt"),
+          spManualYtCurrency: $("spManualYtCurrency"),
+          spManualNote: $("spManualNote"),
           spKeywords: $("spKeywords"),
           spKeywordMode: $("spKeywordMode"),
           spGoal: $("spGoal"),
@@ -3633,6 +3670,16 @@
             const bitsRate = parseFloat(fields.spBitsRate.value);
             if (bitsRate && bitsRate > 0) p.set("bitsRate", String(bitsRate));
           }
+          const manualBits = parseInt(fields.spManualBits.value, 10);
+          if (manualBits && manualBits !== 0) p.set("manualBits", String(manualBits));
+          const manualYt = parseFloat(fields.spManualYt.value);
+          if (manualYt && manualYt !== 0) {
+            p.set("manualYt", String(manualYt));
+            if (fields.spManualYtCurrency.value) {
+              p.set("manualYtCurrency", fields.spManualYtCurrency.value);
+            }
+          }
+          if (fields.spManualNote.value.trim()) p.set("manualNote", fields.spManualNote.value.trim());
           const kw = fields.spKeywords.value.trim();
           if (kw) {
             p.set("must", kw);

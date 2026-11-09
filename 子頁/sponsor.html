@@ -78,6 +78,54 @@
         color: var(--bar);
       }
 
+      #manualToggle {
+        margin-left: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--muted);
+        font: inherit;
+        font-size: calc(var(--size) * 0.7);
+        font-weight: 700;
+        padding: 2px 7px;
+        cursor: pointer;
+      }
+      #manualToggle:hover {
+        color: var(--fg);
+        border-color: rgba(255, 255, 255, 0.45);
+      }
+
+      #manualPanel {
+        display: none;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 4px 0 2px;
+        font-size: calc(var(--size) * 0.72);
+      }
+      #manualPanel.open {
+        display: flex;
+      }
+      #manualPanel select,
+      #manualPanel input {
+        font: inherit;
+        font-size: inherit;
+        color: var(--fg);
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 3px 6px;
+        max-width: 140px;
+      }
+      #manualPanel button {
+        font: inherit;
+        font-size: inherit;
+        font-weight: 700;
+        border: 0;
+        background: var(--bar);
+        color: #042016;
+        padding: 3px 10px;
+        cursor: pointer;
+      }
+
       .tot span.num {
         font-family: var(--font-num);
         font-weight: 700;
@@ -201,7 +249,17 @@
           <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
         </div>
         <div id="status">…</div>
+        <button type="button" id="manualToggle" title="手動補登（OBS 來源→互動）">＋手動</button>
       </div>
+      <form id="manualPanel" autocomplete="off">
+        <select id="manualPlatform" aria-label="平台">
+          <option value="tw">TW bits</option>
+          <option value="yt">YT 金額</option>
+        </select>
+        <input id="manualAmount" type="number" step="1" min="0" placeholder="數量" required />
+        <input id="manualMsg" type="text" placeholder="備註（選填）" />
+        <button type="submit">加入</button>
+      </form>
       <div class="feed" id="feed"></div>
     </div>
 
@@ -286,6 +344,16 @@
           .split(/[,，、\n\r|／/]+/)
           .map((s) => s.trim())
           .filter(Boolean);
+        const manualBitsUrl = parseInt(params.get("manualBits") || "0", 10) || 0;
+        const manualYtUrl = Number(params.get("manualYt") || 0) || 0;
+        const manualYtCurrency = (
+          params.get("manualYtCurrency") ||
+          params.get("manualCurrency") ||
+          goalCurrency
+        )
+          .trim()
+          .toUpperCase() || goalCurrency;
+        const manualNoteUrl = (params.get("manualNote") || "手動補登").trim() || "手動補登";
 
         function parseTimeMs(raw) {
           const s = String(raw || "").trim();
@@ -342,10 +410,15 @@
           goalFill: document.getElementById("goalFill"),
           feed: document.getElementById("feed"),
           status: document.getElementById("status"),
+          manualToggle: document.getElementById("manualToggle"),
+          manualPanel: document.getElementById("manualPanel"),
+          manualPlatform: document.getElementById("manualPlatform"),
+          manualAmount: document.getElementById("manualAmount"),
+          manualMsg: document.getElementById("manualMsg"),
         };
 
-        const showTw = wantTw || demo;
-        const showYt = wantYt || demo;
+        const showTw = wantTw || demo || !!manualBitsUrl;
+        const showYt = wantYt || demo || !!manualYtUrl;
         // 合併時多顯示「合計」；TW／YT 明細仍分開列，方便核對
         els.totCombined.hidden = !(combine && (showTw || showYt));
         els.totTw.hidden = !showTw;
@@ -432,6 +505,7 @@
           if (wantYt) parts.push(connected.yt ? "YT●" : "YT○");
           if (combine) parts.push("合併");
           if (mustKeywords.length) parts.push("關鍵字");
+          if (manualBitsUrl || manualYtUrl) parts.push("手動網址");
           if (persistKey && (twBitsTotal > 0 || Object.keys(ytByCurrency).length)) {
             parts.push("已記住");
           }
@@ -446,20 +520,34 @@
           return `${c} ${Number(amount).toFixed(2)}`;
         }
 
+        function ytTotalsWithManual() {
+          const map = { ...ytByCurrency };
+          if (manualYtUrl) {
+            map[manualYtCurrency] = (map[manualYtCurrency] || 0) + manualYtUrl;
+          }
+          return map;
+        }
+
         function formatYtTotals() {
-          const keys = Object.keys(ytByCurrency);
+          const map = ytTotalsWithManual();
+          const keys = Object.keys(map);
           if (!keys.length) return "0";
-          return keys.map((c) => formatMoney(ytByCurrency[c], c)).join(" · ");
+          return keys.map((c) => formatMoney(map[c], c)).join(" · ");
+        }
+
+        function displayTwBits() {
+          return twBitsTotal + manualBitsUrl;
         }
 
         function goalProgressValue() {
-          let sum = ytByCurrency[goalCurrency] || 0;
-          if (combine && bitsRate > 0) sum += (twBitsTotal * bitsRate) / 100;
+          const map = ytTotalsWithManual();
+          let sum = map[goalCurrency] || 0;
+          if (combine && bitsRate > 0) sum += (displayTwBits() * bitsRate) / 100;
           return sum;
         }
 
         function renderTotals() {
-          els.twBits.textContent = String(twBitsTotal);
+          els.twBits.textContent = String(displayTwBits());
           els.ytMoney.textContent = formatYtTotals();
           if (combine) {
             els.combinedMoney.textContent = formatMoney(goalProgressValue(), goalCurrency);
@@ -503,9 +591,10 @@
           renderFeed();
         }
 
-        function addTwBits(user, bits, message, tsMs, idHint) {
+        function addTwBits(user, bits, message, tsMs, idHint, opts = {}) {
           const n = Math.max(0, parseInt(bits, 10) || 0);
           if (!n) return false;
+          const force = !!opts.force;
           const cleanMsg = (message || "").replace(/Cheer\d+/gi, "").trim();
           const id =
             idHint ||
@@ -513,11 +602,11 @@
           if (seenIds.has(id)) return false;
           seenIds.add(id);
           if (seenIds.size > 500) seenIds = new Set(Array.from(seenIds).slice(-250));
-          if (!inCountWindow(tsMs)) {
+          if (!force && !inCountWindow(tsMs)) {
             savePersist();
             return false;
           }
-          if (!messageMatches(cleanMsg) && !messageMatches(message)) {
+          if (!force && !messageMatches(cleanMsg) && !messageMatches(message)) {
             savePersist();
             return false;
           }
@@ -534,17 +623,18 @@
           return true;
         }
 
-        function addYtSuper(user, amountDisplay, amountMicros, currency, message, tsMs, idHint) {
+        function addYtSuper(user, amountDisplay, amountMicros, currency, message, tsMs, idHint, opts = {}) {
           const id = idHint || `yt:${tsMs || 0}:${user}:${amountMicros || 0}`;
           if (seenIds.has(id)) return false;
           seenIds.add(id);
           if (seenIds.size > 500) seenIds = new Set(Array.from(seenIds).slice(-250));
+          const force = !!opts.force;
           const msg = (message || "").trim();
-          if (!inCountWindow(tsMs)) {
+          if (!force && !inCountWindow(tsMs)) {
             savePersist();
             return false;
           }
-          if (!messageMatches(msg)) {
+          if (!force && !messageMatches(msg)) {
             savePersist();
             return false;
           }
@@ -565,7 +655,57 @@
           return true;
         }
 
+        function ensureUrlManualFeed() {
+          if (!manualBitsUrl && !manualYtUrl) return;
+          const id = `manual:url:${manualBitsUrl}:${manualYtUrl}:${manualYtCurrency}`;
+          if (events.some((e) => e.id === id)) return;
+          const parts = [];
+          if (manualBitsUrl) parts.push(`${manualBitsUrl} bits`);
+          if (manualYtUrl) parts.push(formatMoney(manualYtUrl, manualYtCurrency));
+          events.unshift({
+            platform: manualBitsUrl && !manualYtUrl ? "tw" : "yt",
+            user: "手動",
+            amountText: parts.join(" + ") || "補登",
+            message: manualNoteUrl,
+            id,
+          });
+          while (events.length > maxEvents) events.pop();
+        }
+
+        els.manualToggle.addEventListener("click", () => {
+          els.manualPanel.classList.toggle("open");
+          if (els.manualPanel.classList.contains("open")) {
+            els.manualAmount.focus();
+          }
+        });
+        els.manualPanel.addEventListener("submit", (ev) => {
+          ev.preventDefault();
+          const amount = Number(els.manualAmount.value);
+          if (!amount || amount <= 0) return;
+          const note = (els.manualMsg.value || "").trim() || "手動補登";
+          const now = Date.now();
+          if (els.manualPlatform.value === "tw") {
+            addTwBits("手動", amount, note, now, `manual:ui:tw:${now}`, { force: true });
+          } else {
+            addYtSuper(
+              "手動",
+              formatMoney(amount, goalCurrency),
+              amount * 1e6,
+              goalCurrency,
+              note,
+              now,
+              `manual:ui:yt:${now}`,
+              { force: true }
+            );
+          }
+          els.manualAmount.value = "";
+          els.manualMsg.value = "";
+          els.manualPanel.classList.remove("open");
+        });
+
         loadPersist();
+        events = events.filter((e) => !String((e && e.id) || "").startsWith("manual:url:"));
+        ensureUrlManualFeed();
         setInterval(refreshStatus, 1000);
 
         // ----- Twitch IRC cheers -----
@@ -882,9 +1022,9 @@
           }, 3200);
         }
 
-        if (!wantTw && !wantYt && !demo) {
+        if (!wantTw && !wantYt && !demo && !manualBitsUrl && !manualYtUrl) {
           els.status.textContent = "NO SRC";
-          return;
+          // 仍可開＋手動，方便只做補登測試
         }
         renderTotals();
         renderFeed();

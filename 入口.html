@@ -950,7 +950,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.1.12</span>
+          <span class="brand-version" id="brandVersion">v1.1.13</span>
         </h1>
         <p>
           先填最上方的 Twitch／YouTube 帳號，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室可分開放來源。
@@ -1463,11 +1463,11 @@
           </aside>
         </div>
 
-        <!-- ④ 倒數天數 -->
+        <!-- ⑤ 倒數天數（跳過 ④） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>④ 倒數天數</h2>
+              <h2>⑤ 倒數天數</h2>
               <span class="side-title">離今天幾天</span>
             </div>
             <p class="hint">選一個目標日期，顯示還有幾天（依本地日曆日計算）。圖示可留空不顯示。</p>
@@ -1541,7 +1541,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>④ 倒數天數網址</h2>
+              <h2>⑤ 倒數天數網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="daysUrl" class="url-box" readonly></textarea>
@@ -1556,11 +1556,11 @@
           </aside>
         </div>
 
-        <!-- ⑤ 遊戲名稱 -->
+        <!-- ⑥ 遊戲名稱 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑤ 遊戲名稱</h2>
+              <h2>⑥ 遊戲名稱</h2>
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">顯示格式：<code>標籤： 平台 - 遊戲名</code>（例如「遊戲名稱： PC - 艾爾登法環」）</p>
@@ -1662,7 +1662,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑤ 遊戲名稱網址</h2>
+              <h2>⑥ 遊戲名稱網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="gameUrl" class="url-box" readonly></textarea>
@@ -1677,11 +1677,11 @@
           </aside>
         </div>
 
-        <!-- ⑥ 聊天室 -->
+        <!-- ⑦ 聊天室 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑥ 聊天室（TW + YT）</h2>
+              <h2>⑦ 聊天室（TW + YT）</h2>
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
@@ -1796,7 +1796,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑥ 聊天室網址</h2>
+              <h2>⑦ 聊天室網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
 
@@ -1837,16 +1837,16 @@
           </aside>
         </div>
 
-        <!-- ⑦ 回覆（主播用） -->
+        <!-- ⑧ 回覆（主播用） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑦ 聊天回覆</h2>
+              <h2>⑧ 聊天回覆</h2>
               <span class="side-title">主播用 · 非 OBS</span>
             </div>
             <p class="hint">
               <strong>建議用 Restream Chat</strong>：TW／YT 等平台授權存在 Restream，平常回覆不用自己換 token，也可一次回兩邊。
-              OBS 上的⑥聊天室覆蓋仍只負責「顯示」、免發話授權。
+              OBS 上的⑦聊天室覆蓋仍只負責「顯示」、免發話授權。
             </p>
             <p class="hint">
               沒有 Restream 才用下方本機回覆頁（要自己貼 TW／YT 發話 token，那些<strong>會過期</strong>）。
@@ -1871,7 +1871,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑦ 開啟回覆</h2>
+              <h2>⑧ 開啟回覆</h2>
               <span class="side-title">用瀏覽器開啟</span>
             </div>
             <div class="actions" style="margin-top: 0">
@@ -1879,7 +1879,7 @@
                 >開啟 Restream Chat（建議）</a
               >
             </div>
-            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑥覆蓋、一邊回覆。</p>
+            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑦覆蓋、一邊回覆。</p>
 
             <h3 style="margin: 18px 0 8px; font-size: 0.95rem">備選：本機回覆頁</h3>
             <textarea id="chatReplyUrl" class="url-box" readonly></textarea>
@@ -1891,11 +1891,11 @@
           </aside>
         </div>
 
-        <!-- ⑧ 贊助條 -->
+        <!-- ⑨ 贊助條 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑧ 贊助條</h2>
+              <h2>⑨ 贊助條</h2>
               <span class="side-title">TW 小奇點 · YT 超留</span>
             </div>
             <p class="hint">
@@ -2051,7 +2051,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑧ 贊助條網址</h2>
+              <h2>⑨ 贊助條網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="spUrl" class="url-box" readonly></textarea>
@@ -2071,7 +2071,7 @@
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          ①②③④⑤⑥⑧ 右邊網址各自加 OBS 瀏覽器來源即可（⑦ 回覆除外）。
+          ①②③⑤⑥⑦⑨ 右邊網址各自加 OBS 瀏覽器來源即可（⑧ 回覆除外；編號跳過 ④）。
         </div>
       </div>
 
@@ -2198,7 +2198,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.1.12</p>
+          <p class="apply-status" id="versionStatus">本機 v1.1.13</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -2212,7 +2212,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.1.12";
+        const APP_VERSION = "v1.1.13";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

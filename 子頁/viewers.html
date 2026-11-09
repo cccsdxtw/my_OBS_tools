@@ -228,8 +228,20 @@
           totalIcon: document.getElementById("total-icon"),
         };
 
+        function isHiddenIcon(url) {
+          const s = String(url || "").trim().toLowerCase();
+          return s === "0" || s === "none" || s === "off" || s === "false" || s === "hide";
+        }
+
         function applyCustomIcon(slot, url) {
-          if (!slot || !url) return;
+          if (!slot) return;
+          if (isHiddenIcon(url)) {
+            slot.hidden = true;
+            slot.innerHTML = "";
+            return;
+          }
+          if (!url) return; // 空白＝保留預設 SVG
+          slot.hidden = false;
           slot.innerHTML = "";
           const img = document.createElement("img");
           img.className = "custom-icon";

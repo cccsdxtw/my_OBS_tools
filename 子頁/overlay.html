@@ -203,8 +203,19 @@
         function applyIcon(modId, rawParam, fallback) {
           const mod = document.getElementById(modId);
           if (!mod) return fallback;
-          const raw = (rawParam || "").trim() || fallback;
+          const rawIn = (rawParam || "").trim();
           let iconEl = mod.querySelector(".icon, .custom-icon, .material-symbols-outlined");
+          if (
+            rawIn === "0" ||
+            rawIn === "none" ||
+            rawIn === "off" ||
+            rawIn === "false" ||
+            rawIn === "hide"
+          ) {
+            if (iconEl) iconEl.remove();
+            return null;
+          }
+          const raw = rawIn || fallback;
           if (isUrlIcon(raw)) {
             if (!iconEl || iconEl.tagName !== "IMG") {
               const img = document.createElement("img");

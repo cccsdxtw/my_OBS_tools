@@ -178,8 +178,18 @@
           return /^https?:\/\//i.test(s) || /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s);
         }
 
-        const iconRaw = (params.get("icon") || params.get("daysIcon") || "").trim();
-        if (iconRaw && els.icon) {
+        const iconRaw = (params.get("icon") || params.get("daysIcon") || "event_upcoming").trim();
+        const hideIcon =
+          !iconRaw ||
+          iconRaw === "0" ||
+          iconRaw === "none" ||
+          iconRaw === "off" ||
+          iconRaw === "false" ||
+          iconRaw === "hide";
+        if (els.icon && hideIcon) {
+          els.icon.hidden = true;
+          els.icon.innerHTML = "";
+        } else if (iconRaw && els.icon) {
           els.icon.hidden = false;
           if (isUrlIcon(iconRaw)) {
             els.icon.innerHTML = "";
@@ -190,7 +200,7 @@
             img.src = iconRaw;
             els.icon.appendChild(img);
           } else {
-            const name = normalizeMsName(iconRaw) || "event";
+            const name = normalizeMsName(iconRaw) || "event_upcoming";
             els.icon.innerHTML = "";
             const span = document.createElement("span");
             span.className = "material-symbols-outlined icon";

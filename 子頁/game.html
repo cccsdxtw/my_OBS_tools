@@ -263,14 +263,22 @@
           }
         }
 
-        // 沒帶參數也給預設手把圖，避免 OBS 網址漏掉 gameIcon 時完全沒圖
+        // 入口會明確傳 gameIcon；0/none＝隱藏；缺參數時仍給預設
         const iconRaw = (
           params.get("gameIcon") ||
           params.get("icon") ||
           "sports_esports"
         ).trim();
         const iconSlot = document.getElementById("game-icon");
-        if (iconSlot && iconRaw && iconRaw !== "0" && iconRaw !== "none" && iconRaw !== "off") {
+        if (
+          iconSlot &&
+          iconRaw &&
+          iconRaw !== "0" &&
+          iconRaw !== "none" &&
+          iconRaw !== "off" &&
+          iconRaw !== "false" &&
+          iconRaw !== "hide"
+        ) {
           iconSlot.hidden = false;
           if (isUrlIcon(iconRaw)) {
             iconSlot.innerHTML = "";

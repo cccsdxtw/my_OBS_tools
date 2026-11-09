@@ -63,6 +63,10 @@
         flex: 0 0 auto;
       }
 
+      .icon-slot[hidden] {
+        display: none;
+      }
+
       .icon,
       .custom-icon {
         width: 100%;
@@ -114,9 +118,7 @@
   </head>
   <body>
     <div id="bar" aria-live="polite">
-      <span class="icon-slot" id="cd-icon">
-        <span class="material-symbols-outlined icon" aria-hidden="true">hourglass_empty</span>
-      </span>
+      <span class="icon-slot" id="cd-icon"></span>
       <span class="label" id="countdown-label" hidden></span>
       <span class="value" id="countdown">00:00:00</span>
     </div>
@@ -168,7 +170,18 @@
 
         const cdIconRaw = (params.get("cdIcon") || params.get("icon") || "hourglass_empty").trim();
         const slot = document.getElementById("cd-icon");
-        if (slot && cdIconRaw) {
+        const hideIcon =
+          !cdIconRaw ||
+          cdIconRaw === "0" ||
+          cdIconRaw === "none" ||
+          cdIconRaw === "off" ||
+          cdIconRaw === "false" ||
+          cdIconRaw === "hide";
+        if (slot && hideIcon) {
+          slot.hidden = true;
+          slot.innerHTML = "";
+        } else if (slot && cdIconRaw) {
+          slot.hidden = false;
           if (isUrlIcon(cdIconRaw)) {
             slot.innerHTML = "";
             const img = document.createElement("img");
@@ -189,8 +202,6 @@
               window.MyObsMaterialIcons.ensureMaterialSymbols([name]);
             }
           }
-        } else if (window.MyObsMaterialIcons) {
-          window.MyObsMaterialIcons.ensureMaterialSymbols(["hourglass_empty"]);
         }
 
         function pad(n) {

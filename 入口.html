@@ -1091,6 +1091,8 @@
               <option value="videocam"></option>
               <option value="timer"></option>
               <option value="hourglass_empty"></option>
+              <option value="event_upcoming"></option>
+              <option value="sports_esports"></option>
               <option value="visibility"></option>
               <option value="person"></option>
               <option value="favorite"></option>
@@ -1135,13 +1137,16 @@
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="vcShowIcon" checked /> 顯示圖示</label
+                >
                 <input
                   id="vcMsIcon"
                   class="icon-name"
                   type="text"
                   list="materialIconSuggest"
-                  placeholder="圖示名 visibility"
-                  value="visibility"
+                  placeholder="空白＝預設 visibility"
+                  style="grid-column: 1 / -1"
                 />
               </div>
               <div class="mod-row" data-key="st">
@@ -1150,13 +1155,16 @@
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="stShowIcon" checked /> 顯示圖示</label
+                >
                 <input
                   id="stMsIcon"
                   class="icon-name"
                   type="text"
                   list="materialIconSuggest"
-                  placeholder="圖示名 videocam"
-                  value="videocam"
+                  placeholder="空白＝預設 videocam"
+                  style="grid-column: 1 / -1"
                 />
               </div>
               <div class="mod-row" data-key="date">
@@ -1165,13 +1173,16 @@
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="dateShowIcon" checked /> 顯示圖示</label
+                >
                 <input
                   id="dateMsIcon"
                   class="icon-name"
                   type="text"
                   list="materialIconSuggest"
-                  placeholder="圖示名 calendar_month"
-                  value="calendar_month"
+                  placeholder="空白＝預設 calendar_month"
+                  style="grid-column: 1 / -1"
                 />
               </div>
               <div class="mod-row" data-key="time">
@@ -1180,13 +1191,16 @@
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="timeShowIcon" checked /> 顯示圖示</label
+                >
                 <input
                   id="timeMsIcon"
                   class="icon-name"
                   type="text"
                   list="materialIconSuggest"
-                  placeholder="圖示名 schedule"
-                  value="schedule"
+                  placeholder="空白＝預設 schedule"
+                  style="grid-column: 1 / -1"
                 />
               </div>
               <div class="mod-row" data-key="showTz">
@@ -1198,7 +1212,7 @@
               </div>
             </div>
             <p class="hint">
-              用 ↑↓ 調整左右順序（列表上＝資訊條左邊）。每個項目下方可填圖示名稱；國旗仍用 ISO 代碼，不用 Material 名稱。
+              用 ↑↓ 調整左右順序（列表上＝資訊條左邊）。勾「顯示圖示」才會出現圖；勾了但名稱空白＝用預設。國旗仍用 ISO 代碼。
             </p>
 
             <div class="row">
@@ -1291,39 +1305,39 @@
             </p>
             <div class="checks" id="vcPlatforms">
               <div class="mod-row" data-key="tw">
-                <label>
-                  Twitch
-                  <span style="font-weight: 500; color: var(--muted); margin-left: 6px">圖示網址</span>
-                </label>
+                <label>Twitch</label>
                 <div class="mod-move">
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="twShowIcon" checked /> 顯示圖示</label
+                >
                 <input
                   id="twIcon"
                   type="text"
-                  placeholder="空白＝預設 Twitch 圖示"
-                  style="grid-column: 1 / -1; margin-top: 4px"
+                  placeholder="空白＝預設 Twitch 圖示；可貼圖片網址"
+                  style="grid-column: 1 / -1"
                 />
               </div>
               <div class="mod-row" data-key="yt">
-                <label>
-                  YouTube
-                  <span style="font-weight: 500; color: var(--muted); margin-left: 6px">圖示網址</span>
-                </label>
+                <label>YouTube</label>
                 <div class="mod-move">
                   <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
                   <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
                 </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="ytShowIcon" checked /> 顯示圖示</label
+                >
                 <input
                   id="ytIcon"
                   type="text"
-                  placeholder="空白＝預設 YouTube 圖示"
-                  style="grid-column: 1 / -1; margin-top: 4px"
+                  placeholder="空白＝預設 YouTube 圖示；可貼圖片網址"
+                  style="grid-column: 1 / -1"
                 />
               </div>
             </div>
-            <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。可貼自己的 PNG／SVG／WebP 網址換圖（建議正方形）。</p>
+            <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。勾選才顯示圖示；空白用平台預設，也可貼 PNG／SVG／WebP。</p>
             <div class="row">
               <div>
                 <label for="viewersFontSize">字級</label>
@@ -1397,13 +1411,15 @@
               >
             </div>
             <div class="field">
+              <label><input type="checkbox" id="cdShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
               <label for="cdIcon">倒計時圖示</label>
               <input
                 id="cdIcon"
                 type="text"
                 list="materialIconSuggest"
-                value="hourglass_empty"
-                placeholder="Material 名稱如 Timer，或圖片 https://…"
+                placeholder="空白＝預設 hourglass_empty；或圖片網址"
               />
             </div>
             <div class="row">
@@ -1416,9 +1432,7 @@
               </div>
               <div></div>
             </div>
-            <p class="hint">
-              同上：到 Google Icons 找名稱貼上來（如 <code>Timer</code>）；顏色用「圖示色」選。貼圖片網址則不套用圖示色。
-            </p>
+            <p class="hint">勾選才顯示圖示；勾了沒填＝預設沙漏。貼圖片網址則不套用圖示色。</p>
             <div class="row">
               <div>
                 <label for="countdownFontSize">字級</label>
@@ -1470,7 +1484,7 @@
               <h2>⑤ 倒數天數</h2>
               <span class="side-title">離今天幾天</span>
             </div>
-            <p class="hint">選一個目標日期，顯示還有幾天（依本地日曆日計算）。圖示可留空不顯示。</p>
+            <p class="hint">選一個目標日期，顯示還有幾天（依本地日曆日計算）。</p>
             <div class="field">
               <label for="daysDate">目標日期</label>
               <input id="daysDate" type="date" />
@@ -1495,12 +1509,15 @@
               >
             </div>
             <div class="field">
-              <label for="daysIcon">圖示（選填，空白＝不放）</label>
+              <label><input type="checkbox" id="daysShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
+              <label for="daysIcon">倒數天數圖示</label>
               <input
                 id="daysIcon"
                 type="text"
                 list="materialIconSuggest"
-                placeholder="Material 名稱如 event，或圖片網址；空白不顯示"
+                placeholder="空白＝預設 event_upcoming；或圖片網址"
               />
             </div>
             <div class="row">
@@ -1614,13 +1631,15 @@
               >
             </div>
             <div class="field">
-              <label for="gameIcon">圖示（選填）</label>
+              <label><input type="checkbox" id="gameShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
+              <label for="gameIcon">遊戲圖示</label>
               <input
                 id="gameIcon"
                 type="text"
                 list="materialIconSuggest"
-                value="sports_esports"
-                placeholder="Material 名稱或圖片 https://…；空白＝不顯示"
+                placeholder="空白＝預設 sports_esports；或圖片網址"
               />
             </div>
             <div class="row">
@@ -2940,7 +2959,7 @@
               fields[k].value = v == null ? "" : String(v);
             }
           });
-          document.querySelectorAll("#modules input[type=checkbox]").forEach((el) => {
+          document.querySelectorAll("#modules input[type=checkbox][data-key]").forEach((el) => {
             if (
               setup.modules &&
               Object.prototype.hasOwnProperty.call(setup.modules, el.dataset.key)
@@ -3013,11 +3032,18 @@
           ytKey: $("ytKey"),
           twIcon: $("twIcon"),
           ytIcon: $("ytIcon"),
+          twShowIcon: $("twShowIcon"),
+          ytShowIcon: $("ytShowIcon"),
           cdIcon: $("cdIcon"),
+          cdShowIcon: $("cdShowIcon"),
           vcMsIcon: $("vcMsIcon"),
           stMsIcon: $("stMsIcon"),
           dateMsIcon: $("dateMsIcon"),
           timeMsIcon: $("timeMsIcon"),
+          vcShowIcon: $("vcShowIcon"),
+          stShowIcon: $("stShowIcon"),
+          dateShowIcon: $("dateShowIcon"),
+          timeShowIcon: $("timeShowIcon"),
           tz: $("tz"),
           flagCode: $("flagCode"),
           dateFormat: $("dateFormat"),
@@ -3045,6 +3071,7 @@
           daysDate: $("daysDate"),
           daysLabel: $("daysLabel"),
           daysUnit: $("daysUnit"),
+          daysShowIcon: $("daysShowIcon"),
           daysIcon: $("daysIcon"),
           daysIconColor: $("daysIconColor"),
           daysFontSize: $("daysFontSize"),
@@ -3054,6 +3081,7 @@
           gameLabel: $("gameLabel"),
           gamePlatform: $("gamePlatform"),
           gameName: $("gameName"),
+          gameShowIcon: $("gameShowIcon"),
           gameIcon: $("gameIcon"),
           gameIconColor: $("gameIconColor"),
           gameFontSize: $("gameFontSize"),
@@ -3267,7 +3295,7 @@
                 fields[k].value = v;
               }
             });
-            document.querySelectorAll("#modules input[type=checkbox]").forEach((el) => {
+            document.querySelectorAll("#modules input[type=checkbox][data-key]").forEach((el) => {
               if (data.modules && Object.prototype.hasOwnProperty.call(data.modules, el.dataset.key)) {
                 el.checked = !!data.modules[el.dataset.key];
               }
@@ -3611,6 +3639,16 @@
           return s;
         }
 
+        function resolveIconParam(showEl, inputEl, defaultName) {
+          if (!showEl || !showEl.checked) return "0";
+          const raw = (inputEl && inputEl.value ? inputEl.value : "").trim();
+          return resolveAssetUrl(raw || defaultName);
+        }
+
+        function setIconParam(p, key, showEl, inputEl, defaultName) {
+          p.set(key, resolveIconParam(showEl, inputEl, defaultName));
+        }
+
         function buildOverlayUrl() {
           const url = pageUrl("overlay.html");
           const p = url.searchParams;
@@ -3618,7 +3656,7 @@
           if (channel) p.set("login", channel);
 
           const mods = {};
-          document.querySelectorAll("#modules input[type=checkbox]").forEach((el) => {
+          document.querySelectorAll("#modules input[type=checkbox][data-key]").forEach((el) => {
             mods[el.dataset.key] = el.checked;
             p.set(el.dataset.key, el.checked ? "1" : "0");
           });
@@ -3631,14 +3669,10 @@
           }
           if (fields.dateFormat.value.trim()) p.set("dateFormat", fields.dateFormat.value.trim());
           if (fields.timeFormat.value.trim()) p.set("timeFormat", fields.timeFormat.value.trim());
-          if (fields.vcMsIcon.value.trim())
-            p.set("vcIcon", resolveAssetUrl(fields.vcMsIcon.value.trim()));
-          if (fields.stMsIcon.value.trim())
-            p.set("stIcon", resolveAssetUrl(fields.stMsIcon.value.trim()));
-          if (fields.dateMsIcon.value.trim())
-            p.set("dateIcon", resolveAssetUrl(fields.dateMsIcon.value.trim()));
-          if (fields.timeMsIcon.value.trim())
-            p.set("timeIcon", resolveAssetUrl(fields.timeMsIcon.value.trim()));
+          setIconParam(p, "vcIcon", fields.vcShowIcon, fields.vcMsIcon, "visibility");
+          setIconParam(p, "stIcon", fields.stShowIcon, fields.stMsIcon, "videocam");
+          setIconParam(p, "dateIcon", fields.dateShowIcon, fields.dateMsIcon, "calendar_month");
+          setIconParam(p, "timeIcon", fields.timeShowIcon, fields.timeMsIcon, "schedule");
           styleParams(
             p,
             fields.overlayShowBg,
@@ -3654,8 +3688,7 @@
           const url = pageUrl("countdown.html");
           const p = url.searchParams;
           if (fields.cdLabel.value.trim()) p.set("cdLabel", fields.cdLabel.value.trim());
-          if (fields.cdIcon.value.trim())
-            p.set("cdIcon", resolveAssetUrl(fields.cdIcon.value.trim()));
+          setIconParam(p, "cdIcon", fields.cdShowIcon, fields.cdIcon, "hourglass_empty");
           if (fields.countdown.value) {
             const local = new Date(fields.countdown.value);
             if (!Number.isNaN(local.getTime())) p.set("countdown", local.toISOString());
@@ -3692,9 +3725,7 @@
           }
           if (fields.daysLabel.value.trim()) p.set("label", fields.daysLabel.value.trim());
           if (fields.daysUnit.value.trim()) p.set("unit", fields.daysUnit.value.trim());
-          if (fields.daysIcon.value.trim()) {
-            p.set("icon", resolveAssetUrl(fields.daysIcon.value.trim()));
-          }
+          setIconParam(p, "icon", fields.daysShowIcon, fields.daysIcon, "event_upcoming");
           styleParams(
             p,
             fields.daysShowBg,
@@ -3721,9 +3752,12 @@
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
           const vcPlatformOrder = getVcPlatformOrder();
           if (vcPlatformOrder.length) p.set("vcOrder", vcPlatformOrder.join(","));
-          if (fields.twIcon.value.trim())
+          // 空白＝平台預設 SVG；勾掉＝不顯示（傳 0）
+          if (!fields.twShowIcon.checked) p.set("twIcon", "0");
+          else if (fields.twIcon.value.trim())
             p.set("twIcon", resolveAssetUrl(fields.twIcon.value.trim()));
-          if (fields.ytIcon.value.trim())
+          if (!fields.ytShowIcon.checked) p.set("ytIcon", "0");
+          else if (fields.ytIcon.value.trim())
             p.set("ytIcon", resolveAssetUrl(fields.ytIcon.value.trim()));
           styleParams(
             p,
@@ -3745,10 +3779,7 @@
           if (platform) p.set("platform", platform);
           else if (!game) p.set("platform", "PC");
           p.set("game", game || "遊戲名");
-          p.set(
-            "gameIcon",
-            resolveAssetUrl(fields.gameIcon.value.trim() || "sports_esports")
-          );
+          setIconParam(p, "gameIcon", fields.gameShowIcon, fields.gameIcon, "sports_esports");
           styleParams(
             p,
             fields.gameShowBg,

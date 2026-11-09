@@ -1877,26 +1877,6 @@
             </p>
             <div class="row">
               <div>
-                <label for="spKeywords">訊息需含（選填）</label>
-                <input
-                  id="spKeywords"
-                  type="text"
-                  placeholder="例如：拉基,加油（空白＝全部都算）"
-                />
-              </div>
-              <div>
-                <label for="spKeywordMode">關鍵字規則</label>
-                <select id="spKeywordMode">
-                  <option value="any" selected>含任一詞就算</option>
-                  <option value="all">要含全部詞才算</option>
-                </select>
-              </div>
-            </div>
-            <p class="hint">
-              逗號或空白分隔。只計算留言／Cheer 文字有符合的；沒留言、或字對不上就不計入。手動補登不受關鍵字限制。
-            </p>
-            <div class="row">
-              <div>
                 <label
                   ><input type="checkbox" id="spCombine" /> 小奇點＋超留一起算進同一目標</label
                 >
@@ -1914,14 +1894,9 @@
               </div>
             </div>
             <p class="hint">
-              勾選合併才把 bits 換算進目標／合計。例：填 1 → 每 100 bits＝目標幣 1 元。不勾則 TW／YT
-              分開顯示，目標只算超留。
+              勾選合併才把 bits 換算進各基金進度。例：填 1 → 每 100 bits＝目標幣 1 元。
             </p>
             <div class="row">
-              <div>
-                <label for="spGoal">目標金額（選填）</label>
-                <input id="spGoal" type="number" min="0" step="1" placeholder="0＝不顯示進度條" />
-              </div>
               <div>
                 <label for="spGoalCurrency">目標幣別</label>
                 <select id="spGoalCurrency">
@@ -1930,14 +1905,25 @@
                   <option value="JPY">JPY</option>
                 </select>
               </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="spGoalLabel">目標標籤</label>
-                <input id="spGoalLabel" type="text" value="本場目標" placeholder="本場目標" />
-              </div>
               <div></div>
             </div>
+            <div class="card-head" style="margin-top: 8px">
+              <h2 style="font-size: 0.95rem; margin: 0">基金／目標（可多個）</h2>
+              <span class="side-title">例：唱歌基金 · 女裝基金</span>
+            </div>
+            <div id="spFundsList" class="checks" style="margin-top: 8px"></div>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" class="secondary" id="spAddFund">新增基金</button>
+            </div>
+            <p class="hint">
+              每筆可設名稱、目標金額、關鍵字。留言／Cheer
+              <strong>含該關鍵字</strong>才算進該基金（多個關鍵字用逗號；空白則用名稱）。只有一個基金且關鍵字空白＝全部都算進它。手動補登可指定基金。
+            </p>
+            <!-- 舊版單目標欄位：還原設定相容，畫面隱藏 -->
+            <input id="spGoal" type="hidden" value="" />
+            <input id="spGoalLabel" type="hidden" value="" />
+            <input id="spKeywords" type="hidden" value="" />
+            <input id="spKeywordMode" type="hidden" value="any" />
             <div class="row">
               <div>
                 <label for="spMax">最近幾筆</label>
@@ -1976,7 +1962,7 @@
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="spUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 700–1100、高度 70–120。預覽含示範小奇點／超留。</p>
+            <p class="hint">建議寬度 700–1100；基金愈多高度愈高（約 70 + 每條 36）。預覽含示範。</p>
             <div class="actions">
               <button type="button" id="copySp">複製贊助條網址</button>
               <a class="btn secondary" id="openSp" href="#" target="_blank" rel="noopener">預覽</a>
@@ -2883,6 +2869,13 @@
               );
             } catch (_) {}
           }
+          if (Array.isArray(setup.sponsorFunds) && setup.sponsorFunds.length) {
+            sponsorFunds = normalizeSponsorFunds(setup.sponsorFunds);
+          } else {
+            sponsorFunds = [];
+            seedSponsorFundsFromLegacy();
+          }
+          renderSponsorFunds();
           if (typeof data.accountTxt === "string" && data.accountTxt.trim()) {
             applyAccountMap(parseAccountTxt(data.accountTxt), { force: true });
           }
@@ -3003,6 +2996,86 @@
           spBg: $("spBg"),
         };
 
+        /** @type {Array<{id:string,name:string,goal:string,keywords:string}>} */
+        let sponsorFunds = [];
+
+        function newFundId() {
+          return "f" + Math.random().toString(36).slice(2, 9);
+        }
+
+        function normalizeSponsorFunds(list) {
+          if (!Array.isArray(list) || !list.length) {
+            return [
+              {
+                id: newFundId(),
+                name: "本場目標",
+                goal: "",
+                keywords: "",
+              },
+            ];
+          }
+          return list.map((f) => ({
+            id: String((f && f.id) || newFundId()),
+            name: String((f && f.name) || "").trim() || "未命名基金",
+            goal: f && f.goal != null && f.goal !== "" ? String(f.goal) : "",
+            keywords: String((f && f.keywords) || "").trim(),
+          }));
+        }
+
+        function readSponsorFundsFromDom() {
+          const list = $("spFundsList");
+          if (!list) return sponsorFunds;
+          sponsorFunds = Array.from(list.querySelectorAll(".sp-fund-row")).map((row) => ({
+            id: row.dataset.id || newFundId(),
+            name: (row.querySelector("[data-k=name]")?.value || "").trim() || "未命名基金",
+            goal: (row.querySelector("[data-k=goal]")?.value || "").trim(),
+            keywords: (row.querySelector("[data-k=keywords]")?.value || "").trim(),
+          }));
+          return sponsorFunds;
+        }
+
+        function renderSponsorFunds() {
+          const list = $("spFundsList");
+          if (!list) return;
+          sponsorFunds = normalizeSponsorFunds(sponsorFunds);
+          list.innerHTML = "";
+          sponsorFunds.forEach((fund, idx) => {
+            const row = document.createElement("div");
+            row.className = "mod-row sp-fund-row";
+            row.dataset.id = fund.id;
+            row.innerHTML = `
+              <span class="side-title" style="min-width:2.2em">${idx + 1}.</span>
+              <input data-k="name" type="text" placeholder="基金名稱（如：唱歌基金）" />
+              <input data-k="goal" type="number" min="0" step="1" placeholder="目標金額" style="max-width:7em" />
+              <input data-k="keywords" type="text" placeholder="關鍵字（空白＝用名稱）" />
+              <button type="button" class="secondary sp-fund-del" title="刪除">刪</button>
+            `;
+            row.querySelector("[data-k=name]").value = fund.name;
+            row.querySelector("[data-k=goal]").value = fund.goal;
+            row.querySelector("[data-k=keywords]").value = fund.keywords;
+            list.appendChild(row);
+          });
+        }
+
+        function seedSponsorFundsFromLegacy() {
+          if (sponsorFunds.length) return;
+          const label = (fields.spGoalLabel.value || "").trim();
+          const goal = (fields.spGoal.value || "").trim();
+          const kw = (fields.spKeywords.value || "").trim();
+          if (label || goal || kw) {
+            sponsorFunds = [
+              {
+                id: newFundId(),
+                name: label || "本場目標",
+                goal,
+                keywords: kw,
+              },
+            ];
+          } else {
+            sponsorFunds = normalizeSponsorFunds([]);
+          }
+        }
+
         // 所有左右排序：↑↓（列表上＝左邊）
         function getOrderFromList(listEl) {
           return Array.from(listEl.querySelectorAll(".mod-row")).map((row) => row.dataset.key);
@@ -3108,6 +3181,9 @@
             }
             if (Array.isArray(vcOrder) && vcOrder.length) {
               applyVcPlatformOrder(vcOrder);
+            }
+            if (Array.isArray(data.sponsorFunds) && data.sponsorFunds.length) {
+              sponsorFunds = normalizeSponsorFunds(data.sponsorFunds);
             }
           } catch (_) {}
         }
@@ -3642,8 +3718,16 @@
           fields.spBitsRate.style.opacity = fields.spCombine.checked ? "1" : "0.5";
         }
 
+        function encodeFundParam(fund) {
+          const name = String(fund.name || "").replace(/\|/g, "｜").trim() || "未命名基金";
+          const goal = String(fund.goal || "").trim();
+          const keywords = String(fund.keywords || "").replace(/\|/g, "｜").trim();
+          return `${name}|${goal}|${keywords}`;
+        }
+
         function buildSponsorUrl(opts = {}) {
           syncSponsorEndMode();
+          const funds = readSponsorFundsFromDom();
           const url = pageUrl("sponsor.html");
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
@@ -3680,15 +3764,16 @@
             }
           }
           if (fields.spManualNote.value.trim()) p.set("manualNote", fields.spManualNote.value.trim());
-          const kw = fields.spKeywords.value.trim();
-          if (kw) {
-            p.set("must", kw);
-            if (fields.spKeywordMode.value === "all") p.set("mustMode", "all");
-          }
-          const goal = parseFloat(fields.spGoal.value);
-          if (goal && goal > 0) p.set("goal", String(goal));
           if (fields.spGoalCurrency.value) p.set("goalCurrency", fields.spGoalCurrency.value);
-          if (fields.spGoalLabel.value.trim()) p.set("goalLabel", fields.spGoalLabel.value.trim());
+          funds.forEach((fund) => p.append("fund", encodeFundParam(fund)));
+          // 舊版單目標相容（僅一筆時順便帶上）
+          if (funds.length === 1) {
+            const g = parseFloat(funds[0].goal);
+            if (g && g > 0) p.set("goal", String(g));
+            if (funds[0].name) p.set("goalLabel", funds[0].name);
+            const kw = funds[0].keywords || funds[0].name;
+            if (kw) p.set("must", kw);
+          }
           if (fields.spMax.value) p.set("max", fields.spMax.value);
           if (fields.spHideStatus.checked) p.set("hideStatus", "1");
           if (opts.demo) p.set("demo", "1");
@@ -3771,6 +3856,7 @@
               modules: mods,
               moduleOrder,
               vcPlatformOrder: getVcPlatformOrder(),
+              sponsorFunds: readSponsorFundsFromDom(),
             })
           );
           return {
@@ -3863,6 +3949,33 @@
           const { spHref } = buildUrls();
           $("spUrl").select();
           await copyText(spHref, $("copySp"), "複製贊助條網址");
+        });
+
+        $("spAddFund").addEventListener("click", () => {
+          readSponsorFundsFromDom();
+          sponsorFunds.push({
+            id: newFundId(),
+            name: "",
+            goal: "",
+            keywords: "",
+          });
+          renderSponsorFunds();
+          buildUrls();
+        });
+        $("spFundsList").addEventListener("input", () => buildUrls());
+        $("spFundsList").addEventListener("click", (ev) => {
+          const btn = ev.target.closest(".sp-fund-del");
+          if (!btn) return;
+          readSponsorFundsFromDom();
+          const row = btn.closest(".sp-fund-row");
+          const id = row && row.dataset.id;
+          if (sponsorFunds.length <= 1) {
+            sponsorFunds = normalizeSponsorFunds([]);
+          } else {
+            sponsorFunds = sponsorFunds.filter((f) => f.id !== id);
+          }
+          renderSponsorFunds();
+          buildUrls();
         });
 
         Object.values(fields).forEach((el) => {
@@ -4075,6 +4188,8 @@
         syncAllBgFields();
         renderGameHistory();
         syncGamePlatformChips();
+        if (!sponsorFunds.length) seedSponsorFundsFromLegacy();
+        renderSponsorFunds();
         loadAccountTxt().finally(() => {
           buildUrls();
           ensureYtChannelIdResolved();

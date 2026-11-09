@@ -131,9 +131,15 @@
         font-weight: 700;
       }
 
-      .goal-wrap {
+      #goals {
         flex: 1;
-        min-width: 120px;
+        min-width: 140px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .goal-wrap {
         display: flex;
         flex-direction: column;
         gap: 3px;
@@ -142,6 +148,7 @@
       .goal-meta {
         display: flex;
         justify-content: space-between;
+        gap: 8px;
         font-size: calc(var(--size) * 0.72);
         color: var(--muted);
         font-weight: 600;
@@ -158,6 +165,11 @@
         width: 0%;
         background: var(--bar);
         transition: width 0.35s ease;
+      }
+
+      .evt .fund {
+        color: var(--bar);
+        font-weight: 700;
       }
 
       #status {
@@ -241,17 +253,12 @@
           <div class="tot tw" id="totTw" hidden>TW <span class="num" id="twBits">0</span> bits</div>
           <div class="tot yt" id="totYt" hidden>YT <span class="num" id="ytMoney">—</span></div>
         </div>
-        <div class="goal-wrap" id="goalWrap" hidden>
-          <div class="goal-meta">
-            <span id="goalLabel">本場目標</span>
-            <span id="goalText">0 / 0</span>
-          </div>
-          <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
-        </div>
+        <div id="goals" hidden></div>
         <div id="status">…</div>
         <button type="button" id="manualToggle" title="手動補登（OBS 來源→互動）">＋手動</button>
       </div>
       <form id="manualPanel" autocomplete="off">
+        <select id="manualFund" aria-label="基金"></select>
         <select id="manualPlatform" aria-label="平台">
           <option value="tw">TW bits</option>
           <option value="yt">YT 金額</option>
@@ -330,20 +337,11 @@
         const wantYt = !!(ytVideoParam || (ytChannel && ytKey));
         const demo = params.get("demo") === "1";
         const maxEvents = Math.max(3, Math.min(20, parseInt(params.get("max") || "8", 10) || 8));
-        const goal = Math.max(0, Number(params.get("goal") || 0) || 0);
         const combine = params.get("combine") === "1";
         const bitsRate = combine
           ? Math.max(0, Number(params.get("bitsRate") || 0) || 0)
           : 0; // 每 100 bits → 多少目標幣（僅合併時）
         const goalCurrency = (params.get("goalCurrency") || "TWD").trim() || "TWD";
-        const goalLabel = (params.get("goalLabel") || "本場目標").trim() || "本場目標";
-        const mustMode = (params.get("mustMode") || params.get("keywordMode") || "any")
-          .trim()
-          .toLowerCase();
-        const mustKeywords = String(params.get("must") || params.get("keywords") || "")
-          .split(/[,，、\n\r|／/]+/)
-          .map((s) => s.trim())
-          .filter(Boolean);
         const manualBitsUrl = parseInt(params.get("manualBits") || "0", 10) || 0;
         const manualYtUrl = Number(params.get("manualYt") || 0) || 0;
         const manualYtCurrency = (
@@ -354,6 +352,53 @@
           .trim()
           .toUpperCase() || goalCurrency;
         const manualNoteUrl = (params.get("manualNote") || "手動補登").trim() || "手動補登";
+
+        function splitKeywords(raw) {
+          return String(raw || "")
+            .split(/[,，、\n\r|／/]+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+
+        function parseFunds() {
+          const rawList = params.getAll("fund").filter(Boolean);
+          /** @type {Array<{id:string,name:string,goal:number,keywords:string[]}>} */
+          let list = rawList.map((raw, i) => {
+            const parts = String(raw).split("|");
+            const name = (parts[0] || "").trim() || `基金${i + 1}`;
+            const goal = Math.max(0, Number(parts[1] || 0) || 0);
+            const kwRaw = (parts[2] != null ? parts[2] : "").trim();
+            const keywords = splitKeywords(kwRaw || name);
+            return {
+              id: `fund${i}_${name}`,
+              name,
+              goal,
+              keywords,
+            };
+          });
+          if (!list.length) {
+            // 舊版單目標
+            const goal = Math.max(0, Number(params.get("goal") || 0) || 0);
+            const name = (params.get("goalLabel") || "本場目標").trim() || "本場目標";
+            const keywords = splitKeywords(params.get("must") || params.get("keywords") || "");
+            list = [
+              {
+                id: "fund0_" + name,
+                name,
+                goal,
+                keywords: keywords.length ? keywords : [],
+              },
+            ];
+          }
+          return list;
+        }
+
+        const funds = parseFunds();
+        /** @type {Record<string,{twBits:number,yt:number}>} */
+        const fundState = {};
+        funds.forEach((f) => {
+          fundState[f.id] = { twBits: 0, yt: 0 };
+        });
 
         function parseTimeMs(raw) {
           const s = String(raw || "").trim();
@@ -368,7 +413,6 @@
         if (windowEndMs == null && windowStartMs != null && durationMins > 0) {
           windowEndMs = windowStartMs + durationMins * 60 * 1000;
         } else if (windowEndMs == null && windowStartMs == null && durationMins > 0) {
-          // 無開始時間時：以頁面載入當下當開始，再加時長
           windowEndMs = Date.now() + durationMins * 60 * 1000;
         }
 
@@ -387,14 +431,18 @@
           return "active";
         }
 
-        function messageMatches(rawMsg) {
-          if (!mustKeywords.length) return true;
+        function fundMatches(fund, rawMsg) {
+          if (!fund.keywords.length) return funds.length === 1;
           const text = String(rawMsg || "").toLowerCase();
           if (!text.trim()) return false;
-          if (mustMode === "all") {
-            return mustKeywords.every((k) => text.includes(k.toLowerCase()));
-          }
-          return mustKeywords.some((k) => text.includes(k.toLowerCase()));
+          return fund.keywords.some((k) => text.includes(k.toLowerCase()));
+        }
+
+        function resolveFundId(rawMsg, forcedId) {
+          if (forcedId && fundState[forcedId]) return forcedId;
+          if (funds.length === 1 && !funds[0].keywords.length) return funds[0].id;
+          const hit = funds.find((f) => fundMatches(f, rawMsg));
+          return hit ? hit.id : "";
         }
 
         const els = {
@@ -404,14 +452,12 @@
           totYt: document.getElementById("totYt"),
           twBits: document.getElementById("twBits"),
           ytMoney: document.getElementById("ytMoney"),
-          goalWrap: document.getElementById("goalWrap"),
-          goalLabel: document.getElementById("goalLabel"),
-          goalText: document.getElementById("goalText"),
-          goalFill: document.getElementById("goalFill"),
+          goals: document.getElementById("goals"),
           feed: document.getElementById("feed"),
           status: document.getElementById("status"),
           manualToggle: document.getElementById("manualToggle"),
           manualPanel: document.getElementById("manualPanel"),
+          manualFund: document.getElementById("manualFund"),
           manualPlatform: document.getElementById("manualPlatform"),
           manualAmount: document.getElementById("manualAmount"),
           manualMsg: document.getElementById("manualMsg"),
@@ -419,14 +465,46 @@
 
         const showTw = wantTw || demo || !!manualBitsUrl;
         const showYt = wantYt || demo || !!manualYtUrl;
-        // 合併時多顯示「合計」；TW／YT 明細仍分開列，方便核對
         els.totCombined.hidden = !(combine && (showTw || showYt));
         els.totTw.hidden = !showTw;
         els.totYt.hidden = !showYt;
-        if (goal > 0) {
-          els.goalWrap.hidden = false;
-          els.goalLabel.textContent = goalLabel;
+
+        /** @type {Record<string,{wrap:HTMLElement,label:HTMLElement,text:HTMLElement,fill:HTMLElement}>} */
+        const goalEls = {};
+        function buildGoalUi() {
+          els.goals.innerHTML = "";
+          const showGoals = funds.some((f) => f.goal > 0) || funds.length > 1;
+          els.goals.hidden = !showGoals;
+          funds.forEach((f) => {
+            const wrap = document.createElement("div");
+            wrap.className = "goal-wrap";
+            wrap.dataset.fund = f.id;
+            const meta = document.createElement("div");
+            meta.className = "goal-meta";
+            const label = document.createElement("span");
+            label.textContent = f.name;
+            const text = document.createElement("span");
+            text.textContent = "0";
+            meta.append(label, text);
+            const track = document.createElement("div");
+            track.className = "goal-track";
+            const fill = document.createElement("div");
+            fill.className = "goal-fill";
+            track.appendChild(fill);
+            if (f.goal <= 0) track.style.display = "none";
+            wrap.append(meta, track);
+            els.goals.appendChild(wrap);
+            goalEls[f.id] = { wrap, label, text, fill };
+          });
+          els.manualFund.innerHTML = "";
+          funds.forEach((f) => {
+            const opt = document.createElement("option");
+            opt.value = f.id;
+            opt.textContent = f.name;
+            els.manualFund.appendChild(opt);
+          });
         }
+        buildGoalUi();
 
         const connected = { tw: false, yt: false };
         let twBitsTotal = 0;
@@ -440,7 +518,7 @@
         const persistKey = demo
           ? ""
           : [
-              "laji_obs_sponsor_v1",
+              "laji_obs_sponsor_v2",
               twitchLogin || "-",
               (ytChannel || ytVideoParam || "-").toLowerCase(),
               windowStartMs || 0,
@@ -448,8 +526,7 @@
               durationMins || 0,
               combine ? "1" : "0",
               bitsRate || 0,
-              mustMode,
-              mustKeywords.join("|").toLowerCase(),
+              funds.map((f) => `${f.name}:${f.goal}:${f.keywords.join(",")}`).join(";"),
             ].join(":");
 
         function savePersist() {
@@ -460,6 +537,7 @@
               JSON.stringify({
                 twBitsTotal,
                 ytByCurrency,
+                fundState,
                 events: events.slice(0, maxEvents),
                 seen: Array.from(seenIds).slice(-400),
                 savedAt: Date.now(),
@@ -478,6 +556,14 @@
               Object.keys(raw.ytByCurrency).forEach((c) => {
                 const n = Number(raw.ytByCurrency[c]);
                 if (!Number.isNaN(n) && n > 0) ytByCurrency[c] = n;
+              });
+            }
+            if (raw.fundState && typeof raw.fundState === "object") {
+              Object.keys(fundState).forEach((id) => {
+                const s = raw.fundState[id];
+                if (!s) return;
+                fundState[id].twBits = Math.max(0, Number(s.twBits) || 0);
+                fundState[id].yt = Math.max(0, Number(s.yt) || 0);
               });
             }
             if (Array.isArray(raw.events)) {
@@ -504,7 +590,7 @@
           if (wantTw) parts.push(connected.tw ? "TW●" : "TW○");
           if (wantYt) parts.push(connected.yt ? "YT●" : "YT○");
           if (combine) parts.push("合併");
-          if (mustKeywords.length) parts.push("關鍵字");
+          if (funds.length > 1) parts.push(`${funds.length}基金`);
           if (manualBitsUrl || manualYtUrl) parts.push("手動網址");
           if (persistKey && (twBitsTotal > 0 || Object.keys(ytByCurrency).length)) {
             parts.push("已記住");
@@ -539,28 +625,43 @@
           return twBitsTotal + manualBitsUrl;
         }
 
-        function goalProgressValue() {
-          const map = ytTotalsWithManual();
-          let sum = map[goalCurrency] || 0;
-          if (combine && bitsRate > 0) sum += (displayTwBits() * bitsRate) / 100;
+        function fundProgressValue(fundId) {
+          const st = fundState[fundId] || { twBits: 0, yt: 0 };
+          let sum = st.yt;
+          // 網址手動補登加在第一個基金
+          if (fundId === funds[0]?.id) {
+            if (manualYtCurrency === goalCurrency) sum += manualYtUrl;
+            if (combine && bitsRate > 0) sum += (manualBitsUrl * bitsRate) / 100;
+          }
+          if (combine && bitsRate > 0) sum += (st.twBits * bitsRate) / 100;
           return sum;
+        }
+
+        function allFundsProgressValue() {
+          return funds.reduce((acc, f) => acc + fundProgressValue(f.id), 0);
         }
 
         function renderTotals() {
           els.twBits.textContent = String(displayTwBits());
           els.ytMoney.textContent = formatYtTotals();
           if (combine) {
-            els.combinedMoney.textContent = formatMoney(goalProgressValue(), goalCurrency);
+            els.combinedMoney.textContent = formatMoney(allFundsProgressValue(), goalCurrency);
           }
-          if (goal > 0) {
-            const cur = goalProgressValue();
-            const pct = Math.max(0, Math.min(100, (cur / goal) * 100));
-            els.goalFill.style.width = pct.toFixed(1) + "%";
-            els.goalText.textContent = `${formatMoney(cur, goalCurrency)} / ${formatMoney(
-              goal,
-              goalCurrency
-            )}`;
-          }
+          funds.forEach((f) => {
+            const ui = goalEls[f.id];
+            if (!ui) return;
+            const cur = fundProgressValue(f.id);
+            if (f.goal > 0) {
+              const pct = Math.max(0, Math.min(100, (cur / f.goal) * 100));
+              ui.fill.style.width = pct.toFixed(1) + "%";
+              ui.text.textContent = `${formatMoney(cur, goalCurrency)} / ${formatMoney(
+                f.goal,
+                goalCurrency
+              )}`;
+            } else {
+              ui.text.textContent = formatMoney(cur, goalCurrency);
+            }
+          });
         }
 
         function renderFeed() {
@@ -568,6 +669,12 @@
           events.forEach((e) => {
             const row = document.createElement("div");
             row.className = `evt ${e.platform}`;
+            if (e.fundName) {
+              const fundTag = document.createElement("span");
+              fundTag.className = "fund";
+              fundTag.textContent = e.fundName;
+              row.appendChild(fundTag);
+            }
             const who = document.createElement("span");
             who.className = "who";
             who.textContent = e.user || "anon";
@@ -591,6 +698,12 @@
           renderFeed();
         }
 
+        function creditFund(fundId, bits, ytMajor) {
+          if (!fundId || !fundState[fundId]) return;
+          if (bits) fundState[fundId].twBits += bits;
+          if (ytMajor) fundState[fundId].yt += ytMajor;
+        }
+
         function addTwBits(user, bits, message, tsMs, idHint, opts = {}) {
           const n = Math.max(0, parseInt(bits, 10) || 0);
           if (!n) return false;
@@ -606,16 +719,21 @@
             savePersist();
             return false;
           }
-          if (!force && !messageMatches(cleanMsg) && !messageMatches(message)) {
+          const fundId = resolveFundId(cleanMsg || message, opts.fundId);
+          if (!fundId) {
             savePersist();
             return false;
           }
+          const fund = funds.find((f) => f.id === fundId);
           twBitsTotal += n;
+          creditFund(fundId, n, 0);
           pushEvent({
             platform: "tw",
             user,
             amountText: `${n} bits`,
             message: cleanMsg,
+            fundId,
+            fundName: fund ? fund.name : "",
             id,
           });
           renderTotals();
@@ -634,20 +752,25 @@
             savePersist();
             return false;
           }
-          if (!force && !messageMatches(msg)) {
+          const fundId = resolveFundId(msg, opts.fundId);
+          if (!fundId) {
             savePersist();
             return false;
           }
+          const fund = funds.find((f) => f.id === fundId);
           const cur = (currency || "TWD").toUpperCase();
           const major = amountMicros != null ? Number(amountMicros) / 1e6 : 0;
           if (!Number.isNaN(major) && major > 0) {
             ytByCurrency[cur] = (ytByCurrency[cur] || 0) + major;
+            if (cur === goalCurrency) creditFund(fundId, 0, major);
           }
           pushEvent({
             platform: "yt",
             user,
             amountText: amountDisplay || `${cur} ${major}`,
             message: msg,
+            fundId,
+            fundName: fund ? fund.name : "",
             id,
           });
           renderTotals();
@@ -667,6 +790,7 @@
             user: "手動",
             amountText: parts.join(" + ") || "補登",
             message: manualNoteUrl,
+            fundName: funds[0] ? funds[0].name : "",
             id,
           });
           while (events.length > maxEvents) events.pop();
@@ -683,9 +807,13 @@
           const amount = Number(els.manualAmount.value);
           if (!amount || amount <= 0) return;
           const note = (els.manualMsg.value || "").trim() || "手動補登";
+          const fundId = els.manualFund.value || funds[0]?.id;
           const now = Date.now();
           if (els.manualPlatform.value === "tw") {
-            addTwBits("手動", amount, note, now, `manual:ui:tw:${now}`, { force: true });
+            addTwBits("手動", amount, note, now, `manual:ui:tw:${now}`, {
+              force: true,
+              fundId,
+            });
           } else {
             addYtSuper(
               "手動",
@@ -695,7 +823,7 @@
               note,
               now,
               `manual:ui:yt:${now}`,
-              { force: true }
+              { force: true, fundId }
             );
           }
           els.manualAmount.value = "";
@@ -1007,12 +1135,33 @@
         }
 
         function startDemo() {
-          const now = Date.now();
+          const a = funds[0]?.name || "基金A";
+          const b = funds[1]?.name || funds[0]?.name || "基金B";
           const samples = [
-            () => addTwBits("NightOwl", 100, "加油拉基", now, `demo:tw:1:${Date.now()}`),
-            () => addYtSuper("貓奴", "NT$50", 50e6, "TWD", "超留測試加油", now, `demo:yt:1:${Date.now()}`),
-            () => addTwBits("Tea", 500, "Cheer500 拉基 POG", now, `demo:tw:2:${Date.now()}`),
-            () => addYtSuper("小白", "NT$100", 100e6, "TWD", "晚上好拉基", now, `demo:yt:2:${Date.now()}`),
+            () =>
+              addTwBits("NightOwl", 100, `${a} 加油`, Date.now(), `demo:tw:1:${Date.now()}`),
+            () =>
+              addYtSuper(
+                "貓奴",
+                "NT$50",
+                50e6,
+                "TWD",
+                `${b} 超留`,
+                Date.now(),
+                `demo:yt:1:${Date.now()}`
+              ),
+            () =>
+              addTwBits("Tea", 500, `Cheer500 ${b}`, Date.now(), `demo:tw:2:${Date.now()}`),
+            () =>
+              addYtSuper(
+                "小白",
+                "NT$100",
+                100e6,
+                "TWD",
+                `${a} 晚上好`,
+                Date.now(),
+                `demo:yt:2:${Date.now()}`
+              ),
           ];
           samples.forEach((fn, i) => setTimeout(fn, 400 + i * 900));
           let i = 0;

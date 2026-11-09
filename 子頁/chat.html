@@ -19,6 +19,9 @@
         --yt: #ff6b6b;
         --size: 18px;
         --pad: 10px;
+        --panel-inset: var(--pad);
+        --msg-bg: transparent;
+        --msg-inset: 0px;
         --radius: 0;
         --gap: 6px;
         --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
@@ -43,8 +46,12 @@
       #wrap {
         width: 100%;
         height: 100%;
-        padding: var(--pad);
-        background: var(--bg);
+        padding: var(--panel-inset);
+        background-color: var(--bg);
+        background-image: var(--panel-img, none);
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        background-position: center;
         border-radius: var(--radius);
         display: flex;
         flex-direction: column;
@@ -86,6 +93,12 @@
         animation: in 0.2s ease-out;
         word-break: break-word;
         transition: opacity 0.35s ease, transform 0.35s ease;
+        background-color: var(--msg-bg);
+        background-image: var(--msg-img, none);
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        background-position: center;
+        padding: var(--msg-inset);
       }
 
       .msg.fade-out {
@@ -225,6 +238,53 @@
         } else {
           cssVar("--bg", bgParam);
         }
+
+        function cssUrl(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return "";
+          // 避開 CSS url() 斷字元
+          const safe = s.replace(/["'\\)]/g, "");
+          return `url("${safe}")`;
+        }
+
+        function insetToCss(raw, fallbackPx) {
+          const parts = String(raw || "")
+            .trim()
+            .split(/[\s,，]+/)
+            .filter(Boolean)
+            .map((n) => Math.max(0, Math.min(200, parseInt(n, 10) || 0)));
+          if (!parts.length) {
+            return fallbackPx == null ? "" : `${fallbackPx}px`;
+          }
+          return parts
+            .slice(0, 4)
+            .map((n) => `${n}px`)
+            .join(" ");
+        }
+
+        const panelImg = (params.get("panelImg") || "").trim();
+        if (panelImg) {
+          cssVar("--panel-img", cssUrl(panelImg));
+        }
+        const panelInsetCss = insetToCss(
+          params.get("panelInset"),
+          panelImg ? 16 : null
+        );
+        if (panelInsetCss) cssVar("--panel-inset", panelInsetCss);
+
+        const msgImg = (params.get("msgImg") || "").trim();
+        const msgBg = (params.get("msgBg") || "").trim();
+        if (msgImg) cssVar("--msg-img", cssUrl(msgImg));
+        if (msgBg && msgBg !== "0" && msgBg !== "none" && msgBg !== "off") {
+          cssVar("--msg-bg", msgBg);
+        } else if (msgImg) {
+          cssVar("--msg-bg", "transparent");
+        }
+        const msgInsetCss = insetToCss(
+          params.get("msgInset"),
+          msgImg || msgBg ? 8 : null
+        );
+        if (msgInsetCss) cssVar("--msg-inset", msgInsetCss);
 
         const maxMsgs = Math.max(5, Math.min(100, parseInt(params.get("max") || "30", 10) || 30));
         const ttlSec = Math.max(0, parseInt(params.get("ttl") || "0", 10) || 0);

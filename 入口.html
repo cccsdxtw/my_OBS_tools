@@ -1818,7 +1818,77 @@
               <label for="chatBg">底色</label>
               <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
             </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。</p>
+            <p class="hint">字級／文字色空白＝用最上方預設。底色＝整塊聊天區填色（可關）。</p>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="chatShowPanelImg" /> 留言區底圖</label
+                >
+              </div>
+              <div>
+                <label for="chatPanelInset">底圖外推（px）</label>
+                <input
+                  id="chatPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  value="16"
+                  placeholder="16 或 12 16"
+                  title="內容往內縮，避開底圖周圍裝飾"
+                />
+              </div>
+            </div>
+            <div class="field" id="chatPanelImgRow">
+              <label for="chatPanelImg">留言區底圖網址</label>
+              <input
+                id="chatPanelImg"
+                type="text"
+                placeholder="空白＝不用圖；可貼 圖片/xxx.png 或網址"
+              />
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="chatShowMsgBg" /> 每一則留言底</label
+                >
+              </div>
+              <div>
+                <label for="chatMsgInset">單則外推（px）</label>
+                <input
+                  id="chatMsgInset"
+                  type="text"
+                  inputmode="numeric"
+                  value="8"
+                  placeholder="8 或 6 10"
+                  title="單則文字往內縮，避開單則底圖周圍裝飾"
+                />
+              </div>
+            </div>
+            <div class="row" id="chatMsgBgRow">
+              <div>
+                <label for="chatMsgImg">單則底圖</label>
+                <input
+                  id="chatMsgImg"
+                  type="text"
+                  placeholder="可貼圖檔網址；空白＝只用底色"
+                />
+              </div>
+              <div>
+                <label for="chatMsgBgColor">單則底色</label>
+                <input
+                  id="chatMsgBgColor"
+                  type="text"
+                  value="rgba(0,0,0,0.35)"
+                  placeholder="rgba(0,0,0,0.35)"
+                />
+              </div>
+            </div>
+            <p class="hint">
+              底圖／單則底：勾選後才套用。外推＝內容內縮像素，用來避開圖框周圍裝飾；可只填一邊（上右下左用空白分隔，例如
+              <code>12 16</code>）。
+            </p>
+
             <div class="field" style="align-items: flex-start">
               <label for="chatCss">5. 自訂 CSS</label>
               <textarea
@@ -3156,6 +3226,13 @@
           chatColor: $("chatColor"),
           chatShowBg: $("chatShowBg"),
           chatBg: $("chatBg"),
+          chatShowPanelImg: $("chatShowPanelImg"),
+          chatPanelImg: $("chatPanelImg"),
+          chatPanelInset: $("chatPanelInset"),
+          chatShowMsgBg: $("chatShowMsgBg"),
+          chatMsgImg: $("chatMsgImg"),
+          chatMsgBgColor: $("chatMsgBgColor"),
+          chatMsgInset: $("chatMsgInset"),
           chatCss: $("chatCss"),
           restreamChatUrl: $("restreamChatUrl"),
           spStart: $("spStart"),
@@ -4019,6 +4096,21 @@
             if (ytIcon) p.set("ytIcon", resolveAssetUrl(ytIcon));
           }
           if (fields.chatHideStatus.checked) p.set("hideStatus", "1");
+          if (fields.chatShowPanelImg.checked) {
+            const panelImg = fields.chatPanelImg.value.trim();
+            if (panelImg) p.set("panelImg", resolveAssetUrl(panelImg));
+            const panelInset = normalizeInsetParam(fields.chatPanelInset.value);
+            if (panelInset) p.set("panelInset", panelInset);
+          }
+          if (fields.chatShowMsgBg.checked) {
+            const msgImg = fields.chatMsgImg.value.trim();
+            if (msgImg) p.set("msgImg", resolveAssetUrl(msgImg));
+            const msgBg = fields.chatMsgBgColor.value.trim();
+            if (msgBg) p.set("msgBg", msgBg);
+            else if (!msgImg) p.set("msgBg", "rgba(0,0,0,0.35)");
+            const msgInset = normalizeInsetParam(fields.chatMsgInset.value);
+            if (msgInset) p.set("msgInset", msgInset);
+          }
           const css = fields.chatCss.value.trim();
           if (css) p.set("css", css);
           if (opts.demo) p.set("demo", "1");
@@ -4032,12 +4124,37 @@
           return url.toString();
         }
 
+        /** 外推：單一數字或上右下左（空白／逗號分隔）→ 寫進網址 */
+        function normalizeInsetParam(raw) {
+          const parts = String(raw || "")
+            .trim()
+            .split(/[\s,，]+/)
+            .filter(Boolean)
+            .map((n) => Math.max(0, Math.min(200, parseInt(n, 10) || 0)));
+          if (!parts.length) return "";
+          return parts.slice(0, 4).join(" ");
+        }
+
         function syncChatSourceIconRow() {
           const row = $("chatSourceIconsRow");
           if (!row) return;
           row.style.opacity = fields.chatShowSource.checked ? "1" : "0.45";
           fields.chatTwIcon.disabled = !fields.chatShowSource.checked;
           fields.chatYtIcon.disabled = !fields.chatShowSource.checked;
+        }
+
+        function syncChatBgRows() {
+          const panelOn = fields.chatShowPanelImg.checked;
+          const msgOn = fields.chatShowMsgBg.checked;
+          const panelRow = $("chatPanelImgRow");
+          const msgRow = $("chatMsgBgRow");
+          if (panelRow) panelRow.style.opacity = panelOn ? "1" : "0.45";
+          if (msgRow) msgRow.style.opacity = msgOn ? "1" : "0.45";
+          fields.chatPanelImg.disabled = !panelOn;
+          fields.chatPanelInset.disabled = !panelOn;
+          fields.chatMsgImg.disabled = !msgOn;
+          fields.chatMsgBgColor.disabled = !msgOn;
+          fields.chatMsgInset.disabled = !msgOn;
         }
 
         function buildChatReplyUrl() {
@@ -4062,6 +4179,7 @@
           $("chatSplitPanel").hidden = !split;
           $("chatSourceWrap").style.visibility = split ? "hidden" : "visible";
           syncChatSourceIconRow();
+          syncChatBgRows();
         }
 
         function syncSponsorEndMode() {

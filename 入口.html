@@ -1793,8 +1793,34 @@
                 />
               </div>
             </div>
+            <div class="row" id="chatSourceColorsRow">
+              <div>
+                <label for="chatTwIconColor">TW 圖示色</label>
+                <div class="color-pair">
+                  <input id="chatTwIconColor" type="text" value="#bf94ff" />
+                  <input
+                    type="color"
+                    data-sync="chatTwIconColor"
+                    value="#bf94ff"
+                    title="快速選色"
+                  />
+                </div>
+              </div>
+              <div>
+                <label for="chatYtIconColor">YT 圖示色</label>
+                <div class="color-pair">
+                  <input id="chatYtIconColor" type="text" value="#ff6b6b" />
+                  <input
+                    type="color"
+                    data-sync="chatYtIconColor"
+                    value="#ff6b6b"
+                    title="快速選色"
+                  />
+                </div>
+              </div>
+            </div>
             <p class="hint">
-              2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。來源改顯示平台圖示（預設與②人數相同，可自己換）。
+              2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。來源改顯示平台圖示（預設與②人數相同，可自己換）。圖示色預設為現在的紫／紅；只對內建 SVG 生效（自訂圖檔本身帶色）。
             </p>
             <div class="row">
               <div>
@@ -3221,6 +3247,8 @@
           chatShowSource: $("chatShowSource"),
           chatTwIcon: $("chatTwIcon"),
           chatYtIcon: $("chatYtIcon"),
+          chatTwIconColor: $("chatTwIconColor"),
+          chatYtIconColor: $("chatYtIconColor"),
           chatHideStatus: $("chatHideStatus"),
           chatFontSize: $("chatFontSize"),
           chatColor: $("chatColor"),
@@ -4094,6 +4122,10 @@
               fields.chatYtIcon.value.trim() || fields.ytIcon.value.trim();
             if (twIcon) p.set("twIcon", resolveAssetUrl(twIcon));
             if (ytIcon) p.set("ytIcon", resolveAssetUrl(ytIcon));
+            const twColor = fields.chatTwIconColor.value.trim();
+            const ytColor = fields.chatYtIconColor.value.trim();
+            if (twColor) p.set("twColor", twColor);
+            if (ytColor) p.set("ytColor", ytColor);
           }
           if (fields.chatHideStatus.checked) p.set("hideStatus", "1");
           if (fields.chatShowPanelImg.checked) {
@@ -4136,11 +4168,22 @@
         }
 
         function syncChatSourceIconRow() {
-          const row = $("chatSourceIconsRow");
-          if (!row) return;
-          row.style.opacity = fields.chatShowSource.checked ? "1" : "0.45";
-          fields.chatTwIcon.disabled = !fields.chatShowSource.checked;
-          fields.chatYtIcon.disabled = !fields.chatShowSource.checked;
+          const on = fields.chatShowSource.checked;
+          const iconRow = $("chatSourceIconsRow");
+          const colorRow = $("chatSourceColorsRow");
+          if (iconRow) iconRow.style.opacity = on ? "1" : "0.45";
+          if (colorRow) colorRow.style.opacity = on ? "1" : "0.45";
+          fields.chatTwIcon.disabled = !on;
+          fields.chatYtIcon.disabled = !on;
+          fields.chatTwIconColor.disabled = !on;
+          fields.chatYtIconColor.disabled = !on;
+          document
+            .querySelectorAll(
+              'input[type=color][data-sync="chatTwIconColor"], input[type=color][data-sync="chatYtIconColor"]'
+            )
+            .forEach((el) => {
+              el.disabled = !on;
+            });
         }
 
         function syncChatBgRows() {

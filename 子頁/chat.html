@@ -232,6 +232,9 @@
         cssVar("--pad", params.get("pad") ? `${params.get("pad")}px` : "");
         cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
         cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+        // 來源圖示色：空白＝內建紫／紅
+        cssVar("--tw", params.get("twColor") || params.get("srcTwColor") || "");
+        cssVar("--yt", params.get("ytColor") || params.get("srcYtColor") || "");
         const bgParam = (params.get("bg") || "").trim();
         if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {
           cssVar("--bg", "transparent");

@@ -121,11 +121,25 @@
 
       .plat {
         flex: 0 0 auto;
-        font-size: 0.72em;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        margin-top: 0.2em;
-        opacity: 0.9;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25em;
+        margin-top: 0.15em;
+        opacity: 0.95;
+        max-width: 7.5em;
+      }
+
+      .plat .plat-icon {
+        width: 0.95em;
+        height: 0.95em;
+        display: block;
+        object-fit: contain;
+        flex: 0 0 auto;
+      }
+
+      .plat .plat-icon.svg {
+        fill: currentColor;
+        color: inherit;
       }
 
       .plat.tw {
@@ -134,6 +148,16 @@
 
       .plat.yt {
         color: var(--yt);
+      }
+
+      .plat .plat-chan {
+        font-size: 0.72em;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
       }
 
       body.hide-source .plat {
@@ -331,6 +355,82 @@
           }
         }
 
+        // 與人數覆蓋頁相同的預設 Twitch／YouTube 圖示
+        const TW_SVG_PATH =
+          "M4.3 2 2 4.3v15.4h4.6V22l2.6-2.3h3.4L20.6 12V2H4.3zm14.8 9.1-3 3h-3l-2.6 2.3v-2.3H6.9V3.7h12.2v7.4zM14.3 6.3h1.7v4.6h-1.7V6.3zm-4.6 0H11v4.6H9.7V6.3z";
+        const YT_SVG_PATH =
+          "M23.5 6.2a3 3 0 0 0-2.1-2.1C19.4 3.7 12 3.7 12 3.7s-7.4 0-9.4.4A3 3 0 0 0 .5 6.2 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c2 .4 9.4.4 9.4.4s7.4 0 9.4-.4a3 3 0 0 0 2.1-2.1A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.8zM9.8 15.6V8.4L15.7 12l-5.9 3.6z";
+
+        function isHiddenIcon(url) {
+          const s = String(url || "")
+            .trim()
+            .toLowerCase();
+          return (
+            s === "0" ||
+            s === "none" ||
+            s === "off" ||
+            s === "false" ||
+            s === "hide"
+          );
+        }
+
+        function isUrlIcon(raw) {
+          const s = String(raw || "").trim();
+          return (
+            /^https?:\/\//i.test(s) ||
+            /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s)
+          );
+        }
+
+        const twIconUrl = (
+          params.get("twIcon") ||
+          params.get("srcTwIcon") ||
+          ""
+        ).trim();
+        const ytIconUrl = (
+          params.get("ytIcon") ||
+          params.get("srcYtIcon") ||
+          ""
+        ).trim();
+
+        function makePlatformIcon(platform) {
+          const wrap = document.createElement("span");
+          wrap.className = "plat-icon-wrap";
+          const custom = platform === "tw" ? twIconUrl : ytIconUrl;
+          if (isHiddenIcon(custom)) {
+            wrap.hidden = true;
+            return wrap;
+          }
+          if (custom && isUrlIcon(custom)) {
+            const img = document.createElement("img");
+            img.className = "plat-icon";
+            img.alt = platform === "tw" ? "Twitch" : "YouTube";
+            img.referrerPolicy = "no-referrer";
+            img.src = custom;
+            wrap.appendChild(img);
+            return wrap;
+          }
+          const svg = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg"
+          );
+          svg.setAttribute("class", "plat-icon svg");
+          svg.setAttribute("viewBox", "0 0 24 24");
+          svg.setAttribute("aria-hidden", "true");
+          const path = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path"
+          );
+          path.setAttribute("fill", "currentColor");
+          path.setAttribute(
+            "d",
+            platform === "tw" ? TW_SVG_PATH : YT_SVG_PATH
+          );
+          svg.appendChild(path);
+          wrap.appendChild(svg);
+          return wrap;
+        }
+
         function addMessage({ platform, user, text, born, channel }) {
           const row = document.createElement("div");
           row.className = "msg";
@@ -339,16 +439,20 @@
           if (channel) row.dataset.channel = channel;
           const plat = document.createElement("span");
           plat.className = `plat ${platform}`;
+          plat.appendChild(makePlatformIcon(platform));
           const showChan =
             channel &&
             ((platform === "tw" && multiTw) || (platform === "yt" && multiYt));
           if (showChan) {
             const short =
               channel.length > 10 ? channel.slice(0, 8) + "…" : channel;
-            plat.textContent = `${platform === "tw" ? "TW" : "YT"}:${short}`;
+            const chan = document.createElement("span");
+            chan.className = "plat-chan";
+            chan.textContent = short;
             plat.title = channel;
+            plat.appendChild(chan);
           } else {
-            plat.textContent = platform === "tw" ? "TW" : "YT";
+            plat.title = platform === "tw" ? "Twitch" : "YouTube";
           }
           const u = document.createElement("span");
           u.className = "user";

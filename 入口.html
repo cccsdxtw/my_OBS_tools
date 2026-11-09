@@ -1911,6 +1911,16 @@
                 />
               </div>
               <div>
+                <label for="chatMsgFit">單則底圖顯示</label>
+                <select id="chatMsgFit">
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="chatMsgBgColorRow">
+              <div>
                 <label for="chatMsgBgColor">單則底色</label>
                 <input
                   id="chatMsgBgColor"
@@ -1919,21 +1929,11 @@
                   placeholder="rgba(0,0,0,0.35)"
                 />
               </div>
-            </div>
-            <div class="row" id="chatMsgFitRow">
-              <div>
-                <label for="chatMsgFit">單則底圖顯示</label>
-                <select id="chatMsgFit">
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
               <div></div>
             </div>
             <p class="hint">
               底圖／單則底：勾選後才套用。外推＝內容內縮像素，避開圖框周圍裝飾（例如
-              <code>12 16</code>）。顯示方式：拉伸＝拉滿框（可能變形）；完整顯示＝整張都看得到（可能留邊）；裁切＝填滿但可能切掉邊緣。
+              <code>12 16</code>）。顯示方式：拉伸＝拉滿框；完整顯示＝整張都看得到（單則會依圖比例長高）；裁切＝填滿但可能切邊。
             </p>
 
             <div class="field" style="align-items: flex-start">
@@ -4227,8 +4227,8 @@
           fields.chatMsgBgColor.disabled = !msgOn;
           fields.chatMsgFit.disabled = !msgOn;
           fields.chatMsgInset.disabled = !msgOn;
-          const msgFitRow = $("chatMsgFitRow");
-          if (msgFitRow) msgFitRow.style.opacity = msgOn ? "1" : "0.45";
+          const msgColorRow = $("chatMsgBgColorRow");
+          if (msgColorRow) msgColorRow.style.opacity = msgOn ? "1" : "0.45";
         }
 
         function buildChatReplyUrl() {

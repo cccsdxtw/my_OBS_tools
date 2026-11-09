@@ -101,6 +101,37 @@
         background-repeat: no-repeat;
         background-position: center;
         padding: var(--msg-inset);
+        position: relative;
+      }
+
+      /* 完整顯示：用真實圖片撐高，整張底圖都看得到 */
+      .msg.fit-contain-img {
+        background-image: none;
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        gap: 0;
+        padding: 0;
+      }
+
+      .msg.fit-contain-img > .msg-bg-full {
+        grid-area: 1 / 1;
+        width: 100%;
+        height: auto;
+        display: block;
+        object-fit: contain;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .msg.fit-contain-img > .msg-body {
+        grid-area: 1 / 1;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: var(--msg-inset);
+        min-width: 0;
+        z-index: 1;
       }
 
       .msg.fade-out {
@@ -303,9 +334,17 @@
           msgImg || msgBg ? 8 : null
         );
         if (msgInsetCss) cssVar("--msg-inset", msgInsetCss);
+        const msgFitMode = String(params.get("msgFit") || "stretch")
+          .trim()
+          .toLowerCase();
         if (msgImg || params.get("msgFit")) {
-          cssVar("--msg-fit", bgFitToCss(params.get("msgFit")));
+          cssVar("--msg-fit", bgFitToCss(msgFitMode));
         }
+        const msgFitContain =
+          !!msgImg &&
+          (msgFitMode === "contain" ||
+            msgFitMode === "full" ||
+            msgFitMode === "fit");
 
         const maxMsgs = Math.max(5, Math.min(100, parseInt(params.get("max") || "30", 10) || 30));
         const ttlSec = Math.max(0, parseInt(params.get("ttl") || "0", 10) || 0);
@@ -541,7 +580,23 @@
           const t = document.createElement("span");
           t.className = "text";
           t.textContent = text || "";
-          row.append(plat, u, t);
+
+          if (msgFitContain) {
+            row.classList.add("fit-contain-img");
+            const bgImg = document.createElement("img");
+            bgImg.className = "msg-bg-full";
+            bgImg.alt = "";
+            bgImg.decoding = "async";
+            bgImg.referrerPolicy = "no-referrer";
+            bgImg.src = msgImg;
+            const body = document.createElement("div");
+            body.className = "msg-body";
+            body.append(plat, u, t);
+            row.append(bgImg, body);
+          } else {
+            row.append(plat, u, t);
+          }
+
           if (stack === "top") feed.insertBefore(row, feed.firstChild);
           else feed.appendChild(row);
           trimFeed();

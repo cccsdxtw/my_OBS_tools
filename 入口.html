@@ -1838,8 +1838,29 @@
               <div></div>
             </div>
             <p class="hint">
-              精度：年／月／日／時／分（不到秒）。空白開始＝網頁一開就開始算；空白結束＝不設截止。時間用你電腦本地時區（台灣通常 UTC+8）。
-              Twitch 只能算「開著覆蓋之後」收到的 Cheer；YouTube 超留可依訊息時間過濾。
+              精度：年／月／日／時／分。空白開始＝網頁一開就開始算；空白結束＝不設截止（本地時區）。
+              Twitch <strong>無法補抓關掉覆蓋期間</strong>的歷史 Cheer；但<strong>已計入的會本機記住</strong>（OBS
+              重整不丟，同一台電腦）。YouTube 超留可依訊息時間過濾。
+            </p>
+            <div class="row">
+              <div>
+                <label for="spKeywords">訊息需含（選填）</label>
+                <input
+                  id="spKeywords"
+                  type="text"
+                  placeholder="例如：拉基,加油（空白＝全部都算）"
+                />
+              </div>
+              <div>
+                <label for="spKeywordMode">關鍵字規則</label>
+                <select id="spKeywordMode">
+                  <option value="any" selected>含任一詞就算</option>
+                  <option value="all">要含全部詞才算</option>
+                </select>
+              </div>
+            </div>
+            <p class="hint">
+              逗號或空白分隔。只計算留言／Cheer 文字有符合的；沒留言、或字對不上就不計入。
             </p>
             <div class="row">
               <div>
@@ -2931,6 +2952,8 @@
           spEnd: $("spEnd"),
           spDuration: $("spDuration"),
           spCombine: $("spCombine"),
+          spKeywords: $("spKeywords"),
+          spKeywordMode: $("spKeywordMode"),
           spGoal: $("spGoal"),
           spGoalCurrency: $("spGoalCurrency"),
           spGoalLabel: $("spGoalLabel"),
@@ -3609,6 +3632,11 @@
             p.set("combine", "1");
             const bitsRate = parseFloat(fields.spBitsRate.value);
             if (bitsRate && bitsRate > 0) p.set("bitsRate", String(bitsRate));
+          }
+          const kw = fields.spKeywords.value.trim();
+          if (kw) {
+            p.set("must", kw);
+            if (fields.spKeywordMode.value === "all") p.set("mustMode", "all");
           }
           const goal = parseFloat(fields.spGoal.value);
           if (goal && goal > 0) p.set("goal", String(goal));

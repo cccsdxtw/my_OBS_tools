@@ -279,6 +279,13 @@
           : 0; // 每 100 bits → 多少目標幣（僅合併時）
         const goalCurrency = (params.get("goalCurrency") || "TWD").trim() || "TWD";
         const goalLabel = (params.get("goalLabel") || "本場目標").trim() || "本場目標";
+        const mustMode = (params.get("mustMode") || params.get("keywordMode") || "any")
+          .trim()
+          .toLowerCase();
+        const mustKeywords = String(params.get("must") || params.get("keywords") || "")
+          .split(/[,，、\n\r|／/]+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
 
         function parseTimeMs(raw) {
           const s = String(raw || "").trim();
@@ -312,6 +319,16 @@
           return "active";
         }
 
+        function messageMatches(rawMsg) {
+          if (!mustKeywords.length) return true;
+          const text = String(rawMsg || "").toLowerCase();
+          if (!text.trim()) return false;
+          if (mustMode === "all") {
+            return mustKeywords.every((k) => text.includes(k.toLowerCase()));
+          }
+          return mustKeywords.some((k) => text.includes(k.toLowerCase()));
+        }
+
         const els = {
           totCombined: document.getElementById("totCombined"),
           combinedMoney: document.getElementById("combinedMoney"),
@@ -342,7 +359,64 @@
         let twBitsTotal = 0;
         /** @type {Record<string, number>} currency -> major units */
         const ytByCurrency = {};
-        const events = [];
+        /** @type {Array<object>} */
+        let events = [];
+        /** @type {Set<string>} */
+        let seenIds = new Set();
+
+        const persistKey = demo
+          ? ""
+          : [
+              "laji_obs_sponsor_v1",
+              twitchLogin || "-",
+              (ytChannel || ytVideoParam || "-").toLowerCase(),
+              windowStartMs || 0,
+              windowEndMs || 0,
+              durationMins || 0,
+              combine ? "1" : "0",
+              bitsRate || 0,
+              mustMode,
+              mustKeywords.join("|").toLowerCase(),
+            ].join(":");
+
+        function savePersist() {
+          if (!persistKey) return;
+          try {
+            localStorage.setItem(
+              persistKey,
+              JSON.stringify({
+                twBitsTotal,
+                ytByCurrency,
+                events: events.slice(0, maxEvents),
+                seen: Array.from(seenIds).slice(-400),
+                savedAt: Date.now(),
+              })
+            );
+          } catch (_) {}
+        }
+
+        function loadPersist() {
+          if (!persistKey) return;
+          try {
+            const raw = JSON.parse(localStorage.getItem(persistKey) || "null");
+            if (!raw || typeof raw !== "object") return;
+            twBitsTotal = Math.max(0, Number(raw.twBitsTotal) || 0);
+            if (raw.ytByCurrency && typeof raw.ytByCurrency === "object") {
+              Object.keys(raw.ytByCurrency).forEach((c) => {
+                const n = Number(raw.ytByCurrency[c]);
+                if (!Number.isNaN(n) && n > 0) ytByCurrency[c] = n;
+              });
+            }
+            if (Array.isArray(raw.events)) {
+              events = raw.events
+                .filter((e) => e && e.platform && e.amountText)
+                .slice(0, maxEvents);
+            }
+            if (Array.isArray(raw.seen)) {
+              seenIds = new Set(raw.seen.map(String).filter(Boolean));
+            }
+          } catch (_) {}
+        }
 
         function refreshStatus() {
           if (demo && !wantTw && !wantYt) {
@@ -357,6 +431,10 @@
           if (wantTw) parts.push(connected.tw ? "TW●" : "TW○");
           if (wantYt) parts.push(connected.yt ? "YT●" : "YT○");
           if (combine) parts.push("合併");
+          if (mustKeywords.length) parts.push("關鍵字");
+          if (persistKey && (twBitsTotal > 0 || Object.keys(ytByCurrency).length)) {
+            parts.push("已記住");
+          }
           if (demo) parts.push("DEMO");
           els.status.textContent = parts.length ? parts.join(" ") : "NO SRC";
         }
@@ -397,9 +475,7 @@
           }
         }
 
-        function pushEvent(evt) {
-          events.unshift(evt);
-          while (events.length > maxEvents) events.pop();
+        function renderFeed() {
           els.feed.innerHTML = "";
           events.forEach((e) => {
             const row = document.createElement("div");
@@ -421,22 +497,57 @@
           });
         }
 
-        function addTwBits(user, bits, message, tsMs) {
-          if (!inCountWindow(tsMs)) return;
+        function pushEvent(evt) {
+          events.unshift(evt);
+          while (events.length > maxEvents) events.pop();
+          renderFeed();
+        }
+
+        function addTwBits(user, bits, message, tsMs, idHint) {
           const n = Math.max(0, parseInt(bits, 10) || 0);
-          if (!n) return;
+          if (!n) return false;
+          const cleanMsg = (message || "").replace(/Cheer\d+/gi, "").trim();
+          const id =
+            idHint ||
+            `tw:${tsMs || 0}:${String(user || "").toLowerCase()}:${n}:${cleanMsg.slice(0, 40)}`;
+          if (seenIds.has(id)) return false;
+          seenIds.add(id);
+          if (seenIds.size > 500) seenIds = new Set(Array.from(seenIds).slice(-250));
+          if (!inCountWindow(tsMs)) {
+            savePersist();
+            return false;
+          }
+          if (!messageMatches(cleanMsg) && !messageMatches(message)) {
+            savePersist();
+            return false;
+          }
           twBitsTotal += n;
           pushEvent({
             platform: "tw",
             user,
             amountText: `${n} bits`,
-            message: (message || "").replace(/Cheer\d+/gi, "").trim(),
+            message: cleanMsg,
+            id,
           });
           renderTotals();
+          savePersist();
+          return true;
         }
 
-        function addYtSuper(user, amountDisplay, amountMicros, currency, message, tsMs) {
-          if (!inCountWindow(tsMs)) return;
+        function addYtSuper(user, amountDisplay, amountMicros, currency, message, tsMs, idHint) {
+          const id = idHint || `yt:${tsMs || 0}:${user}:${amountMicros || 0}`;
+          if (seenIds.has(id)) return false;
+          seenIds.add(id);
+          if (seenIds.size > 500) seenIds = new Set(Array.from(seenIds).slice(-250));
+          const msg = (message || "").trim();
+          if (!inCountWindow(tsMs)) {
+            savePersist();
+            return false;
+          }
+          if (!messageMatches(msg)) {
+            savePersist();
+            return false;
+          }
           const cur = (currency || "TWD").toUpperCase();
           const major = amountMicros != null ? Number(amountMicros) / 1e6 : 0;
           if (!Number.isNaN(major) && major > 0) {
@@ -446,11 +557,15 @@
             platform: "yt",
             user,
             amountText: amountDisplay || `${cur} ${major}`,
-            message: (message || "").trim(),
+            message: msg,
+            id,
           });
           renderTotals();
+          savePersist();
+          return true;
         }
 
+        loadPersist();
         setInterval(refreshStatus, 1000);
 
         // ----- Twitch IRC cheers -----
@@ -683,7 +798,6 @@
           if (!ytKey && !ytVideoParam) return;
           let chatId = null;
           let pageToken = "";
-          let seen = new Set();
           let fail = 0;
 
           async function ensure() {
@@ -720,9 +834,7 @@
               const wait = Math.max(2500, Number(json.pollingIntervalMillis || 5000));
               (json.items || []).forEach((item) => {
                 const id = item.id;
-                if (!id || seen.has(id)) return;
-                seen.add(id);
-                if (seen.size > 500) seen = new Set(Array.from(seen).slice(-200));
+                if (!id) return;
                 const type = item.snippet?.type || "";
                 if (type !== "superChatEvent" && type !== "superStickerEvent") return;
                 const details =
@@ -737,7 +849,8 @@
                   details.amountMicros,
                   details.currency,
                   details.userComment || item.snippet?.displayMessage || "",
-                  published
+                  published,
+                  `yt:${id}`
                 );
               });
               setTimeout(tick, wait);
@@ -756,10 +869,10 @@
         function startDemo() {
           const now = Date.now();
           const samples = [
-            () => addTwBits("NightOwl", 100, "加油", now),
-            () => addYtSuper("貓奴", "NT$50", 50e6, "TWD", "超留測試", now),
-            () => addTwBits("Tea", 500, "Cheer500 POG", now),
-            () => addYtSuper("小白", "NT$100", 100e6, "TWD", "晚上好", now),
+            () => addTwBits("NightOwl", 100, "加油拉基", now, `demo:tw:1:${Date.now()}`),
+            () => addYtSuper("貓奴", "NT$50", 50e6, "TWD", "超留測試加油", now, `demo:yt:1:${Date.now()}`),
+            () => addTwBits("Tea", 500, "Cheer500 拉基 POG", now, `demo:tw:2:${Date.now()}`),
+            () => addYtSuper("小白", "NT$100", 100e6, "TWD", "晚上好拉基", now, `demo:yt:2:${Date.now()}`),
           ];
           samples.forEach((fn, i) => setTimeout(fn, 400 + i * 900));
           let i = 0;
@@ -774,6 +887,7 @@
           return;
         }
         renderTotals();
+        renderFeed();
         refreshStatus();
         if (demo) startDemo();
         else {

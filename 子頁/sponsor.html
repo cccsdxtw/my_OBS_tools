@@ -431,18 +431,33 @@
           return "active";
         }
 
-        function fundMatches(fund, rawMsg) {
-          if (!fund.keywords.length) return funds.length === 1;
-          const text = String(rawMsg || "").toLowerCase();
-          if (!text.trim()) return false;
-          return fund.keywords.some((k) => text.includes(k.toLowerCase()));
+        function bestKeywordHitLen(fund, text) {
+          if (!fund.keywords.length) return funds.length === 1 ? 0 : -1;
+          let best = -1;
+          fund.keywords.forEach((k) => {
+            const key = k.toLowerCase();
+            if (!key) return;
+            if (text.includes(key)) best = Math.max(best, key.length);
+          });
+          return best;
         }
 
+        // 一筆只進一個基金：多個都符合時，關鍵字較長者優先；一樣長則清單較前者
         function resolveFundId(rawMsg, forcedId) {
           if (forcedId && fundState[forcedId]) return forcedId;
           if (funds.length === 1 && !funds[0].keywords.length) return funds[0].id;
-          const hit = funds.find((f) => fundMatches(f, rawMsg));
-          return hit ? hit.id : "";
+          const text = String(rawMsg || "").toLowerCase();
+          if (!text.trim()) return "";
+          let bestId = "";
+          let bestLen = -1;
+          funds.forEach((f) => {
+            const len = bestKeywordHitLen(f, text);
+            if (len > bestLen) {
+              bestLen = len;
+              bestId = f.id;
+            }
+          });
+          return bestLen >= 0 ? bestId : "";
         }
 
         const els = {
@@ -625,25 +640,40 @@
           return twBitsTotal + manualBitsUrl;
         }
 
-        function fundProgressValue(fundId) {
+        function fundBits(fundId) {
           const st = fundState[fundId] || { twBits: 0, yt: 0 };
-          let sum = st.yt;
-          // 網址手動補登加在第一個基金
-          if (fundId === funds[0]?.id) {
-            if (manualYtCurrency === goalCurrency) sum += manualYtUrl;
-            if (combine && bitsRate > 0) sum += (manualBitsUrl * bitsRate) / 100;
-          }
-          if (combine && bitsRate > 0) sum += (st.twBits * bitsRate) / 100;
+          let bits = st.twBits;
+          if (fundId === funds[0]?.id) bits += manualBitsUrl;
+          return bits;
+        }
+
+        function fundYt(fundId) {
+          const st = fundState[fundId] || { twBits: 0, yt: 0 };
+          let yt = st.yt;
+          if (fundId === funds[0]?.id && manualYtCurrency === goalCurrency) yt += manualYtUrl;
+          return yt;
+        }
+
+        function fundProgressValue(fundId) {
+          let sum = fundYt(fundId);
+          if (combine && bitsRate > 0) sum += (fundBits(fundId) * bitsRate) / 100;
           return sum;
         }
 
         function allFundsProgressValue() {
+          // 各基金互斥累計後加總（同一筆不會進兩基金，故不會重複）
           return funds.reduce((acc, f) => acc + fundProgressValue(f.id), 0);
         }
 
         function renderTotals() {
-          els.twBits.textContent = String(displayTwBits());
-          els.ytMoney.textContent = formatYtTotals();
+          // 上方總計：各基金各自累計後加總（互斥，不會同一筆算兩次）
+          const twSum = funds.reduce((acc, f) => acc + fundBits(f.id), 0);
+          const ytSum = funds.reduce((acc, f) => acc + fundYt(f.id), 0);
+          els.twBits.textContent = String(twSum || displayTwBits());
+          els.ytMoney.textContent =
+            ytSum > 0 || Object.keys(ytByCurrency).length
+              ? formatMoney(ytSum, goalCurrency)
+              : formatYtTotals();
           if (combine) {
             els.combinedMoney.textContent = formatMoney(allFundsProgressValue(), goalCurrency);
           }
@@ -651,16 +681,19 @@
             const ui = goalEls[f.id];
             if (!ui) return;
             const cur = fundProgressValue(f.id);
+            const bits = fundBits(f.id);
+            const parts = [];
             if (f.goal > 0) {
               const pct = Math.max(0, Math.min(100, (cur / f.goal) * 100));
               ui.fill.style.width = pct.toFixed(1) + "%";
-              ui.text.textContent = `${formatMoney(cur, goalCurrency)} / ${formatMoney(
-                f.goal,
-                goalCurrency
-              )}`;
+              parts.push(
+                `${formatMoney(cur, goalCurrency)} / ${formatMoney(f.goal, goalCurrency)}`
+              );
             } else {
-              ui.text.textContent = formatMoney(cur, goalCurrency);
+              parts.push(formatMoney(cur, goalCurrency));
             }
+            if (bits > 0) parts.push(`${bits} bits`);
+            ui.text.textContent = parts.join(" · ");
           });
         }
 
@@ -699,9 +732,10 @@
         }
 
         function creditFund(fundId, bits, ytMajor) {
-          if (!fundId || !fundState[fundId]) return;
+          if (!fundId || !fundState[fundId]) return false;
           if (bits) fundState[fundId].twBits += bits;
           if (ytMajor) fundState[fundId].yt += ytMajor;
+          return true;
         }
 
         function addTwBits(user, bits, message, tsMs, idHint, opts = {}) {
@@ -719,6 +753,7 @@
             savePersist();
             return false;
           }
+          // 互斥：只解析出一個基金
           const fundId = resolveFundId(cleanMsg || message, opts.fundId);
           if (!fundId) {
             savePersist();
@@ -752,6 +787,7 @@
             savePersist();
             return false;
           }
+          // 互斥：只解析出一個基金
           const fundId = resolveFundId(msg, opts.fundId);
           if (!fundId) {
             savePersist();

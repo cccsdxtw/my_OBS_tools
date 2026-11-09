@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS 倒數天數</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="../material-icons.js"></script>
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.85);
+        --icon: var(--fg);
+        --muted: rgba(255, 255, 255, 0.7);
+        --size: 22px;
+        --bar-h: calc(var(--size) + 16px);
+        --pad-x: 12px;
+        --gap: 10px;
+        --radius: 0;
+        --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
+          "PingFang TC", sans-serif;
+        --font-num: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        color: var(--fg);
+      }
+
+      #bar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: var(--gap);
+        height: var(--bar-h);
+        padding: 0 var(--pad-x);
+        background: var(--bg);
+        border-radius: var(--radius);
+        white-space: nowrap;
+        line-height: 1;
+        overflow: hidden;
+      }
+
+      .icon-slot {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(var(--size) * 0.95);
+        height: calc(var(--size) * 0.95);
+        flex: 0 0 auto;
+      }
+
+      .icon-slot[hidden] {
+        display: none;
+      }
+
+      .icon,
+      .custom-icon {
+        width: 100%;
+        height: 100%;
+        opacity: 0.95;
+        display: block;
+        object-fit: contain;
+      }
+
+      .material-symbols-outlined.icon {
+        width: auto;
+        height: auto;
+        font-size: calc(var(--size) * 0.95);
+        line-height: 1;
+        color: var(--icon);
+        font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+        user-select: none;
+      }
+
+      .label,
+      .value {
+        display: flex;
+        align-items: center;
+        height: var(--size);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        line-height: 1;
+      }
+
+      .label {
+        color: var(--muted);
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.82);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        transform: translateY(0.06em);
+      }
+
+      .value {
+        font-family: var(--font-num);
+        font-size: var(--size);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        transform: translateY(0.02em);
+      }
+
+      .value .unit {
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.82);
+        font-weight: 600;
+        margin-left: 0.15em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar" aria-live="polite">
+      <span class="icon-slot" id="days-icon" hidden></span>
+      <span class="label" id="days-label" hidden></span>
+      <span class="value" id="days-value">—</span>
+    </div>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(location.search);
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        cssVar("--fg", params.get("color"));
+        cssVar("--icon", params.get("iconColor") || params.get("iconColour"));
+        const bgParam = (params.get("bg") || "").trim();
+        if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {
+          cssVar("--bg", "transparent");
+        } else {
+          cssVar("--bg", bgParam);
+        }
+        cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
+        cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+
+        const els = {
+          icon: document.getElementById("days-icon"),
+          label: document.getElementById("days-label"),
+          value: document.getElementById("days-value"),
+        };
+
+        const labelText = (params.get("label") || params.get("daysLabel") || "").trim();
+        if (labelText) {
+          els.label.hidden = false;
+          els.label.textContent = labelText;
+        }
+
+        const unit = (params.get("unit") || "天").trim() || "天";
+        const doneText = (params.get("done") || params.get("daysDone") || "0").trim() || "0";
+
+        function normalizeMsName(raw) {
+          return String(raw || "")
+            .trim()
+            .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+            .replace(/[\s-]+/g, "_")
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, "");
+        }
+
+        function isUrlIcon(raw) {
+          const s = String(raw || "").trim();
+          return /^https?:\/\//i.test(s) || /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s);
+        }
+
+        const iconRaw = (params.get("icon") || params.get("daysIcon") || "").trim();
+        if (iconRaw && els.icon) {
+          els.icon.hidden = false;
+          if (isUrlIcon(iconRaw)) {
+            els.icon.innerHTML = "";
+            const img = document.createElement("img");
+            img.className = "custom-icon";
+            img.alt = "";
+            img.referrerPolicy = "no-referrer";
+            img.src = iconRaw;
+            els.icon.appendChild(img);
+          } else {
+            const name = normalizeMsName(iconRaw) || "event";
+            els.icon.innerHTML = "";
+            const span = document.createElement("span");
+            span.className = "material-symbols-outlined icon";
+            span.setAttribute("aria-hidden", "true");
+            span.textContent = name;
+            els.icon.appendChild(span);
+            if (window.MyObsMaterialIcons) {
+              window.MyObsMaterialIcons.ensureMaterialSymbols([name]);
+            }
+          }
+        }
+
+        function parseTargetDate() {
+          const raw =
+            params.get("date") ||
+            params.get("target") ||
+            params.get("days") ||
+            params.get("countdown") ||
+            "";
+          if (!raw.trim()) return null;
+          // date-only YYYY-MM-DD → local midnight
+          if (/^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) {
+            const [y, m, d] = raw.trim().split("-").map(Number);
+            return new Date(y, m - 1, d);
+          }
+          const t = Date.parse(raw);
+          if (Number.isNaN(t)) return null;
+          return new Date(t);
+        }
+
+        function startOfLocalDay(d) {
+          return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+
+        function daysUntil(target) {
+          const a = startOfLocalDay(new Date());
+          const b = startOfLocalDay(target);
+          return Math.round((b - a) / 86400000);
+        }
+
+        const target = parseTargetDate();
+
+        function renderDays(n) {
+          els.value.innerHTML = `${n}<span class="unit">${unit}</span>`;
+        }
+
+        function tick() {
+          if (!target) {
+            els.value.textContent = "—";
+            return;
+          }
+          const n = daysUntil(target);
+          if (n <= 0) {
+            if (doneText && doneText !== "0" && doneText !== "0天") {
+              els.value.textContent = doneText;
+            } else {
+              renderDays(0);
+            }
+            return;
+          }
+          renderDays(n);
+        }
+
+        tick();
+        // 跨日再算一次：每分鐘檢查即可
+        setInterval(tick, 60 * 1000);
+      })();
+    </script>
+  </body>
+</html>

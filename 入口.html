@@ -1463,6 +1463,99 @@
           </aside>
         </div>
 
+        <!-- ④ 倒數天數 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>④ 倒數天數</h2>
+              <span class="side-title">離今天幾天</span>
+            </div>
+            <p class="hint">選一個目標日期，顯示還有幾天（依本地日曆日計算）。圖示可留空不顯示。</p>
+            <div class="field">
+              <label for="daysDate">目標日期</label>
+              <input id="daysDate" type="date" />
+            </div>
+            <div class="row">
+              <div>
+                <label for="daysLabel">標籤（選填）</label>
+                <input id="daysLabel" type="text" placeholder="例如：距離活動" />
+              </div>
+              <div>
+                <label for="daysUnit">單位文字</label>
+                <input id="daysUnit" type="text" value="天" placeholder="天" />
+              </div>
+            </div>
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label for="daysIcon">圖示（選填，空白＝不放）</label>
+              <input
+                id="daysIcon"
+                type="text"
+                list="materialIconSuggest"
+                placeholder="Material 名稱如 event，或圖片網址；空白不顯示"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="daysIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="daysIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="daysIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="daysFontSize">字級</label>
+                <input id="daysFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="daysColor">文字色</label>
+                <div class="color-pair">
+                  <input id="daysColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="daysColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="daysShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="daysBg">底色</label>
+                <input id="daysBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>④ 倒數天數網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="daysUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 180–320、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyDays">複製倒數天數網址</button>
+              <a class="btn secondary" id="openDays" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewDays" title="days preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
         <!-- ⑤ 遊戲名稱 -->
         <div class="band">
           <section class="card">
@@ -1978,7 +2071,7 @@
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          ①②③⑤⑥⑧ 右邊網址各自加 OBS 瀏覽器來源即可（⑦ 回覆除外）。
+          ①②③④⑤⑥⑧ 右邊網址各自加 OBS 瀏覽器來源即可（⑦ 回覆除外）。
         </div>
       </div>
 
@@ -2130,6 +2223,7 @@
           "fonts/MaterialSymbolsOutlined.ttf",
           "子頁/overlay.html",
           "子頁/countdown.html",
+          "子頁/days.html",
           "子頁/viewers.html",
           "子頁/game.html",
           "子頁/chat.html",
@@ -2948,6 +3042,15 @@
           countdownIconColor: $("countdownIconColor"),
           countdownShowBg: $("countdownShowBg"),
           countdownBg: $("countdownBg"),
+          daysDate: $("daysDate"),
+          daysLabel: $("daysLabel"),
+          daysUnit: $("daysUnit"),
+          daysIcon: $("daysIcon"),
+          daysIconColor: $("daysIconColor"),
+          daysFontSize: $("daysFontSize"),
+          daysColor: $("daysColor"),
+          daysShowBg: $("daysShowBg"),
+          daysBg: $("daysBg"),
           gameLabel: $("gameLabel"),
           gamePlatform: $("gamePlatform"),
           gameName: $("gameName"),
@@ -3221,6 +3324,7 @@
             fields.overlayFontSize,
             fields.viewersFontSize,
             fields.countdownFontSize,
+            fields.daysFontSize,
             fields.gameFontSize,
             fields.chatFontSize,
             fields.spFontSize,
@@ -3231,13 +3335,19 @@
             fields.overlayColor,
             fields.viewersColor,
             fields.countdownColor,
+            fields.daysColor,
             fields.gameColor,
             fields.chatColor,
             fields.spColor,
           ].forEach((el) => {
             el.placeholder = `預設 ${col}`;
           });
-          [fields.overlayIconColor, fields.countdownIconColor, fields.gameIconColor].forEach((el) => {
+          [
+            fields.overlayIconColor,
+            fields.countdownIconColor,
+            fields.daysIconColor,
+            fields.gameIconColor,
+          ].forEach((el) => {
             if (!el) return;
             el.placeholder = fields.defaultIconColor.value.trim()
               ? `預設 ${iconCol}`
@@ -3296,6 +3406,7 @@
           syncBgField(fields.overlayShowBg, fields.overlayBg);
           syncBgField(fields.viewersShowBg, fields.viewersBg);
           syncBgField(fields.countdownShowBg, fields.countdownBg);
+          syncBgField(fields.daysShowBg, fields.daysBg);
           syncBgField(fields.gameShowBg, fields.gameBg);
           syncBgField(fields.chatShowBg, fields.chatBg);
           syncBgField(fields.spShowBg, fields.spBg);
@@ -3565,6 +3676,36 @@
           return url.toString();
         }
 
+        function buildDaysUrl() {
+          const url = pageUrl("days.html");
+          const p = url.searchParams;
+          if (fields.daysDate.value) {
+            p.set("date", fields.daysDate.value);
+          } else {
+            // 預覽預設：今天起算 30 天後
+            const d = new Date();
+            d.setDate(d.getDate() + 30);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            p.set("date", `${yyyy}-${mm}-${dd}`);
+          }
+          if (fields.daysLabel.value.trim()) p.set("label", fields.daysLabel.value.trim());
+          if (fields.daysUnit.value.trim()) p.set("unit", fields.daysUnit.value.trim());
+          if (fields.daysIcon.value.trim()) {
+            p.set("icon", resolveAssetUrl(fields.daysIcon.value.trim()));
+          }
+          styleParams(
+            p,
+            fields.daysShowBg,
+            fields.daysBg,
+            fields.daysFontSize,
+            fields.daysColor,
+            fields.daysIconColor
+          );
+          return url.toString();
+        }
+
         function buildViewersUrl() {
           const url = pageUrl("viewers.html");
           const p = url.searchParams;
@@ -3786,6 +3927,7 @@
           syncGamePlatformChips();
           const { href, mods, moduleOrder } = buildOverlayUrl();
           const cdHref = buildCountdownUrl();
+          const daysHref = buildDaysUrl();
           const vcHref = buildViewersUrl();
           const gameHref = buildGameUrl();
           const split = fields.chatLayout.value === "split";
@@ -3808,6 +3950,10 @@
           $("cdUrl").value = cdHref;
           $("openCd").href = cdHref;
           $("previewCd").src = cdHref;
+
+          $("daysUrl").value = daysHref;
+          $("openDays").href = daysHref;
+          $("previewDays").src = daysHref;
 
           $("vcUrl").value = vcHref;
           $("openVc").href = vcHref;
@@ -3862,6 +4008,7 @@
           return {
             href,
             cdHref,
+            daysHref,
             vcHref,
             gameHref,
             chatHref,
@@ -3892,6 +4039,11 @@
           const { cdHref } = buildUrls();
           $("cdUrl").select();
           await copyText(cdHref, $("copyCd"), "複製倒計時網址");
+        });
+        $("copyDays").addEventListener("click", async () => {
+          const { daysHref } = buildUrls();
+          $("daysUrl").select();
+          await copyText(daysHref, $("copyDays"), "複製倒數天數網址");
         });
 
         $("copyVc").addEventListener("click", async () => {
@@ -3984,6 +4136,7 @@
               el === fields.overlayShowBg ||
               el === fields.viewersShowBg ||
               el === fields.countdownShowBg ||
+              el === fields.daysShowBg ||
               el === fields.gameShowBg ||
               el === fields.chatShowBg ||
               el === fields.spShowBg

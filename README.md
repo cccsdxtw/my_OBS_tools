@@ -4,7 +4,7 @@ OBS 統合工具：觀看人數、已開台時間、日期／時間、國旗、�
 
 預設免 Twitch OAuth，不用再把會過期的 Access Token 塞進網址重驗證。
 
-資訊條／倒計時／人數／遊戲名稱／聊天室／贊助條是**獨立網址**，OBS 可分開放多個瀏覽器來源。
+資訊條／倒計時／倒數天數／人數／遊戲名稱／聊天室／贊助條是**獨立網址**，OBS 可分開放多個瀏覽器來源。
 
 ## 目錄
 
@@ -28,6 +28,7 @@ material-icons.js  ← Google Fonts 優先、失敗改本機字型
 - **圖示**：可貼 Google Material Symbol 名稱（如 `Timer`），優先 Google Fonts、失敗用內建字型；也可貼 `圖片/xxx.png` 或網址
 - **圖示色**：入口頁可選 Material 圖示顏色（貼圖片則不套用）
 - **倒計時**：`子頁/countdown.html`
+- **倒數天數**：`子頁/days.html`（目標日期離今天還有幾天；圖示可選）
 - **遊戲名稱**：`子頁/game.html`（格式「遊戲名稱： 平台 - 遊戲名」）
 - **聊天室**：`子頁/chat.html`
 - **贊助條**：`子頁/sponsor.html`（Twitch 小奇點 IRC＋YouTube 超留；可設目標進度條）
@@ -42,7 +43,8 @@ material-icons.js  ← Google Fonts 優先、失敗改本機字型
 4. OBS 加「瀏覽器」來源（入口頁右側會給完整網址）：
    - 資訊條 `子頁/overlay.html`
    - 倒計時 `子頁/countdown.html`
-   - 觀眾人數 `子頁/viewers.html`
+   - 倒數天數 `子頁/days.html`
+   - 觀看人數 `子頁/viewers.html`
    - 遊戲名稱 `子頁/game.html`
    - 聊天室 `子頁/chat.html`
    - 贊助條 `子頁/sponsor.html`（TW 小奇點／YT 超留）

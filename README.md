@@ -62,6 +62,6 @@ material-icons.js  ← Google Fonts 優先、失敗改本機字型
 
 ## 版號
 
-見 GitHub Releases（目前最新例如 v1.1.11）。
+見 GitHub Releases（目前最新例如 v1.1.12）。
 
 版號會**跳過含「4」的數字**（例如沒有 v0.1.4、v0.1.14；4 之後接 5，13 之後接 15）。

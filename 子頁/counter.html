@@ -226,10 +226,16 @@
         const minVal = minRaw != null && minRaw !== "" ? Number(minRaw) : null;
         const maxVal = maxRaw != null && maxRaw !== "" ? Number(maxRaw) : null;
         const startVal = (() => {
-          const n = Number(params.get("start") || params.get("value") || "0");
+          const raw = params.get("start");
+          const raw2 = params.get("value");
+          const picked = raw != null && raw !== "" ? raw : raw2 != null && raw2 !== "" ? raw2 : "0";
+          const n = Number(picked);
           return Number.isFinite(n) ? Math.trunc(n) : 0;
         })();
 
+        const persist = !["0", "false", "no", "off"].includes(
+          (params.get("persist") || "1").trim().toLowerCase()
+        );
         const storageKey = (() => {
           const id = (params.get("id") || params.get("ctrId") || "").trim();
           if (id) return `my_obs_tools_counter:id:${id}`;
@@ -246,6 +252,8 @@
         }
 
         function readStored() {
+          // 預覽 demo 絕不讀寫本機，避免把正式計數從 0 洗掉
+          if (demo || !persist) return null;
           try {
             const raw = localStorage.getItem(storageKey);
             if (raw == null || raw === "") return null;
@@ -257,17 +265,23 @@
         }
 
         function writeStored(n) {
+          if (demo || !persist) return;
           try {
             localStorage.setItem(storageKey, String(n));
           } catch (_) {}
         }
 
-        if (["1", "true", "yes"].includes((params.get("reset") || "").trim().toLowerCase())) {
+        if (
+          !demo &&
+          persist &&
+          ["1", "true", "yes"].includes((params.get("reset") || "").trim().toLowerCase())
+        ) {
           try {
             localStorage.removeItem(storageKey);
           } catch (_) {}
         }
 
+        // 起始值可為 0；有記住的數字才蓋過起始值
         let count = clamp(readStored() ?? startVal);
         let bumpTimer = 0;
 

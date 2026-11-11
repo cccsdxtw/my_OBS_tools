@@ -274,8 +274,12 @@
           }
         }
 
+        const counterId = (params.get("id") || params.get("ctrId") || "").trim();
+        const isEmbed = flagOn(params.get("embed"));
+
         function writeStored(n) {
-          if (demo || !persist) return;
+          // 入口隱藏 embed 不寫正式 storage，避免跟 OBS／預覽頁互搶變成 2↔7 閃爍
+          if (demo || !persist || isEmbed) return;
           if (storageKey.startsWith("preview:")) return;
           try {
             localStorage.setItem(storageKey, String(n));
@@ -285,6 +289,7 @@
         if (
           !demo &&
           persist &&
+          !isEmbed &&
           ["1", "true", "yes"].includes((params.get("reset") || "").trim().toLowerCase())
         ) {
           try {
@@ -295,9 +300,7 @@
         // 起始值可為 0；有記住的數字才蓋過起始值
         let count = clamp(readStored() ?? startVal);
         let bumpTimer = 0;
-        const counterId = (params.get("id") || params.get("ctrId") || "").trim();
-        const isEmbed = flagOn(params.get("embed"));
-        // 同瀏覽器多開（入口 embed + 預覽）共用 localStorage 時，只讓一個實例處理聊天，避免 +2
+        // 同瀏覽器多開時只讓一個「非 embed」實例處理聊天並寫入
         const instanceId =
           Math.random().toString(36).slice(2) + String(Date.now()).slice(-4);
         const lockKey = `my_obs_tools_counter_lock:${storageKey}`;
@@ -312,15 +315,22 @@
           try {
             const cur = JSON.parse(localStorage.getItem(lockKey) || "null");
             const stale = !cur || !cur.id || now - Number(cur.ts || 0) > 2500;
-            if (stale || cur.id === instanceId) {
-              localStorage.setItem(
-                lockKey,
-                JSON.stringify({ id: instanceId, ts: now, embed: isEmbed })
-              );
-              isChatLeader = true;
-            } else {
+            if (isEmbed) {
+              // 有正式頁／OBS 同源實例時，embed 只跟隨，不搶領導
+              if (!stale && cur.id && !cur.embed && cur.id !== instanceId) {
+                isChatLeader = false;
+                return false;
+              }
+            } else if (!stale && cur.id && cur.id !== instanceId && !cur.embed) {
               isChatLeader = false;
+              return false;
             }
+            // 正式頁可搶走 embed 的 lock；embed 僅在沒有正式頁時暫當 leader（只改記憶體、不寫入）
+            localStorage.setItem(
+              lockKey,
+              JSON.stringify({ id: instanceId, ts: now, embed: isEmbed })
+            );
+            isChatLeader = true;
           } catch (_) {
             isChatLeader = true;
           }
@@ -359,14 +369,23 @@
           notifyParent();
         }
 
-        function setCount(n, bump) {
+        function setCount(n, bump, opts) {
           const next = clamp(n);
           if (next === count && !bump) {
             render(false);
             return;
           }
           count = next;
-          writeStored(count);
+          if (opts && opts.forceStore) {
+            // 入口手動改「目前／重設」：允許 embed 寫入，讓同源預覽跟著變
+            if (!demo) {
+              try {
+                localStorage.setItem(storageKey, String(count));
+              } catch (_) {}
+            }
+          } else {
+            writeStored(count);
+          }
           render(!!bump);
         }
 
@@ -377,11 +396,11 @@
           if (d.id && counterId && String(d.id) !== counterId) return;
           if (d.op === "set") {
             const n = Number(d.value);
-            if (Number.isFinite(n)) applySet(n);
+            if (Number.isFinite(n)) setCount(n, true, { forceStore: true });
             return;
           }
           if (d.op === "reset") {
-            applySet(startVal);
+            setCount(startVal, true, { forceStore: true });
           }
         });
 
@@ -822,6 +841,8 @@
           let pageToken = "";
           let fail = 0;
           let seen = new Set();
+          // 第一次拉取常是歷史留言（例如舊的 =2、=7），略過只記 seen，避免重放閃爍
+          let skipHistory = true;
 
           async function ensure() {
             const videoId = await resolveLiveVideoId();
@@ -831,6 +852,8 @@
             connected.yt = true;
             refreshStatus();
             fail = 0;
+            skipHistory = true;
+            pageToken = "";
           }
 
           async function tick() {
@@ -855,11 +878,13 @@
               const json = await res.json();
               pageToken = json.nextPageToken || pageToken;
               const wait = Math.max(2500, Number(json.pollingIntervalMillis || 5000));
-              (json.items || []).forEach((item) => {
+              const items = json.items || [];
+              items.forEach((item) => {
                 const id = item.id;
                 if (!id || seen.has(id)) return;
                 seen.add(id);
                 if (seen.size > 400) seen = new Set(Array.from(seen).slice(-200));
+                if (skipHistory) return;
                 if (!isYtPrivileged(item.authorDetails)) return;
                 const text =
                   item.snippet?.textMessageDetails?.messageText ||
@@ -867,6 +892,7 @@
                   "";
                 handleCommand(parseCounterCommand(text));
               });
+              if (skipHistory) skipHistory = false;
               setTimeout(tick, wait);
             } catch (err) {
               console.warn(err);

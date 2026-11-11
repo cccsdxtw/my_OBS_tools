@@ -1041,7 +1041,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.17</span>
+          <span class="brand-version" id="brandVersion">v1.3.18</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2998,7 +2998,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.17</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.18</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3012,7 +3012,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.17";
+        const APP_VERSION = "v1.3.18";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3186,33 +3186,56 @@
           return handle;
         }
 
-        function fileUrlForTag(tag, name) {
-          const path = String(name || "")
+        function encodedRepoPath(name) {
+          return String(name || "")
             .split("/")
             .filter(Boolean)
             .map((seg) => encodeURIComponent(seg))
             .join("/");
+        }
+
+        function fileUrlForTag(tag, name) {
           return (
             "https://cdn.jsdelivr.net/gh/cccsdxtw/my_OBS_tools@" +
             encodeURIComponent(tag) +
             "/" +
-            path
+            encodedRepoPath(name)
           );
+        }
+
+        function rawUrlForTag(tag, name) {
+          return (
+            "https://raw.githubusercontent.com/cccsdxtw/my_OBS_tools/" +
+            encodeURIComponent(tag) +
+            "/" +
+            encodedRepoPath(name)
+          );
+        }
+
+        async function fetchUpdateResponse(tag, name) {
+          const urls = [fileUrlForTag(tag, name), rawUrlForTag(tag, name)];
+          let lastErr = null;
+          for (const url of urls) {
+            try {
+              const res = await fetch(url, { cache: "no-store" });
+              if (res.ok) return res;
+              lastErr = new Error(name + " " + res.status);
+            } catch (err) {
+              lastErr = err;
+            }
+          }
+          throw lastErr || new Error("fetch " + name);
         }
 
         async function resolveUpdateFileList(tag) {
           const merged = new Set(UPDATE_FILES);
           try {
-            const res = await fetch(fileUrlForTag(tag, "update-files.json"), {
-              cache: "no-store",
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (Array.isArray(data.files)) {
-                data.files.forEach((n) => {
-                  if (n && typeof n === "string") merged.add(n);
-                });
-              }
+            const res = await fetchUpdateResponse(tag, "update-files.json");
+            const data = await res.json();
+            if (Array.isArray(data.files)) {
+              data.files.forEach((n) => {
+                if (n && typeof n === "string") merged.add(n);
+              });
             }
           } catch (_) {}
           // 舊入口升級時清單可能沒有這些；強制補上避免空白覆蓋頁
@@ -3261,8 +3284,7 @@
           const files = await resolveUpdateFileList(tag);
           const written = [];
           for (const name of files) {
-            const res = await fetch(fileUrlForTag(tag, name), { cache: "no-store" });
-            if (!res.ok) throw new Error("fetch " + name + " " + res.status);
+            const res = await fetchUpdateResponse(tag, name);
             const parts = name.split("/").filter(Boolean);
             const fileName = parts.pop();
             const dir = await ensureDirPath(dirHandle, parts, true);
@@ -3278,28 +3300,11 @@
           if (missing.length) {
             throw new Error("寫入後仍缺：" + missing.join("、"));
           }
+          try {
+            localStorage.setItem("my_obs_tools_install_ok", tag);
+            sessionStorage.setItem("my_obs_tools_files_ok", APP_VERSION);
+          } catch (_) {}
           return written;
-        }
-
-        /** file:// 下 fetch 常被擋，會誤判缺檔；改用 XHR（成功多半 status=0） */
-        function probeLocalFile(relPath) {
-          return new Promise((resolve) => {
-            try {
-              const url = new URL(relPath, location.href).href;
-              const xhr = new XMLHttpRequest();
-              xhr.open("GET", url, true);
-              xhr.onload = () => {
-                // file:// 成功常是 0；http 則 2xx
-                const ok =
-                  xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300);
-                resolve(ok && typeof xhr.responseText === "string");
-              };
-              xhr.onerror = () => resolve(false);
-              xhr.send();
-            } catch (_) {
-              resolve(false);
-            }
-          });
         }
 
         function applyTheme(theme) {
@@ -3709,9 +3714,6 @@
                 throw err;
               }
             }
-            try {
-              sessionStorage.setItem("my_obs_tools_files_ok", APP_VERSION);
-            } catch (_) {}
             renderVersionStatus(
               `已覆蓋 ${tag} · 正在重開；OBS 瀏覽器來源請再按重新整理`,
               "ok"
@@ -3735,62 +3737,6 @@
                 : `覆蓋失敗：${(err && err.message) || "請改下載 zip"}`;
             renderVersionStatus(msg, "warn");
           }
-        }
-
-        /** 舊版「覆蓋」清單漏檔時：本機已是新版但仍缺 counter／panel-bg */
-        async function checkLocalInstallFiles() {
-          if (!isLocalPage()) return;
-          if (
-            pendingUpdate &&
-            pendingUpdate.tag &&
-            pendingUpdate.tag !== APP_VERSION
-          ) {
-            return;
-          }
-          try {
-            if (sessionStorage.getItem("my_obs_tools_files_ok") === APP_VERSION) {
-              return;
-            }
-          } catch (_) {}
-
-          // 只檢查真正影響顯示的檔；update-files.json 缺了不影響畫面
-          // file:// 必須用 XHR，fetch 會被瀏覽器擋而永遠誤判
-          const need = ["panel-bg.js", "子頁/counter.html"];
-          const missing = [];
-          for (const name of need) {
-            const ok = await probeLocalFile(name);
-            if (!ok) missing.push(name);
-          }
-          if (!missing.length) {
-            try {
-              sessionStorage.setItem("my_obs_tools_files_ok", APP_VERSION);
-            } catch (_) {}
-            return;
-          }
-
-          pendingUpdate = pendingUpdate || { tag: APP_VERSION, zip: null };
-          if (!pendingUpdate.tag) pendingUpdate.tag = APP_VERSION;
-          try {
-            const res = await fetch(RELEASES_API, { cache: "no-store" });
-            if (res.ok) {
-              const data = await res.json();
-              const zip = pickZipAsset(data, data.tag_name || APP_VERSION);
-              if (zip) pendingUpdate.zip = zip;
-            }
-          } catch (_) {}
-          installUpdateBtn.hidden = !canUseDirPicker();
-          installUpdateBtn.disabled = false;
-          installUpdateBtn.textContent = canUseDirPicker()
-            ? `修復缺檔並重開 ${APP_VERSION}`
-            : "修復缺檔";
-          downloadUpdateBtn.hidden = false;
-          downloadUpdateBtn.textContent = pendingUpdate.zip
-            ? `下載完整 zip ${pendingUpdate.zip.tag || ""}`.trim()
-            : "下載完整 zip";
-          renderVersionStatus(
-            `本機缺檔（${missing.join("、")}）。按修復時請選「有 入口.html 的那層」；或下載 zip 解壓後開內層資料夾。不要選 Desktop／上一層。`,
-            "warn"
-          );
         }
 
         async function checkLatestVersion(opts) {
@@ -4101,13 +4047,12 @@
         });
         applyBtn.addEventListener("click", () => flashApplied());
 
+        // 不再開頁自動「缺檔偵測」：file:// 常誤判，逼使用者每次重選資料夾。
+        // 有新版本時按「覆蓋並重開」一次寫齊（含 panel-bg／counter）；記住正確資料夾後下次直接成功。
         if (autoUpdateCheck.checked) {
-          checkLatestVersion({ autoInstall: false }).finally(() => {
-            checkLocalInstallFiles();
-          });
+          checkLatestVersion({ autoInstall: false });
         } else {
           renderVersionStatus(`本機 ${APP_VERSION} · 可按「檢查更新」跟上版本`, null);
-          checkLocalInstallFiles();
         }
 
         const fields = {

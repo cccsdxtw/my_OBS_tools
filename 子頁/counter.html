@@ -476,21 +476,13 @@
         refreshStatus();
 
         if (demo) {
+          // 預覽只顯示起始值，不自動跳、不寫正式數字
           connected.tw = wantTw;
           connected.yt = wantYt;
-          refreshStatus();
-          const demoCmds = [
-            { op: "+", n: 1 },
-            { op: "+", n: 2 },
-            { op: "=", n: 3 },
-            { op: "+", n: 1 },
-            { op: "-", n: 1 },
-          ];
-          let i = 0;
-          setInterval(() => {
-            handleCommand(demoCmds[i % demoCmds.length]);
-            i += 1;
-          }, 2800);
+          setCount(startVal, false);
+          els.status.hidden = false;
+          els.status.textContent =
+            "預覽 · 不自動跳、不寫正式數字 · OBS 請用入口「複製網址」（不要帶 demo）";
           return;
         }
 

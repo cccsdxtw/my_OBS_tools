@@ -1041,7 +1041,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.9</span>
+          <span class="brand-version" id="brandVersion">v1.3.10</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2701,11 +2701,12 @@
           <section class="card">
             <div class="card-head">
               <h2>⑩ 計數器</h2>
-              <span class="side-title">留言區 +N／=N</span>
+              <span class="side-title">可多組 · !指令</span>
             </div>
             <p class="hint">
-              監聽 Twitch／YouTube 留言。指令須加 <code>!</code> 避免誤觸：
-              <code>!+1</code> 加、<code>!-1</code> 減、<code>!=3</code> 直接改成該值。帳號用最上方共用設定。
+              可同時開多組（每組一個 OBS 網址）。指令須加 <code>!</code>：
+              <code>!+1</code> 加、<code>!-1</code> 減、<code>!=3</code> 設值。有填「指令名」則變成
+              <code>!死+1</code>／<code>!死=3</code>，多組才不會搶同一個指令。帳號用最上方共用設定。
             </p>
             <div class="field" style="align-items: flex-start">
               <label>誰可以改</label>
@@ -2724,34 +2725,10 @@
               </div>
             </div>
             <p class="hint" style="margin-top: 6px">
-              槌子、劍都算 MOD（Twitch 劍徽章／YouTube 管理員）。VIP、粉絲預設不勾。
+              槌子、劍都算 MOD。VIP、粉絲預設不勾。升級若用「覆蓋並重開」請再按一次（已補齊缺檔）。
             </p>
-            <div class="row">
-              <div>
-                <label for="ctrLabel">標籤（選填）</label>
-                <input id="ctrLabel" type="text" placeholder="例如：死亡次數" />
-              </div>
-              <div>
-                <label for="ctrStart">起始值</label>
-                <input id="ctrStart" type="number" step="1" value="0" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="ctrId">計數器 ID（選填）</label>
-                <input
-                  id="ctrId"
-                  type="text"
-                  placeholder="多個計數器用不同 ID；空白＝依帳號＋標籤"
-                />
-              </div>
-              <div>
-                <label for="ctrMin">最小值（選填）</label>
-                <input id="ctrMin" type="number" step="1" placeholder="空白＝不限" />
-              </div>
-            </div>
-            <div class="actions" style="margin-top: 12px">
-              <button type="button" class="secondary" id="ctrResetBtn">重設為起始值</button>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" id="ctrAddBtn">新增計數器</button>
               <a
                 class="btn secondary"
                 href="https://fonts.google.com/icons"
@@ -2760,8 +2737,10 @@
                 >開啟 Google Icons 圖示庫</a
               >
             </div>
+            <div id="ctrList" class="checks" style="margin-top: 8px"></div>
             <p class="hint" style="margin-top: 8px">
-              「重設為起始值」會清掉本機記住的數字（OBS 與入口需同網域／同資料夾才共用）。
+              每一列可「複製網址」到 OBS；「重設」清掉該組本機數字。指令名建議短一點（如
+              <code>死</code>、<code>a</code>）。
             </p>
             <div class="field">
               <label><input type="checkbox" id="ctrShowIcon" checked /> 顯示圖示</label>
@@ -2809,10 +2788,12 @@
               <h2>⑩ 計數器網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
+            <label for="ctrPreviewPick">預覽哪一組</label>
+            <select id="ctrPreviewPick" style="margin-bottom: 8px"></select>
             <textarea id="ctrUrl" class="url-box" readonly></textarea>
             <p class="hint">建議寬度 200–360、高度 50–80。預覽為示範模式（會自動跳動）。</p>
             <div class="actions">
-              <button type="button" id="copyCtr">複製計數器網址</button>
+              <button type="button" id="copyCtr">複製此組網址</button>
               <a class="btn secondary" id="openCtr" href="#" target="_blank" rel="noopener">預覽</a>
             </div>
             <div class="preview-wrap">
@@ -3005,7 +2986,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.9</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.10</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3019,14 +3000,19 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.9";
+        const APP_VERSION = "v1.3.10";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
+        // 「覆蓋並重開」會逐一抓這些檔寫入本機。漏列會造成新版入口指到不存在的子頁（例如計數器空白）。
+        // 不要列入 資料/帳號.txt，避免升級把使用者帳號蓋成空白範本。
+        // 實際安裝會優先抓遠端 update-files.json，避免舊版入口清單過期。
         const UPDATE_FILES = [
           "index.html",
           "入口.html",
           "material-icons.js",
+          "panel-bg.js",
+          "update-files.json",
           "fonts/MaterialSymbolsOutlined.ttf",
           "子頁/overlay.html",
           "子頁/countdown.html",
@@ -3036,7 +3022,7 @@
           "子頁/chat.html",
           "子頁/chat-reply.html",
           "子頁/sponsor.html",
-          "資料/帳號.txt",
+          "子頁/counter.html",
           "圖片/說明.txt",
           "README.md",
         ];
@@ -3149,16 +3135,46 @@
         }
 
         function fileUrlForTag(tag, name) {
+          const path = String(name || "")
+            .split("/")
+            .filter(Boolean)
+            .map((seg) => encodeURIComponent(seg))
+            .join("/");
           return (
             "https://cdn.jsdelivr.net/gh/cccsdxtw/my_OBS_tools@" +
             encodeURIComponent(tag) +
             "/" +
-            name
+            path
           );
         }
 
+        async function resolveUpdateFileList(tag) {
+          const merged = new Set(UPDATE_FILES);
+          try {
+            const res = await fetch(fileUrlForTag(tag, "update-files.json"), {
+              cache: "no-store",
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data.files)) {
+                data.files.forEach((n) => {
+                  if (n && typeof n === "string") merged.add(n);
+                });
+              }
+            }
+          } catch (_) {}
+          // 舊入口升級時清單可能沒有這些；強制補上避免空白覆蓋頁
+          [
+            "panel-bg.js",
+            "子頁/counter.html",
+            "update-files.json",
+          ].forEach((n) => merged.add(n));
+          return Array.from(merged);
+        }
+
         async function writeUpdateFiles(dirHandle, tag) {
-          for (const name of UPDATE_FILES) {
+          const files = await resolveUpdateFileList(tag);
+          for (const name of files) {
             const res = await fetch(fileUrlForTag(tag, name), { cache: "no-store" });
             if (!res.ok) throw new Error("fetch " + name + " " + res.status);
             const parts = name.split("/").filter(Boolean);
@@ -3553,8 +3569,9 @@
           }
         }
 
-        async function installAndReopen() {
-          if (!pendingUpdate || !pendingUpdate.tag) return;
+        async function installAndReopen(opts = {}) {
+          const tag = (opts && opts.tag) || (pendingUpdate && pendingUpdate.tag);
+          if (!tag) return;
           if (!canUseDirPicker()) {
             renderVersionStatus(
               "此瀏覽器不支援直接覆蓋，請改用「下載 zip」後手動解壓覆蓋",
@@ -3562,7 +3579,7 @@
             );
             return;
           }
-          const tag = pendingUpdate.tag;
+          installUpdateBtn.hidden = false;
           installUpdateBtn.disabled = true;
           installUpdateBtn.textContent = "覆蓋中…";
           renderVersionStatus(`正在覆蓋安裝 ${tag}…`, "warn");
@@ -3592,6 +3609,53 @@
                 : `覆蓋失敗：${(err && err.message) || "請改下載 zip"}`;
             renderVersionStatus(msg, "warn");
           }
+        }
+
+        /** 舊版「覆蓋」清單漏檔時：本機已是新版但仍缺 counter／panel-bg */
+        async function checkLocalInstallFiles() {
+          if (!isLocalPage()) return;
+          // 若已提示有更新版本，先讓使用者升版，升完重開會再掃缺檔
+          if (
+            pendingUpdate &&
+            pendingUpdate.tag &&
+            pendingUpdate.tag !== APP_VERSION
+          ) {
+            return;
+          }
+          const need = ["panel-bg.js", "子頁/counter.html", "update-files.json"];
+          const missing = [];
+          for (const name of need) {
+            try {
+              const res = await fetch(new URL(name, location.href).href, { cache: "no-store" });
+              if (!res.ok) missing.push(name);
+            } catch (_) {
+              missing.push(name);
+            }
+          }
+          if (!missing.length) return;
+          pendingUpdate = pendingUpdate || { tag: APP_VERSION, zip: null };
+          if (!pendingUpdate.tag) pendingUpdate.tag = APP_VERSION;
+          try {
+            const res = await fetch(RELEASES_API, { cache: "no-store" });
+            if (res.ok) {
+              const data = await res.json();
+              const zip = pickZipAsset(data, data.tag_name || APP_VERSION);
+              if (zip) pendingUpdate.zip = zip;
+            }
+          } catch (_) {}
+          installUpdateBtn.hidden = !canUseDirPicker();
+          installUpdateBtn.disabled = false;
+          installUpdateBtn.textContent = canUseDirPicker()
+            ? `修復缺檔並重開 ${APP_VERSION}`
+            : "修復缺檔";
+          downloadUpdateBtn.hidden = false;
+          downloadUpdateBtn.textContent = pendingUpdate.zip
+            ? `下載完整 zip ${pendingUpdate.zip.tag || ""}`.trim()
+            : "下載完整 zip";
+          renderVersionStatus(
+            `偵測到升級缺檔（${missing.join("、")}）。請按「修復缺檔」或下載 zip 完整覆蓋；OBS 來源再重新整理`,
+            "warn"
+          );
         }
 
         async function checkLatestVersion(opts) {
@@ -3853,8 +3917,15 @@
           } else {
             seedSponsorManualsFromLegacy();
           }
+          if (Array.isArray(setup.counterItems) && setup.counterItems.length) {
+            counterItems = normalizeCounterItems(setup.counterItems);
+          } else {
+            counterItems = [];
+            seedCounterItemsFromLegacy(setup.fields || {});
+          }
           renderSponsorFunds();
           renderSponsorManuals();
+          renderCounterItems();
           if (typeof data.accountTxt === "string" && data.accountTxt.trim()) {
             applyAccountMap(parseAccountTxt(data.accountTxt), { force: true });
           }
@@ -3879,7 +3950,11 @@
         );
         installUpdateBtn.addEventListener("click", () => installAndReopen());
         downloadUpdateBtn.addEventListener("click", () => {
-          if (!pendingUpdate || !pendingUpdate.zip) return;
+          if (!pendingUpdate || !pendingUpdate.zip) {
+            // 修復缺檔時若還沒抓到 zip，改開 Releases
+            window.open(RELEASES_PAGE, "_blank", "noopener");
+            return;
+          }
           startZipDownload(pendingUpdate.zip);
           renderVersionStatus(
             `有新版本 ${pendingUpdate.tag} · 已開始下載 ${pendingUpdate.zip.name}`,
@@ -3888,8 +3963,14 @@
         });
         applyBtn.addEventListener("click", () => flashApplied());
 
-        if (autoUpdateCheck.checked) checkLatestVersion({ autoInstall: false });
-        else renderVersionStatus(`本機 ${APP_VERSION} · 可按「檢查更新」跟上版本`, null);
+        if (autoUpdateCheck.checked) {
+          checkLatestVersion({ autoInstall: false }).finally(() => {
+            checkLocalInstallFiles();
+          });
+        } else {
+          renderVersionStatus(`本機 ${APP_VERSION} · 可按「檢查更新」跟上版本`, null);
+          checkLocalInstallFiles();
+        }
 
         const fields = {
           channel: $("channel"),
@@ -4038,10 +4119,7 @@
           spPanelImg: $("spPanelImg"),
           spPanelFit: $("spPanelFit"),
           spPanelInset: $("spPanelInset"),
-          ctrLabel: $("ctrLabel"),
-          ctrStart: $("ctrStart"),
-          ctrId: $("ctrId"),
-          ctrMin: $("ctrMin"),
+          ctrPreviewPick: $("ctrPreviewPick"),
           ctrRoleOwner: $("ctrRoleOwner"),
           ctrRoleHammer: $("ctrRoleHammer"),
           ctrRoleSword: $("ctrRoleSword"),
@@ -4065,12 +4143,135 @@
         let sponsorFunds = [];
         /** @type {Array<{id:string,platform:string,amount:number,currency:string,fundId:string,fundName:string,note:string}>} */
         let sponsorManuals = [];
+        /** @type {Array<{id:string,label:string,cmd:string,start:string,min:string}>} */
+        let counterItems = [];
+        let ctrPreviewId = "";
 
         function newFundId() {
           return "f" + Math.random().toString(36).slice(2, 9);
         }
         function newManualId() {
           return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        }
+        function newCounterId() {
+          return "c" + Math.random().toString(36).slice(2, 9);
+        }
+
+        function normalizeCounterItems(list) {
+          if (!Array.isArray(list) || !list.length) {
+            return [
+              {
+                id: newCounterId(),
+                label: "",
+                cmd: "",
+                start: "0",
+                min: "",
+              },
+            ];
+          }
+          return list.map((c, i) => ({
+            id: String((c && c.id) || newCounterId()),
+            label: String((c && c.label) || "").trim(),
+            cmd: String((c && c.cmd) || "").trim(),
+            start:
+              c && c.start != null && String(c.start).trim() !== ""
+                ? String(c.start).trim()
+                : "0",
+            min: c && c.min != null ? String(c.min).trim() : "",
+            _idx: i,
+          }));
+        }
+
+        function readCounterItemsFromDom() {
+          const list = $("ctrList");
+          if (!list) return counterItems;
+          counterItems = Array.from(list.querySelectorAll(".ctr-item-row")).map((row) => ({
+            id: row.dataset.id || newCounterId(),
+            label: (row.querySelector("[data-k=label]")?.value || "").trim(),
+            cmd: (row.querySelector("[data-k=cmd]")?.value || "").trim(),
+            start: (row.querySelector("[data-k=start]")?.value || "").trim() || "0",
+            min: (row.querySelector("[data-k=min]")?.value || "").trim(),
+          }));
+          return counterItems;
+        }
+
+        function seedCounterItemsFromLegacy(rawFields) {
+          if (counterItems.length) return;
+          const f = rawFields || {};
+          const label = String(f.ctrLabel || "").trim();
+          const id = String(f.ctrId || "").trim();
+          const start = String(f.ctrStart != null ? f.ctrStart : "0").trim() || "0";
+          const min = String(f.ctrMin || "").trim();
+          if (label || id || start !== "0" || min) {
+            counterItems = [
+              {
+                id: id || newCounterId(),
+                label,
+                cmd: "",
+                start,
+                min,
+              },
+            ];
+          } else {
+            counterItems = normalizeCounterItems([]);
+          }
+        }
+
+        function counterStorageKeyFor(item) {
+          const id = String((item && item.id) || "").trim();
+          if (id) return `my_obs_tools_counter:id:${id}`;
+          const login = (fields.channel.value || "").trim().toLowerCase();
+          const yt = resolveYtChannelForUrl(fields.ytChannel.value) || "";
+          const label = String((item && item.label) || "").trim() || "count";
+          return `my_obs_tools_counter:${login}|${String(yt).toLowerCase()}|${label}`;
+        }
+
+        function syncCtrPreviewPick() {
+          const sel = fields.ctrPreviewPick;
+          if (!sel) return;
+          const items = normalizeCounterItems(counterItems);
+          const prev = sel.value || ctrPreviewId;
+          sel.innerHTML = "";
+          items.forEach((c, i) => {
+            const opt = document.createElement("option");
+            opt.value = c.id;
+            const name = c.label || c.cmd || c.id || `計數器 ${i + 1}`;
+            const cmdHint = c.cmd ? `!${c.cmd}+N` : "!+N";
+            opt.textContent = `${i + 1}. ${name}（${cmdHint}）`;
+            sel.appendChild(opt);
+          });
+          if (prev && items.some((c) => c.id === prev)) sel.value = prev;
+          else if (items[0]) sel.value = items[0].id;
+          ctrPreviewId = sel.value || "";
+        }
+
+        function renderCounterItems() {
+          const list = $("ctrList");
+          if (!list) return;
+          counterItems = normalizeCounterItems(counterItems);
+          list.innerHTML = "";
+          counterItems.forEach((item, idx) => {
+            const row = document.createElement("div");
+            row.className = "mod-row ctr-item-row";
+            row.dataset.id = item.id;
+            row.style.flexWrap = "wrap";
+            row.innerHTML = `
+              <span class="side-title" style="min-width:2.2em">${idx + 1}.</span>
+              <input data-k="label" type="text" placeholder="標籤（如：死亡）" style="min-width:6em;flex:1" />
+              <input data-k="cmd" type="text" placeholder="指令名（如：死）" style="max-width:7em" title="有填則 !死+1；空白則 !+1" />
+              <input data-k="start" type="number" step="1" placeholder="起始" style="max-width:5em" />
+              <input data-k="min" type="number" step="1" placeholder="最小" style="max-width:5em" />
+              <button type="button" class="secondary ctr-copy" title="複製此組 OBS 網址">複製網址</button>
+              <button type="button" class="secondary ctr-reset" title="重設此組數字">重設</button>
+              <button type="button" class="secondary ctr-del" title="刪除">刪</button>
+            `;
+            row.querySelector("[data-k=label]").value = item.label;
+            row.querySelector("[data-k=cmd]").value = item.cmd;
+            row.querySelector("[data-k=start]").value = item.start;
+            row.querySelector("[data-k=min]").value = item.min;
+            list.appendChild(row);
+          });
+          syncCtrPreviewPick();
         }
 
         function syncManualFundOptions() {
@@ -4357,6 +4558,11 @@
                   fundName: String(m.fundName || ""),
                   note: String(m.note || ""),
                 }));
+            }
+            if (Array.isArray(data.counterItems) && data.counterItems.length) {
+              counterItems = normalizeCounterItems(data.counterItems);
+            } else {
+              seedCounterItemsFromLegacy(rawFields || {});
             }
           } catch (_) {}
         }
@@ -5397,16 +5603,24 @@
           return url.toString();
         }
 
-        function counterStorageKey() {
-          const id = (fields.ctrId.value || "").trim();
-          if (id) return `my_obs_tools_counter:id:${id}`;
-          const login = (fields.channel.value || "").trim().toLowerCase();
-          const yt = resolveYtChannelForUrl(fields.ytChannel.value) || "";
-          const label = (fields.ctrLabel.value || "").trim() || "count";
-          return `my_obs_tools_counter:${login}|${String(yt).toLowerCase()}|${label}`;
+        function getSelectedCounterItem() {
+          readCounterItemsFromDom();
+          counterItems = normalizeCounterItems(counterItems);
+          const pick = (fields.ctrPreviewPick && fields.ctrPreviewPick.value) || ctrPreviewId;
+          return (
+            counterItems.find((c) => c.id === pick) ||
+            counterItems[0] || {
+              id: newCounterId(),
+              label: "",
+              cmd: "",
+              start: "0",
+              min: "",
+            }
+          );
         }
 
         function buildCounterUrl(opts = {}) {
+          const item = opts.item || getSelectedCounterItem();
           const url = pageUrl("counter.html");
           const p = url.searchParams;
           const channel = fields.channel.value.trim();
@@ -5417,12 +5631,11 @@
           if (ytChannel) p.set("yt", ytChannel);
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
-          if (fields.ctrLabel.value.trim()) p.set("label", fields.ctrLabel.value.trim());
-          if (fields.ctrId.value.trim()) p.set("id", fields.ctrId.value.trim());
-          const start = (fields.ctrStart.value || "").trim();
-          if (start !== "") p.set("start", start);
-          const min = (fields.ctrMin.value || "").trim();
-          if (min !== "") p.set("min", min);
+          if (item.label) p.set("label", item.label);
+          if (item.id) p.set("id", item.id);
+          if (item.cmd) p.set("cmd", item.cmd);
+          if (item.start !== "") p.set("start", item.start);
+          if (item.min !== "") p.set("min", item.min);
           const roles = [];
           if (fields.ctrRoleOwner.checked) roles.push("owner");
           if (fields.ctrRoleHammer.checked) roles.push("hammer");
@@ -5519,8 +5732,11 @@
           $("openSp").href = spDemoHref;
           $("previewSp").src = spDemoHref;
 
-          const ctrHref = buildCounterUrl();
-          const ctrDemoHref = buildCounterUrl({ demo: true });
+          readCounterItemsFromDom();
+          syncCtrPreviewPick();
+          const ctrItem = getSelectedCounterItem();
+          const ctrHref = buildCounterUrl({ item: ctrItem });
+          const ctrDemoHref = buildCounterUrl({ item: ctrItem, demo: true });
           $("ctrUrl").value = ctrHref;
           $("openCtr").href = ctrDemoHref;
           $("previewCtr").src = ctrDemoHref;
@@ -5539,6 +5755,7 @@
               vcPlatformOrder: getVcPlatformOrder(),
               sponsorFunds: readSponsorFundsFromDom(),
               sponsorManuals,
+              counterItems: readCounterItemsFromDom(),
             })
           );
           return {
@@ -5658,22 +5875,74 @@
         $("copyCtr").addEventListener("click", async () => {
           const { ctrHref } = buildUrls();
           $("ctrUrl").select();
-          await copyText(ctrHref, $("copyCtr"), "複製計數器網址");
+          await copyText(ctrHref, $("copyCtr"), "複製此組網址");
         });
-        const ctrResetBtn = $("ctrResetBtn");
-        if (ctrResetBtn) {
-          ctrResetBtn.addEventListener("click", () => {
-            const key = counterStorageKey();
-            const start = (fields.ctrStart.value || "").trim() || "0";
-            try {
-              localStorage.setItem(key, start);
-            } catch (_) {}
+        if (fields.ctrPreviewPick) {
+          fields.ctrPreviewPick.addEventListener("change", () => {
+            ctrPreviewId = fields.ctrPreviewPick.value;
             buildUrls();
-            const old = ctrResetBtn.textContent;
-            ctrResetBtn.textContent = "已重設";
-            setTimeout(() => {
-              ctrResetBtn.textContent = old;
-            }, 1200);
+          });
+        }
+        const ctrAddBtn = $("ctrAddBtn");
+        if (ctrAddBtn) {
+          ctrAddBtn.addEventListener("click", () => {
+            readCounterItemsFromDom();
+            counterItems.push({
+              id: newCounterId(),
+              label: "",
+              cmd: "",
+              start: "0",
+              min: "",
+            });
+            renderCounterItems();
+            buildUrls();
+          });
+        }
+        const ctrListEl = $("ctrList");
+        if (ctrListEl) {
+          ctrListEl.addEventListener("input", () => {
+            readCounterItemsFromDom();
+            syncCtrPreviewPick();
+            buildUrls();
+          });
+          ctrListEl.addEventListener("click", async (ev) => {
+            const row = ev.target.closest(".ctr-item-row");
+            if (!row) return;
+            readCounterItemsFromDom();
+            const id = row.dataset.id;
+            const item = counterItems.find((c) => c.id === id);
+            if (ev.target.closest(".ctr-del")) {
+              if (counterItems.length <= 1) {
+                counterItems = normalizeCounterItems([]);
+              } else {
+                counterItems = counterItems.filter((c) => c.id !== id);
+              }
+              if (ctrPreviewId === id) ctrPreviewId = "";
+              renderCounterItems();
+              buildUrls();
+              return;
+            }
+            if (ev.target.closest(".ctr-reset") && item) {
+              try {
+                localStorage.setItem(counterStorageKeyFor(item), item.start || "0");
+              } catch (_) {}
+              const btn = ev.target.closest(".ctr-reset");
+              const old = btn.textContent;
+              btn.textContent = "已重設";
+              setTimeout(() => {
+                btn.textContent = old;
+              }, 1000);
+              buildUrls();
+              return;
+            }
+            if (ev.target.closest(".ctr-copy") && item) {
+              ctrPreviewId = item.id;
+              if (fields.ctrPreviewPick) fields.ctrPreviewPick.value = item.id;
+              const href = buildCounterUrl({ item });
+              $("ctrUrl").value = href;
+              await copyText(href, ev.target.closest(".ctr-copy"), "複製網址");
+              buildUrls();
+            }
           });
         }
 
@@ -5962,8 +6231,10 @@
         syncGamePlatformChips();
         if (!sponsorFunds.length) seedSponsorFundsFromLegacy();
         if (!sponsorManuals.length) seedSponsorManualsFromLegacy();
+        if (!counterItems.length) seedCounterItemsFromLegacy({});
         renderSponsorFunds();
         renderSponsorManuals();
+        renderCounterItems();
         loadAccountTxt().finally(() => {
           buildUrls();
           ensureYtChannelIdResolved();

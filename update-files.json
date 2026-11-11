@@ -1,0 +1,21 @@
+{
+  "files": [
+    "index.html",
+    "入口.html",
+    "material-icons.js",
+    "panel-bg.js",
+    "update-files.json",
+    "fonts/MaterialSymbolsOutlined.ttf",
+    "子頁/overlay.html",
+    "子頁/countdown.html",
+    "子頁/days.html",
+    "子頁/viewers.html",
+    "子頁/game.html",
+    "子頁/chat.html",
+    "子頁/chat-reply.html",
+    "子頁/sponsor.html",
+    "子頁/counter.html",
+    "圖片/說明.txt",
+    "README.md"
+  ]
+}

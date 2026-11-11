@@ -319,7 +319,14 @@
           };
         })();
 
-        /** 留言整句是 !+N／!-N／!=N（前綴 ! 避免誤觸；全形也可） */
+        // 多組計數器時用 cmd 區分，例如 cmd=死 → !死+1／!死=3；空白則 !+1／!=3
+        const cmdName = (params.get("cmd") || params.get("ctrCmd") || "").trim();
+
+        function escapeRegExp(s) {
+          return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        }
+
+        /** 留言整句是 ![+cmd]+N／!-N／!=N（前綴 ! 避免誤觸；全形也可） */
         function parseCounterCommand(text) {
           const raw = String(text || "").trim();
           const normalized = raw
@@ -328,7 +335,14 @@
             .replace(/－/g, "-")
             .replace(/—|–/g, "-")
             .replace(/＝/g, "=");
-          const m = normalized.match(/^!([+\-=])(\d{1,7})$/);
+          let m;
+          if (cmdName) {
+            m = normalized.match(
+              new RegExp(`^!${escapeRegExp(cmdName)}\\s*([+\\-=])(\\d{1,7})$`, "i")
+            );
+          } else {
+            m = normalized.match(/^!([+\-=])(\d{1,7})$/);
+          }
           if (!m) return null;
           const op = m[1];
           const n = parseInt(m[2], 10);
@@ -428,9 +442,8 @@
           if (allowRoles.mod) roleBits.push("MOD");
           if (allowRoles.vip) roleBits.push("VIP");
           if (allowRoles.sub) roleBits.push("粉絲");
-          parts.push(
-            (roleBits.length ? roleBits.join("/") : "無權限") + "：!+N　!=N"
-          );
+          const cmdHint = cmdName ? `!${cmdName}+N　!${cmdName}=N` : "!+N　!=N";
+          parts.push((roleBits.length ? roleBits.join("/") : "無權限") + "：" + cmdHint);
           els.status.textContent = parts.join(" · ");
         }
 

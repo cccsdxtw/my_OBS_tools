@@ -364,6 +364,29 @@
         const isFileOrigin = location.protocol === "file:";
         let twErrTip = "";
         let ytErrTip = "";
+        function yt403Tip(msg) {
+          const m = String(msg || "");
+          if (/accessNotConfigured|not been used|disabled/i.test(m)) {
+            return "YouTube API 403：專案尚未啟用 YouTube Data API v3（函式庫裡按啟用，和金鑰限制是兩件事）";
+          }
+          if (/dailyLimitExceeded|quotaExceeded|rateLimitExceeded/i.test(m)) {
+            return "YouTube API 403：今日配額用完或請求太頻繁，到 Google Cloud「配額」查看；或明天再試";
+          }
+          if (/keyInvalid|API key not valid|invalid/i.test(m)) {
+            return "YouTube API 403：金鑰無效，請重新貼上／重新產生 API 金鑰";
+          }
+          if (/ipRefererBlocked|refererBlocked|blocked/i.test(m)) {
+            return "YouTube API 403：金鑰被應用程式限制擋住；OBS／file 請把「應用程式限制」設成「無」";
+          }
+          if (/billing/i.test(m)) {
+            return "YouTube API 403：專案可能需要綁定帳單（免費額度仍可能要求啟用帳單）";
+          }
+          return (
+            "YouTube API 403：" +
+            (m.replace(/^yt\s+/i, "").trim() || "請開 F12 Console 看完整原因") +
+            "（常見：未啟用 API、配額用完、金鑰無效；不一定是應用程式限制）"
+          );
+        }
         function failLabel(err, which) {
           const msg = String((err && err.message) || err || "");
           console.error(which || "viewers", err);
@@ -374,12 +397,8 @@
               : "人數抓取失敗";
           if (which === "yt") ytErrTip = tip;
           else if (which === "tw") twErrTip = tip;
-          // Google API Key 若限制「網站參照網址」，OBS／file 常會 403
           if (/403/.test(msg)) {
-            if (which === "yt") {
-              ytErrTip =
-                "YouTube API 403：請到 Google Cloud 把此金鑰的「應用程式限制」先設成「無」(OBS 本機才能用)";
-            }
+            if (which === "yt") ytErrTip = yt403Tip(msg);
             return "403";
           }
           return "ERR";

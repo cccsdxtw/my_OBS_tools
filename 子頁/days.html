@@ -91,6 +91,14 @@
         user-select: none;
       }
 
+      .ms-svg-icon.icon,
+      .svg-icon {
+        width: 100%;
+        height: 100%;
+        color: var(--icon);
+        fill: currentColor;
+      }
+
       .label,
       .value {
         display: flex;
@@ -172,15 +180,6 @@
         const unit = (params.get("unit") || "天").trim() || "天";
         const doneText = (params.get("done") || params.get("daysDone") || "0").trim() || "0";
 
-        function normalizeMsName(raw) {
-          return String(raw || "")
-            .trim()
-            .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-            .replace(/[\s-]+/g, "_")
-            .toLowerCase()
-            .replace(/[^a-z0-9_]/g, "");
-        }
-
         function isUrlIcon(raw) {
           const s = String(raw || "").trim();
           return /^https?:\/\//i.test(s) || /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s);
@@ -206,18 +205,19 @@
             img.alt = "";
             img.referrerPolicy = "no-referrer";
             img.src = iconRaw;
+            img.onerror = () => {
+              if (window.MyObsMaterialIcons) {
+                window.MyObsMaterialIcons.mountIcon(els.icon, "event_upcoming", {
+                  forceSvg: true,
+                });
+              }
+            };
             els.icon.appendChild(img);
-          } else {
-            const name = normalizeMsName(iconRaw) || "event_upcoming";
-            els.icon.innerHTML = "";
-            const span = document.createElement("span");
-            span.className = "material-symbols-outlined icon";
-            span.setAttribute("aria-hidden", "true");
-            span.textContent = name;
-            els.icon.appendChild(span);
-            if (window.MyObsMaterialIcons) {
-              window.MyObsMaterialIcons.ensureMaterialSymbols([name]);
-            }
+          } else if (window.MyObsMaterialIcons) {
+            // file://／本機精簡字型缺 glyph 時改 SVG，避免露出 event_upcoming 文字
+            window.MyObsMaterialIcons.mountIcon(els.icon, iconRaw || "event_upcoming", {
+              forceSvg: true,
+            });
           }
         }
 

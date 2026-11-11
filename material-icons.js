@@ -8,6 +8,24 @@
   const CACHE_NAME = "my-obs-tools-ms-fonts-v1";
   const GOOGLE_TIMEOUT_MS = 3000;
 
+  // 常用預設圖：本機精簡 TTF／file:// 缺 glyph 時用 SVG，避免露出 event_upcoming 文字
+  const SVG_PATHS = {
+    event_upcoming:
+      "M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM12 10v4.17l2.59-2.58L16 13l-4 4-4-4 1.41-1.41L11 14.17V10h1z",
+    hourglass_empty:
+      "M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-5.99h-.01L18 16l-4-4 4-3.99-.01-.01H18V2H6zm10 14.5V20H8v-3.5l4-4 4 4zm-4-5l-4-4V4h8v3.5l-4 4z",
+    sports_esports:
+      "M21.58 16.09l-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91zM11 11H9v2H8v-2H6v-1h2V8h1v2h2v1zm4-1.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z",
+    visibility:
+      "M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+    videocam:
+      "M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z",
+    calendar_month:
+      "M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5zm2 4h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z",
+    schedule:
+      "M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z",
+  };
+
   function normalizeMsName(raw) {
     return String(raw || "")
       .trim()
@@ -49,6 +67,13 @@
   direction: ltr;
   -webkit-font-feature-settings: "liga";
   font-feature-settings: "liga";
+}
+.ms-svg-icon {
+  width: 1em;
+  height: 1em;
+  display: block;
+  fill: currentColor;
+  flex: 0 0 auto;
 }`;
   }
 
@@ -133,10 +158,99 @@
     }
   }
 
+  function mountSvgIcon(slot, name, className) {
+    const n = normalizeMsName(name);
+    const d = SVG_PATHS[n];
+    if (!slot || !d) return false;
+    slot.innerHTML = "";
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", className || "ms-svg-icon icon");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("fill", "currentColor");
+    path.setAttribute("d", d);
+    svg.appendChild(path);
+    slot.appendChild(svg);
+    return true;
+  }
+
+  function ligatureLooksBroken(el) {
+    try {
+      const r = el.getBoundingClientRect();
+      if (!r.height || r.height < 2) return true;
+      // 圖示應接近正方形；露出 event_upcoming 文字會明顯變寬
+      if (r.width > r.height * 1.65) return true;
+      if (r.width < 2) return true;
+      return false;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /**
+   * 掛 Material 圖示；file://／缺 glyph 時改 SVG（若有路徑）
+   * @returns {Promise<'google'|'cache'|'local'|'svg'|'hidden'>}
+   */
+  async function mountIcon(slot, rawName, opts = {}) {
+    if (!slot) return "hidden";
+    const name = normalizeMsName(rawName);
+    if (!name) {
+      slot.innerHTML = "";
+      return "hidden";
+    }
+    injectCss(localFontFaceCss(), "ms-symbols-local");
+
+    // 已知預設：直接 SVG 最穩（OBS／本機開檔常見）
+    const preferSvg = opts.preferSvg !== false && !!SVG_PATHS[name];
+    if (preferSvg && opts.forceSvg) {
+      mountSvgIcon(slot, name, opts.svgClass);
+      return "svg";
+    }
+
+    slot.innerHTML = "";
+    const span = document.createElement("span");
+    span.className = opts.spanClass || "material-symbols-outlined icon";
+    span.setAttribute("aria-hidden", "true");
+    span.textContent = name;
+    // 先藏起來，避免缺字時文字閃一下叠在數字上
+    span.style.visibility = "hidden";
+    slot.appendChild(span);
+
+    let source = "local";
+    try {
+      source = await ensureMaterialSymbols([name]);
+    } catch (_) {
+      source = "local";
+    }
+    if (document.fonts && document.fonts.load) {
+      try {
+        await document.fonts.load(`500 24px "${FAMILY}"`);
+      } catch (_) {}
+    }
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const broken = ligatureLooksBroken(span) || source === "local";
+    if (broken && SVG_PATHS[name]) {
+      mountSvgIcon(slot, name, opts.svgClass);
+      return "svg";
+    }
+    span.style.visibility = "";
+    if (broken) {
+      // 沒有 SVG 後備：乾脆隱藏，別露出英文名
+      slot.innerHTML = "";
+      return "hidden";
+    }
+    return source;
+  }
+
   window.MyObsMaterialIcons = {
     FAMILY,
     LOCAL_FONT,
+    SVG_PATHS,
     normalizeMsName,
     ensureMaterialSymbols,
+    mountSvgIcon,
+    mountIcon,
   };
 })();

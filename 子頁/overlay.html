@@ -89,6 +89,23 @@
         user-select: none;
       }
 
+      .icon-slot-ms {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(var(--size) * 0.92);
+        height: calc(var(--size) * 0.92);
+        flex: 0 0 auto;
+        color: var(--icon);
+      }
+
+      .ms-svg-icon.icon {
+        width: 100%;
+        height: 100%;
+        color: var(--icon);
+        fill: currentColor;
+      }
+
       img.custom-icon.icon {
         width: calc(var(--size) * 0.92);
         height: calc(var(--size) * 0.92);
@@ -235,27 +252,33 @@
             return null;
           }
           const name = normalizeMsName(raw) || fallback;
-          if (!iconEl || !iconEl.classList.contains("material-symbols-outlined")) {
+          // 先清掉舊圖示，交給 mountIcon（含 SVG 後備）
+          if (iconEl) iconEl.remove();
+          const holder = document.createElement("span");
+          holder.className = "icon-slot-ms";
+          mod.insertBefore(holder, mod.firstChild);
+          if (window.MyObsMaterialIcons) {
+            window.MyObsMaterialIcons.mountIcon(holder, name, {
+              forceSvg: true,
+              spanClass: "material-symbols-outlined icon",
+              svgClass: "ms-svg-icon icon",
+            });
+          } else {
             const span = document.createElement("span");
             span.className = "material-symbols-outlined icon";
             span.setAttribute("aria-hidden", "true");
-            if (iconEl) iconEl.replaceWith(span);
-            else mod.insertBefore(span, mod.firstChild);
-            iconEl = span;
+            span.textContent = name;
+            holder.appendChild(span);
           }
-          iconEl.textContent = name;
           return name;
         }
 
-        const usedMs = [
+        [
           applyIcon("mod-viewers", params.get("vcIcon") || params.get("iconVc"), "visibility"),
           applyIcon("mod-uptime", params.get("stIcon") || params.get("iconSt"), "videocam"),
           applyIcon("mod-date", params.get("dateIcon") || params.get("iconDate"), "calendar_month"),
           applyIcon("mod-time", params.get("timeIcon") || params.get("iconTime"), "schedule"),
         ].filter(Boolean);
-        if (window.MyObsMaterialIcons && usedMs.length) {
-          window.MyObsMaterialIcons.ensureMaterialSymbols(usedMs);
-        }
 
         function cssVar(name, value) {
           if (value) document.documentElement.style.setProperty(name, value);

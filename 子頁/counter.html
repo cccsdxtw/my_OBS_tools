@@ -212,9 +212,13 @@
         const ytChannel = (params.get("yt") || "").trim();
         const ytVideoParam = (params.get("ytVideo") || "").trim();
         const ytKey = (params.get("ytKey") || "").trim();
-        const demo = ["1", "true", "yes", "demo"].includes(
-          (params.get("demo") || "").trim().toLowerCase()
-        );
+        function flagOn(raw) {
+          return ["1", "true", "yes", "demo", "on"].includes(
+            String(raw || "").trim().toLowerCase()
+          );
+        }
+        // 入口預覽／DEMO：與正式 OBS 完全隔離，绝不讀寫正式 localStorage
+        const demo = flagOn(params.get("demo")) || flagOn(params.get("preview"));
         const hideStatus = ["1", "true", "yes", "hide"].includes(
           (params.get("hideStatus") || "").trim().toLowerCase()
         );
@@ -233,15 +237,20 @@
           return Number.isFinite(n) ? Math.trunc(n) : 0;
         })();
 
-        const persist = !["0", "false", "no", "off"].includes(
-          (params.get("persist") || "1").trim().toLowerCase()
-        );
+        const persist =
+          !demo &&
+          !["0", "false", "no", "off"].includes(
+            (params.get("persist") || "1").trim().toLowerCase()
+          );
+        // 正式 key 與預覽 key 永不共用（預覽其實也不寫入）
         const storageKey = (() => {
           const id = (params.get("id") || params.get("ctrId") || "").trim();
-          if (id) return `my_obs_tools_counter:id:${id}`;
-          return `my_obs_tools_counter:${twitchLogin || ""}|${(ytChannel || "").toLowerCase()}|${
-            labelText || "count"
-          }`;
+          const base = id
+            ? `my_obs_tools_counter:id:${id}`
+            : `my_obs_tools_counter:${twitchLogin || ""}|${(ytChannel || "").toLowerCase()}|${
+                labelText || "count"
+              }`;
+          return demo ? `preview:${base}` : base;
         })();
 
         function clamp(n) {
@@ -252,11 +261,12 @@
         }
 
         function readStored() {
-          // 預覽 demo 絕不讀寫本機，避免把正式計數從 0 洗掉
           if (demo || !persist) return null;
           try {
             const raw = localStorage.getItem(storageKey);
             if (raw == null || raw === "") return null;
+            // 雙重保險：正式模式不讀 preview: 前綴
+            if (String(raw) && storageKey.startsWith("preview:")) return null;
             const n = Number(raw);
             return Number.isFinite(n) ? Math.trunc(n) : null;
           } catch (_) {
@@ -266,6 +276,7 @@
 
         function writeStored(n) {
           if (demo || !persist) return;
+          if (storageKey.startsWith("preview:")) return;
           try {
             localStorage.setItem(storageKey, String(n));
           } catch (_) {}

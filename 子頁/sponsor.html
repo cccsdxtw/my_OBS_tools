@@ -343,7 +343,13 @@
         const ytVideoParam = extractYoutubeVideoId(params.get("ytVideo") || "");
         const wantTw = !!twitchLogin;
         const wantYt = !!(ytVideoParam || (ytChannel && ytKey));
-        const demo = params.get("demo") === "1";
+        function flagOn(raw) {
+          return ["1", "true", "yes", "demo", "on"].includes(
+            String(raw || "").trim().toLowerCase()
+          );
+        }
+        // 入口預覽／DEMO：不讀寫正式贊助進度
+        const demo = flagOn(params.get("demo")) || flagOn(params.get("preview"));
         const maxEvents = Math.max(3, Math.min(20, parseInt(params.get("max") || "8", 10) || 8));
         const combine = params.get("combine") === "1";
         const bitsRate = combine
@@ -583,6 +589,7 @@
         /** @type {Set<string>} */
         let seenIds = new Set();
 
+        // 預覽模式 persistKey 為空＝只活在記憶體；正式 key 永不加 preview 前綴混用
         const persistKey = demo
           ? ""
           : [
@@ -599,7 +606,7 @@
             ].join(":");
 
         function savePersist() {
-          if (!persistKey) return;
+          if (demo || !persistKey || persistKey.startsWith("preview:")) return;
           try {
             localStorage.setItem(
               persistKey,
@@ -616,7 +623,7 @@
         }
 
         function loadPersist() {
-          if (!persistKey) return;
+          if (demo || !persistKey || persistKey.startsWith("preview:")) return;
           try {
             const raw = JSON.parse(localStorage.getItem(persistKey) || "null");
             if (!raw || typeof raw !== "object") return;

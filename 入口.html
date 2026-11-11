@@ -1041,7 +1041,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.10</span>
+          <span class="brand-version" id="brandVersion">v1.3.11</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2986,7 +2986,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.10</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.11</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3000,7 +3000,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.10";
+        const APP_VERSION = "v1.3.11";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3172,24 +3172,82 @@
           return Array.from(merged);
         }
 
+        async function ensureDirPath(dirHandle, parts, create) {
+          let dir = dirHandle;
+          for (let i = 0; i < parts.length; i++) {
+            dir = await dir.getDirectoryHandle(parts[i], { create: !!create });
+          }
+          return dir;
+        }
+
+        async function verifyDirHasFiles(dirHandle, names) {
+          const missing = [];
+          for (const name of names) {
+            try {
+              const parts = String(name).split("/").filter(Boolean);
+              const fileName = parts.pop();
+              const dir = await ensureDirPath(dirHandle, parts, false);
+              const fh = await dir.getFileHandle(fileName);
+              const file = await fh.getFile();
+              if (!file || file.size <= 0) missing.push(name);
+            } catch (_) {
+              missing.push(name);
+            }
+          }
+          return missing;
+        }
+
         async function writeUpdateFiles(dirHandle, tag) {
+          // 必須選「裡面直接有 入口.html」的那層，不要選上一層 Desktop／下載
+          try {
+            await dirHandle.getFileHandle("入口.html");
+          } catch (_) {
+            throw new Error(
+              "請選對資料夾：要選「裡面直接看得到 入口.html」的那一層（不要選外層）"
+            );
+          }
           const files = await resolveUpdateFileList(tag);
+          const written = [];
           for (const name of files) {
             const res = await fetch(fileUrlForTag(tag, name), { cache: "no-store" });
             if (!res.ok) throw new Error("fetch " + name + " " + res.status);
             const parts = name.split("/").filter(Boolean);
-            let dir = dirHandle;
-            for (let i = 0; i < parts.length - 1; i++) {
-              dir = await dir.getDirectoryHandle(parts[i], { create: true });
-            }
-            const fileHandle = await dir.getFileHandle(parts[parts.length - 1], {
-              create: true,
-            });
+            const fileName = parts.pop();
+            const dir = await ensureDirPath(dirHandle, parts, true);
+            const fileHandle = await dir.getFileHandle(fileName, { create: true });
             const writable = await fileHandle.createWritable();
             const binary = /\.(ttf|otf|woff2?|png|jpe?g|gif|webp|zip)$/i.test(name);
             await writable.write(binary ? await res.arrayBuffer() : await res.text());
             await writable.close();
+            written.push(name);
           }
+          const critical = ["panel-bg.js", "子頁/counter.html", "入口.html"];
+          const missing = await verifyDirHasFiles(dirHandle, critical);
+          if (missing.length) {
+            throw new Error("寫入後仍缺：" + missing.join("、"));
+          }
+          return written;
+        }
+
+        /** file:// 下 fetch 常被擋，會誤判缺檔；改用 XHR（成功多半 status=0） */
+        function probeLocalFile(relPath) {
+          return new Promise((resolve) => {
+            try {
+              const url = new URL(relPath, location.href).href;
+              const xhr = new XMLHttpRequest();
+              xhr.open("GET", url, true);
+              xhr.onload = () => {
+                // file:// 成功常是 0；http 則 2xx
+                const ok =
+                  xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300);
+                resolve(ok && typeof xhr.responseText === "string");
+              };
+              xhr.onerror = () => resolve(false);
+              xhr.send();
+            } catch (_) {
+              resolve(false);
+            }
+          });
         }
 
         function applyTheme(theme) {
@@ -3582,10 +3640,31 @@
           installUpdateBtn.hidden = false;
           installUpdateBtn.disabled = true;
           installUpdateBtn.textContent = "覆蓋中…";
-          renderVersionStatus(`正在覆蓋安裝 ${tag}…`, "warn");
+          renderVersionStatus(
+            `正在覆蓋安裝 ${tag}…（請選有「入口.html」的那層資料夾）`,
+            "warn"
+          );
           try {
+            // 修復時強制重選，避免寫到舊的錯誤資料夾 handle
+            if (opts.forcePick) {
+              try {
+                localStorage.removeItem(dirHandleKey);
+              } catch (_) {}
+              try {
+                const db = await openDirDb();
+                await new Promise((resolve, reject) => {
+                  const tx = db.transaction(dirHandleStore, "readwrite");
+                  tx.objectStore(dirHandleStore).delete(dirHandleKey);
+                  tx.oncomplete = () => resolve();
+                  tx.onerror = () => reject(tx.error || new Error("idb"));
+                });
+              } catch (_) {}
+            }
             const dir = await pickInstallDir();
             await writeUpdateFiles(dir, tag);
+            try {
+              sessionStorage.setItem("my_obs_tools_files_ok", APP_VERSION);
+            } catch (_) {}
             renderVersionStatus(
               `已覆蓋 ${tag} · 正在重開；OBS 瀏覽器來源請再按重新整理`,
               "ok"
@@ -3614,7 +3693,6 @@
         /** 舊版「覆蓋」清單漏檔時：本機已是新版但仍缺 counter／panel-bg */
         async function checkLocalInstallFiles() {
           if (!isLocalPage()) return;
-          // 若已提示有更新版本，先讓使用者升版，升完重開會再掃缺檔
           if (
             pendingUpdate &&
             pendingUpdate.tag &&
@@ -3622,17 +3700,27 @@
           ) {
             return;
           }
-          const need = ["panel-bg.js", "子頁/counter.html", "update-files.json"];
+          try {
+            if (sessionStorage.getItem("my_obs_tools_files_ok") === APP_VERSION) {
+              return;
+            }
+          } catch (_) {}
+
+          // 只檢查真正影響顯示的檔；update-files.json 缺了不影響畫面
+          // file:// 必須用 XHR，fetch 會被瀏覽器擋而永遠誤判
+          const need = ["panel-bg.js", "子頁/counter.html"];
           const missing = [];
           for (const name of need) {
-            try {
-              const res = await fetch(new URL(name, location.href).href, { cache: "no-store" });
-              if (!res.ok) missing.push(name);
-            } catch (_) {
-              missing.push(name);
-            }
+            const ok = await probeLocalFile(name);
+            if (!ok) missing.push(name);
           }
-          if (!missing.length) return;
+          if (!missing.length) {
+            try {
+              sessionStorage.setItem("my_obs_tools_files_ok", APP_VERSION);
+            } catch (_) {}
+            return;
+          }
+
           pendingUpdate = pendingUpdate || { tag: APP_VERSION, zip: null };
           if (!pendingUpdate.tag) pendingUpdate.tag = APP_VERSION;
           try {
@@ -3653,7 +3741,7 @@
             ? `下載完整 zip ${pendingUpdate.zip.tag || ""}`.trim()
             : "下載完整 zip";
           renderVersionStatus(
-            `偵測到升級缺檔（${missing.join("、")}）。請按「修復缺檔」或下載 zip 完整覆蓋；OBS 來源再重新整理`,
+            `本機缺檔（${missing.join("、")}）。按修復時請選「有 入口.html 的那層」；或下載 zip 解壓後開內層資料夾。不要選 Desktop／上一層。`,
             "warn"
           );
         }
@@ -3948,7 +4036,11 @@
         checkUpdateBtn.addEventListener("click", () =>
           checkLatestVersion({ autoInstall: true })
         );
-        installUpdateBtn.addEventListener("click", () => installAndReopen());
+        installUpdateBtn.addEventListener("click", () => {
+          const label = installUpdateBtn.textContent || "";
+          const forcePick = /修復缺檔/.test(label);
+          installAndReopen({ forcePick });
+        });
         downloadUpdateBtn.addEventListener("click", () => {
           if (!pendingUpdate || !pendingUpdate.zip) {
             // 修復缺檔時若還沒抓到 zip，改開 Releases

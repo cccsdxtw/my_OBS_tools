@@ -537,6 +537,56 @@
         background: var(--input-bg);
       }
 
+      /* 計數器列：不要用 1fr/auto 兩欄，否則起始／最小會被擠到右側 */
+      .checks .mod-row.ctr-item-row {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+
+      .ctr-item-row .ctr-item-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .ctr-item-row .ctr-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .ctr-item-row .ctr-field {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        margin: 0;
+        font-weight: 500;
+      }
+
+      .ctr-item-row .ctr-field > span {
+        flex: 0 0 auto;
+        color: var(--muted);
+        font-size: 0.82rem;
+        white-space: nowrap;
+      }
+
+      .ctr-item-row .ctr-field > input {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+      }
+
+      .ctr-item-row .ctr-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
       .checks .mod-row > input[type="text"] {
         width: 100%;
       }
@@ -1041,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.18</span>
+          <span class="brand-version" id="brandVersion">v1.3.19</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2742,8 +2792,8 @@
             </div>
             <div id="ctrList" class="checks" style="margin-top: 8px"></div>
             <p class="hint" style="margin-top: 8px">
-              每一列可「複製網址」到 OBS；「重設」把該組改回起始值（含 0）。預設一組「死亡／死」：留言
-              <code>!死</code> 就 +1。右側展示與正式網址分開。
+              「標籤／指令／起始／目前／最小」各有說明。「目前」是正式數字（給 OBS），不跟右側展示。
+              「重設」把目前改回起始（含 0）。預設「死亡／死」：留言 <code>!死</code> 就 +1。
             </p>
             <div class="field">
               <label
@@ -2998,7 +3048,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.18</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.19</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3012,7 +3062,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.18";
+        const APP_VERSION = "v1.3.19";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4310,6 +4360,29 @@
           return `my_obs_tools_counter:${login}|${String(yt).toLowerCase()}|${label}`;
         }
 
+        /** 正式 OBS 數字（不含右側 preview: demo） */
+        function readFormalCounterValue(item) {
+          const fallback = String((item && item.start) || "0");
+          try {
+            const raw = localStorage.getItem(counterStorageKeyFor(item));
+            if (raw == null || raw === "") return fallback;
+            const n = parseInt(raw, 10);
+            return Number.isFinite(n) ? String(n) : fallback;
+          } catch (_) {
+            return fallback;
+          }
+        }
+
+        function writeFormalCounterValue(item, value) {
+          try {
+            const n = parseInt(value, 10);
+            localStorage.setItem(
+              counterStorageKeyFor(item),
+              Number.isFinite(n) ? String(n) : String((item && item.start) || "0")
+            );
+          } catch (_) {}
+        }
+
         function syncCtrPreviewPick() {
           const sel = fields.ctrPreviewPick;
           if (!sel) return;
@@ -4338,20 +4411,35 @@
             const row = document.createElement("div");
             row.className = "mod-row ctr-item-row";
             row.dataset.id = item.id;
-            row.style.flexWrap = "wrap";
             row.innerHTML = `
-              <span class="side-title" style="min-width:2.2em">${idx + 1}.</span>
-              <input data-k="label" type="text" placeholder="標籤（如：死亡）" style="min-width:6em;flex:1" />
-              <input data-k="cmd" type="text" placeholder="指令名（如：死）" style="max-width:7em" title="!死＝+1；也可 !死+2／!死=3；空白則 !+1" />
-              <input data-k="start" type="number" step="1" placeholder="起始" style="max-width:5em" />
-              <input data-k="min" type="number" step="1" placeholder="最小" style="max-width:5em" />
-              <button type="button" class="secondary ctr-copy" title="複製此組 OBS 網址">複製網址</button>
-              <button type="button" class="secondary ctr-reset" title="重設此組數字">重設</button>
-              <button type="button" class="secondary ctr-del" title="刪除">刪</button>
+              <div class="ctr-item-head"><span>${idx + 1}.</span></div>
+              <div class="ctr-fields">
+                <label class="ctr-field"><span>標籤</span>
+                  <input data-k="label" type="text" placeholder="如：死亡" />
+                </label>
+                <label class="ctr-field"><span>指令</span>
+                  <input data-k="cmd" type="text" placeholder="如：死" title="!死＝+1；也可 !死+2／!死=3；空白則 !+1" />
+                </label>
+                <label class="ctr-field"><span>起始</span>
+                  <input data-k="start" type="number" step="1" placeholder="0" />
+                </label>
+                <label class="ctr-field"><span>目前</span>
+                  <input data-k="cur" type="number" step="1" title="正式數字（給 OBS；不跟右側展示）" />
+                </label>
+                <label class="ctr-field"><span>最小</span>
+                  <input data-k="min" type="number" step="1" placeholder="可空白" />
+                </label>
+              </div>
+              <div class="ctr-actions">
+                <button type="button" class="secondary ctr-reset" title="重設此組數字">重設</button>
+                <button type="button" class="secondary ctr-copy" title="複製此組 OBS 網址">複製網址</button>
+                <button type="button" class="secondary ctr-del" title="刪除">刪</button>
+              </div>
             `;
             row.querySelector("[data-k=label]").value = item.label;
             row.querySelector("[data-k=cmd]").value = item.cmd;
             row.querySelector("[data-k=start]").value = item.start;
+            row.querySelector("[data-k=cur]").value = readFormalCounterValue(item);
             row.querySelector("[data-k=min]").value = item.min;
             list.appendChild(row);
           });
@@ -5994,8 +6082,14 @@
         }
         const ctrListEl = $("ctrList");
         if (ctrListEl) {
-          ctrListEl.addEventListener("input", () => {
+          ctrListEl.addEventListener("input", (ev) => {
+            const row = ev.target.closest(".ctr-item-row");
             readCounterItemsFromDom();
+            if (row && ev.target && ev.target.getAttribute("data-k") === "cur") {
+              const id = row.dataset.id;
+              const item = counterItems.find((c) => c.id === id);
+              if (item) writeFormalCounterValue(item, ev.target.value);
+            }
             syncCtrPreviewPick();
             buildUrls();
           });
@@ -6017,9 +6111,9 @@
               return;
             }
             if (ev.target.closest(".ctr-reset") && item) {
-              try {
-                localStorage.setItem(counterStorageKeyFor(item), item.start || "0");
-              } catch (_) {}
+              writeFormalCounterValue(item, item.start || "0");
+              const cur = row.querySelector("[data-k=cur]");
+              if (cur) cur.value = item.start || "0";
               const btn = ev.target.closest(".ctr-reset");
               const old = btn.textContent;
               btn.textContent = "已重設";

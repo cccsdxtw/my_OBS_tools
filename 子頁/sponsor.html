@@ -1239,10 +1239,47 @@
         renderFeed();
         refreshStatus();
         if (demo) {
-          // 預覽只顯示空進度，不自動灌示範資料、不寫正式進度
+          // 僅入口 iframe 展示用：可自動跳，但不寫正式進度
+          function startDemo() {
+            const a = funds[0]?.name || "基金A";
+            const b = funds[1]?.name || funds[0]?.name || "基金B";
+            const samples = [
+              () =>
+                addTwBits("NightOwl", 100, `${a} 加油`, Date.now(), `demo:tw:1:${Date.now()}`),
+              () =>
+                addYtSuper(
+                  "貓奴",
+                  "NT$50",
+                  50e6,
+                  "TWD",
+                  `${b} 超留`,
+                  Date.now(),
+                  `demo:yt:1:${Date.now()}`
+                ),
+              () =>
+                addTwBits("Tea", 500, `Cheer500 ${b}`, Date.now(), `demo:tw:2:${Date.now()}`),
+              () =>
+                addYtSuper(
+                  "小白",
+                  "NT$100",
+                  100e6,
+                  "TWD",
+                  `${a} 晚上好`,
+                  Date.now(),
+                  `demo:yt:2:${Date.now()}`
+                ),
+            ];
+            samples.forEach((fn, i) => setTimeout(fn, 400 + i * 900));
+            let i = 0;
+            setInterval(() => {
+              samples[i % samples.length]();
+              i += 1;
+            }, 3200);
+          }
           els.status.hidden = false;
           els.status.textContent =
-            "預覽 · 不自動跳、不寫正式進度 · OBS 請用入口「複製網址」（不要帶 demo）";
+            "展示 DEMO（不寫正式）· OBS 請用入口「複製／預覽」正式網址";
+          startDemo();
         } else {
           connectTwitch();
           pollYoutube();

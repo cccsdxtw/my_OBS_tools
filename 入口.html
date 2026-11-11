@@ -1041,7 +1041,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.15</span>
+          <span class="brand-version" id="brandVersion">v1.3.16</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2636,8 +2636,7 @@
               <a class="btn secondary" id="openSp" href="#" target="_blank" rel="noopener">預覽</a>
             </div>
             <p class="hint">
-              右側預覽靜態示範（不自動跳、不寫正式）。OBS 請按「複製贊助條網址」；網址裡<strong>不要</strong>有
-              <code>demo=1</code>。
+              框內展示會跳動（示範）。「複製」「預覽」兩個按鈕都是<strong>正式網址</strong>（不會自己跳），可安心複製到 OBS。
             </p>
             <div class="preview-wrap" style="min-height: 100px">
               <iframe id="previewSp" title="sponsor preview" style="height: 100px"></iframe>
@@ -2802,8 +2801,8 @@
             <select id="ctrPreviewPick" style="margin-bottom: 8px"></select>
             <textarea id="ctrUrl" class="url-box" readonly></textarea>
             <p class="hint">
-              建議寬度 200–360、高度 50–80。右側預覽靜態示範（不自動跳）。OBS 請「複製此組網址」；若網址有
-              <code>demo=1</code> 就是預覽用，會自己跳的舊版請換掉。
+              建議寬度 200–360、高度 50–80。框內展示會跳；「複製」「預覽」都是正式網址（不帶
+              demo），可安心給 OBS。
             </p>
             <div class="actions">
               <button type="button" id="copyCtr">複製此組網址</button>
@@ -2999,7 +2998,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.15</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.16</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3013,7 +3012,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.15";
+        const APP_VERSION = "v1.3.16";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3132,17 +3131,57 @@
           return false;
         }
 
-        async function pickInstallDir() {
-          let handle = await loadDirHandle();
-          if (handle) {
-            try {
-              if (await ensureDirPermission(handle, "readwrite")) return handle;
-            } catch (_) {}
+        async function clearDirHandle() {
+          try {
+            const db = await openDirDb();
+            await new Promise((resolve, reject) => {
+              const tx = db.transaction(dirHandleStore, "readwrite");
+              tx.objectStore(dirHandleStore).delete(dirHandleKey);
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => reject(tx.error || new Error("idb"));
+            });
+            db.close();
+          } catch (_) {}
+        }
+
+        async function dirHasEntryHtml(handle) {
+          try {
+            await handle.getFileHandle("入口.html");
+            return true;
+          } catch (_) {
+            return false;
           }
-          handle = await window.showDirectoryPicker({
+        }
+
+        async function pickInstallDir(opts = {}) {
+          const force = !!(opts && opts.force);
+          if (force) await clearDirHandle();
+          if (!force) {
+            const saved = await loadDirHandle();
+            if (saved) {
+              try {
+                if (
+                  (await ensureDirPermission(saved, "readwrite")) &&
+                  (await dirHasEntryHtml(saved))
+                ) {
+                  return saved;
+                }
+                // 權限沒了或資料夾不對 → 清掉，下面重選
+                await clearDirHandle();
+              } catch (_) {
+                await clearDirHandle();
+              }
+            }
+          }
+          const handle = await window.showDirectoryPicker({
             id: "my-obs-tools-install",
             mode: "readwrite",
           });
+          if (!(await dirHasEntryHtml(handle))) {
+            throw new Error(
+              "請選「裡面直接有 入口.html」的那層（不要選 Desktop／外層）"
+            );
+          }
           await saveDirHandle(handle);
           return handle;
         }
@@ -3653,28 +3692,23 @@
           installUpdateBtn.hidden = false;
           installUpdateBtn.disabled = true;
           installUpdateBtn.textContent = "覆蓋中…";
-          renderVersionStatus(
-            `正在覆蓋安裝 ${tag}…（請選有「入口.html」的那層資料夾）`,
-            "warn"
-          );
+          renderVersionStatus(`正在覆蓋安裝 ${tag}…`, "warn");
           try {
-            // 修復時強制重選，避免寫到舊的錯誤資料夾 handle
-            if (opts.forcePick) {
-              try {
-                localStorage.removeItem(dirHandleKey);
-              } catch (_) {}
-              try {
-                const db = await openDirDb();
-                await new Promise((resolve, reject) => {
-                  const tx = db.transaction(dirHandleStore, "readwrite");
-                  tx.objectStore(dirHandleStore).delete(dirHandleKey);
-                  tx.oncomplete = () => resolve();
-                  tx.onerror = () => reject(tx.error || new Error("idb"));
-                });
-              } catch (_) {}
+            // 優先重用已記住的正確資料夾；只有 force 或失敗時才重選
+            let dir = await pickInstallDir({ force: !!opts.forcePick });
+            try {
+              await writeUpdateFiles(dir, tag);
+            } catch (err) {
+              const msg = String((err && err.message) || "");
+              if (/入口\.html|選對資料夾|選「裡面/.test(msg)) {
+                await clearDirHandle();
+                renderVersionStatus("資料夾不對，請再選一次（要有 入口.html 的那層）…", "warn");
+                dir = await pickInstallDir({ force: true });
+                await writeUpdateFiles(dir, tag);
+              } else {
+                throw err;
+              }
             }
-            const dir = await pickInstallDir();
-            await writeUpdateFiles(dir, tag);
             try {
               sessionStorage.setItem("my_obs_tools_files_ok", APP_VERSION);
             } catch (_) {}
@@ -4050,9 +4084,8 @@
           checkLatestVersion({ autoInstall: true })
         );
         installUpdateBtn.addEventListener("click", () => {
-          const label = installUpdateBtn.textContent || "";
-          const forcePick = /修復缺檔/.test(label);
-          installAndReopen({ forcePick });
+          // 不每次強制重選；有記住且正確的資料夾就直接覆蓋
+          installAndReopen({});
         });
         downloadUpdateBtn.addEventListener("click", () => {
           if (!pendingUpdate || !pendingUpdate.zip) {
@@ -5844,7 +5877,8 @@
           const spHref = buildSponsorUrl();
           const spDemoHref = buildSponsorUrl({ demo: true });
           $("spUrl").value = spHref;
-          $("openSp").href = spDemoHref;
+          // 「預覽」「複製」都用正式網址，避免開新分頁後從網址列複製到 demo
+          $("openSp").href = spHref;
           $("previewSp").src = spDemoHref;
 
           readCounterItemsFromDom();
@@ -5853,7 +5887,7 @@
           const ctrHref = buildCounterUrl({ item: ctrItem });
           const ctrDemoHref = buildCounterUrl({ item: ctrItem, demo: true });
           $("ctrUrl").value = ctrHref;
-          $("openCtr").href = ctrDemoHref;
+          $("openCtr").href = ctrHref;
           $("previewCtr").src = ctrDemoHref;
 
           localStorage.setItem(

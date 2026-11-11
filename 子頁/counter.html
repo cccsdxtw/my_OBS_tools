@@ -302,18 +302,33 @@
           setCount(n, true);
         }
 
-        /** 留言整句是 +N／-N／=N（全形也可） */
+        // roles=owner,hammer,sword,vip,sub（槌子／劍都當成 MOD）
+        const allowRoles = (() => {
+          const raw = (params.get("roles") || params.get("allow") || "").trim().toLowerCase();
+          const set = new Set(
+            raw
+              ? raw.split(/[,|]+/).map((s) => s.trim()).filter(Boolean)
+              : ["owner", "hammer", "sword"]
+          );
+          const allowMod = set.has("hammer") || set.has("sword") || set.has("mod") || set.has("moderator");
+          return {
+            owner: set.has("owner") || set.has("broadcaster") || set.has("host"),
+            mod: allowMod,
+            vip: set.has("vip"),
+            sub: set.has("sub") || set.has("subscriber") || set.has("fan") || set.has("粉絲"),
+          };
+        })();
+
+        /** 留言整句是 !+N／!-N／!=N（前綴 ! 避免誤觸；全形也可） */
         function parseCounterCommand(text) {
-          const raw = String(text || "")
-            .trim()
-            .replace(/［/g, "[")
-            .replace(/］/g, "]");
+          const raw = String(text || "").trim();
           const normalized = raw
+            .replace(/！/g, "!")
             .replace(/＋/g, "+")
             .replace(/－/g, "-")
             .replace(/—|–/g, "-")
             .replace(/＝/g, "=");
-          const m = normalized.match(/^([+\-=])(\d{1,7})$/);
+          const m = normalized.match(/^!([+\-=])(\d{1,7})$/);
           if (!m) return null;
           const op = m[1];
           const n = parseInt(m[2], 10);
@@ -321,22 +336,36 @@
           return { op, n };
         }
 
+        function badgeHas(badges, name) {
+          return new RegExp(`(^|,)${name}/`).test(String(badges || ""));
+        }
+
         function isTwPrivileged(tags, nick) {
           const badges = String(tags.badges || "");
-          if (/(^|,)broadcaster\//.test(badges)) return true;
-          if (/(^|,)moderator\//.test(badges)) return true;
-          if (tags.mod === "1") return true;
-          if (String(tags["user-type"] || "").toLowerCase() === "mod") return true;
           const login = String(tags.login || nick || "")
             .trim()
             .toLowerCase();
-          if (login && twitchLogin && login === twitchLogin) return true;
+          if (allowRoles.owner) {
+            if (badgeHas(badges, "broadcaster")) return true;
+            if (login && twitchLogin && login === twitchLogin) return true;
+          }
+          if (allowRoles.mod) {
+            if (badgeHas(badges, "moderator")) return true;
+            if (tags.mod === "1") return true;
+            if (String(tags["user-type"] || "").toLowerCase() === "mod") return true;
+          }
+          if (allowRoles.vip && badgeHas(badges, "vip")) return true;
+          if (allowRoles.sub && badgeHas(badges, "subscriber")) return true;
           return false;
         }
 
         function isYtPrivileged(author) {
           if (!author) return false;
-          return !!(author.isChatOwner || author.isChatModerator);
+          if (allowRoles.owner && author.isChatOwner) return true;
+          if (allowRoles.mod && author.isChatModerator) return true;
+          // YT 沒有 VIP；粉絲勾選時允許會員（會員徽章）
+          if (allowRoles.sub && author.isChatSponsor) return true;
+          return false;
         }
 
         function handleCommand(cmd) {
@@ -394,7 +423,14 @@
           if (wantTw) parts.push(connected.tw ? "TW✓" : "TW…");
           if (wantYt) parts.push(connected.yt ? "YT✓" : "YT…");
           if (demo) parts.push("DEMO");
-          parts.push("僅 MOD／台主：+N　=N");
+          const roleBits = [];
+          if (allowRoles.owner) roleBits.push("台主");
+          if (allowRoles.mod) roleBits.push("MOD");
+          if (allowRoles.vip) roleBits.push("VIP");
+          if (allowRoles.sub) roleBits.push("粉絲");
+          parts.push(
+            (roleBits.length ? roleBits.join("/") : "無權限") + "：!+N　!=N"
+          );
           els.status.textContent = parts.join(" · ");
         }
 

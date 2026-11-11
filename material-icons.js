@@ -189,7 +189,8 @@
   }
 
   /**
-   * 掛 Material 圖示；file://／缺 glyph 時改 SVG（若有路徑）
+   * 掛 Material 圖示。
+   * 讀不到／缺 glyph：改 SVG（若有）；連 SVG 也沒有就留空，絕不露出英文名文字。
    * @returns {Promise<'google'|'cache'|'local'|'svg'|'hidden'>}
    */
   async function mountIcon(slot, rawName, opts = {}) {
@@ -201,9 +202,8 @@
     }
     injectCss(localFontFaceCss(), "ms-symbols-local");
 
-    // 已知預設：直接 SVG 最穩（OBS／本機開檔常見）
-    const preferSvg = opts.preferSvg !== false && !!SVG_PATHS[name];
-    if (preferSvg && opts.forceSvg) {
+    // 已知預設：直接 SVG（OBS／file:// 最穩），不算「補文字」
+    if (opts.forceSvg && SVG_PATHS[name]) {
       mountSvgIcon(slot, name, opts.svgClass);
       return "svg";
     }
@@ -213,7 +213,7 @@
     span.className = opts.spanClass || "material-symbols-outlined icon";
     span.setAttribute("aria-hidden", "true");
     span.textContent = name;
-    // 先藏起來，避免缺字時文字閃一下叠在數字上
+    // 成功前保持隱藏，避免缺字時把 icon 名稱叠上去
     span.style.visibility = "hidden";
     slot.appendChild(span);
 
@@ -231,17 +231,17 @@
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const broken = ligatureLooksBroken(span) || source === "local";
-    if (broken && SVG_PATHS[name]) {
+    if (!broken) {
+      span.style.visibility = "";
+      return source;
+    }
+    if (SVG_PATHS[name]) {
       mountSvgIcon(slot, name, opts.svgClass);
       return "svg";
     }
-    span.style.visibility = "";
-    if (broken) {
-      // 沒有 SVG 後備：乾脆隱藏，別露出英文名
-      slot.innerHTML = "";
-      return "hidden";
-    }
-    return source;
+    // 讀不到就留空，不補文字
+    slot.innerHTML = "";
+    return "hidden";
   }
 
   window.MyObsMaterialIcons = {

@@ -264,11 +264,8 @@
               svgClass: "ms-svg-icon icon",
             });
           } else {
-            const span = document.createElement("span");
-            span.className = "material-symbols-outlined icon";
-            span.setAttribute("aria-hidden", "true");
-            span.textContent = name;
-            holder.appendChild(span);
+            // 沒有圖示腳本就留空，不露出英文名
+            holder.innerHTML = "";
           }
           return name;
         }

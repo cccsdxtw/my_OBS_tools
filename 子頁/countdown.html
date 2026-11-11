@@ -197,11 +197,8 @@
             img.referrerPolicy = "no-referrer";
             img.src = cdIconRaw;
             img.onerror = () => {
-              if (window.MyObsMaterialIcons) {
-                window.MyObsMaterialIcons.mountIcon(slot, "hourglass_empty", {
-                  forceSvg: true,
-                });
-              }
+              // 圖片讀不到就留空，不補文字／預設圖
+              slot.innerHTML = "";
             };
             slot.appendChild(img);
           } else if (window.MyObsMaterialIcons) {

@@ -231,10 +231,13 @@
           slot.appendChild(svg);
         }
 
-        function iconLooksEmpty(el) {
+        function iconLooksBroken(el) {
           try {
             const r = el.getBoundingClientRect();
-            return !r.width || r.width < 2 || !r.height || r.height < 2;
+            if (!r.height || r.height < 2 || !r.width || r.width < 2) return true;
+            // 露出英文名會明顯變寬
+            if (r.width > r.height * 1.65) return true;
+            return false;
           } catch (_) {
             return true;
           }
@@ -242,9 +245,16 @@
 
         async function mountMaterialIcon(slot, rawName) {
           const name = normalizeMsName(rawName) || "sports_esports";
-          // 預設手把：直接 SVG，避免 file://／OBS／精簡字型缺 glyph 時空白
+          // 預設手把：直接 SVG
           if (name === "sports_esports") {
             mountDefaultSvgIcon(slot);
+            return;
+          }
+          if (ms && ms.mountIcon) {
+            await ms.mountIcon(slot, name, {
+              spanClass: "material-symbols-outlined icon",
+              svgClass: "svg-icon",
+            });
             return;
           }
           slot.innerHTML = "";
@@ -252,8 +262,8 @@
           span.className = "material-symbols-outlined icon";
           span.setAttribute("aria-hidden", "true");
           span.textContent = name;
+          span.style.visibility = "hidden";
           slot.appendChild(span);
-          // Google Fonts 優先 → 快取 → 內建 fonts/；量不到寬度就當失敗
           let source = "local";
           if (ms && ms.ensureMaterialSymbols) {
             source = await ms.ensureMaterialSymbols([name]);
@@ -263,11 +273,12 @@
               await document.fonts.load(`500 24px "Material Symbols Outlined"`);
             } catch (_) {}
           }
-          // 等一幀再量，給 ligature 字形時間
           await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-          if (iconLooksEmpty(span) || source === "local") {
-            // 本機精簡字型通常沒有完整圖示；量不到就退回手把 SVG
-            mountDefaultSvgIcon(slot);
+          if (iconLooksBroken(span) || source === "local") {
+            // 讀不到就留空，不補英文名
+            slot.innerHTML = "";
+          } else {
+            span.style.visibility = "";
           }
         }
 
@@ -295,7 +306,10 @@
             img.alt = "";
             img.referrerPolicy = "no-referrer";
             img.src = iconRaw;
-            img.onerror = () => mountDefaultSvgIcon(iconSlot);
+            img.onerror = () => {
+              // 圖片讀不到就留空，不補文字／預設圖
+              iconSlot.innerHTML = "";
+            };
             iconSlot.appendChild(img);
           } else {
             mountMaterialIcon(iconSlot, iconRaw);

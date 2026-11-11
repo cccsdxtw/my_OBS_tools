@@ -206,11 +206,8 @@
             img.referrerPolicy = "no-referrer";
             img.src = iconRaw;
             img.onerror = () => {
-              if (window.MyObsMaterialIcons) {
-                window.MyObsMaterialIcons.mountIcon(els.icon, "event_upcoming", {
-                  forceSvg: true,
-                });
-              }
+              // 圖片讀不到就留空，不補文字／預設圖
+              els.icon.innerHTML = "";
             };
             els.icon.appendChild(img);
           } else if (window.MyObsMaterialIcons) {

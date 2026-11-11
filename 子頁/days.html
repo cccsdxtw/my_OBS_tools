@@ -11,6 +11,7 @@
       rel="stylesheet"
     />
     <script src="../material-icons.js"></script>
+    <script src="../panel-bg.js"></script>
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -46,8 +47,12 @@
         justify-content: flex-start;
         gap: var(--gap);
         height: var(--bar-h);
-        padding: 0 var(--pad-x);
-        background: var(--bg);
+        padding: var(--panel-inset, 0 var(--pad-x));
+        background-color: var(--bg);
+        background-image: var(--panel-img, none);
+        background-size: var(--panel-fit, 100% 100%);
+        background-repeat: no-repeat;
+        background-position: center;
         border-radius: var(--radius);
         white-space: nowrap;
         line-height: 1;
@@ -145,6 +150,9 @@
           cssVar("--bg", "transparent");
         } else {
           cssVar("--bg", bgParam);
+        }
+        if (window.ObsPanelBg) {
+          ObsPanelBg.applyOverlayPanelBg(params, cssVar, { defaultInset: 12 });
         }
         cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
         cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");

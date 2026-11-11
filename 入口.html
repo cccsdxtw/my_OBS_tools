@@ -1035,8 +1035,59 @@
               <div></div>
             </div>
             <p class="hint">
-              各橫列字級／文字色／圖示色沒填時，會用這裡的預設。圖示色空白＝跟文字色（跟 Google Icons 預覽一樣用 CSS 上色）。
+              這裡是各窗共用的預設樣式：字級／文字色／圖示色／底色／底圖。各橫列沒填（或底圖選「用預設」）就沿用這裡。圖示色空白＝跟文字色。
             </p>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="defaultShowBg" checked /> 預設顯示底色</label
+                >
+              </div>
+              <div>
+                <label for="defaultBg">預設底色</label>
+                <input id="defaultBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="defaultShowPanelImg" /> 預設底圖</label
+                >
+              </div>
+              <div>
+                <label for="defaultPanelFit">預設底圖顯示</label>
+                <select id="defaultPanelFit">
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="defaultPanelImgRow">
+              <div>
+                <label for="defaultPanelImg">預設底圖網址</label>
+                <input
+                  id="defaultPanelImg"
+                  type="text"
+                  placeholder="可貼 圖片/xxx.png 或網址；各窗空白時沿用"
+                />
+              </div>
+              <div>
+                <label for="defaultPanelInset">預設外推（px）</label>
+                <input
+                  id="defaultPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  value="12"
+                  placeholder="12 或 8 12"
+                />
+              </div>
+            </div>
+            <p class="hint">
+              各窗勾了「顯示底圖」但網址空白＝用這裡的預設底圖；顯示方式／外推選「用預設」或空白也一樣。
+            </p>
+
 
             <div class="steps" id="yt-key-guide">
               <h3>YT API Key 怎麼申請（一次即可）</h3>
@@ -1261,7 +1312,44 @@
                 <input id="overlayBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
-            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。</p>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="overlayShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="overlayPanelFit">底圖顯示</label>
+                <select id="overlayPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="overlayPanelImgRow">
+              <div>
+                <label for="overlayPanelImg">底圖網址</label>
+                <input
+                  id="overlayPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="overlayPanelInset">外推（px）</label>
+                <input
+                  id="overlayPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
+            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。底圖空白＝用最上方預設底圖。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -1357,6 +1445,43 @@
                 <input id="viewersBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="viewersShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="viewersPanelFit">底圖顯示</label>
+                <select id="viewersPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="viewersPanelImgRow">
+              <div>
+                <label for="viewersPanelImg">底圖網址</label>
+                <input
+                  id="viewersPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="viewersPanelInset">外推（px）</label>
+                <input
+                  id="viewersPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
             <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
           </section>
 
@@ -1455,6 +1580,43 @@
                 <input id="countdownBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="countdownShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="countdownPanelFit">底圖顯示</label>
+                <select id="countdownPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="countdownPanelImgRow">
+              <div>
+                <label for="countdownPanelImg">底圖網址</label>
+                <input
+                  id="countdownPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="countdownPanelInset">外推（px）</label>
+                <input
+                  id="countdownPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
             <p class="hint">目標時間與「從現在起」擇一。字級／文字色空白＝用最上方預設。</p>
           </section>
 
@@ -1552,6 +1714,43 @@
                 <input id="daysBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="daysShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="daysPanelFit">底圖顯示</label>
+                <select id="daysPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="daysPanelImgRow">
+              <div>
+                <label for="daysPanelImg">底圖網址</label>
+                <input
+                  id="daysPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="daysPanelInset">外推（px）</label>
+                <input
+                  id="daysPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -1674,6 +1873,43 @@
                 <input id="gameBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="gameShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="gamePanelFit">底圖顯示</label>
+                <select id="gamePanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="gamePanelImgRow">
+              <div>
+                <label for="gamePanelImg">底圖網址</label>
+                <input
+                  id="gamePanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="gamePanelInset">外推（px）</label>
+                <input
+                  id="gamePanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
             <p class="hint">字級／文字色／圖示色空白＝用最上方預設。</p>
           </section>
 
@@ -1858,8 +2094,7 @@
                   id="chatPanelInset"
                   type="text"
                   inputmode="numeric"
-                  value="16"
-                  placeholder="16 或 12 16"
+                  placeholder="用預設"
                   title="內容往內縮，避開底圖周圍裝飾"
                 />
               </div>
@@ -1870,12 +2105,13 @@
                 <input
                   id="chatPanelImg"
                   type="text"
-                  placeholder="空白＝不用圖；可貼 圖片/xxx.png 或網址"
+                  placeholder="空白＝用上方預設底圖"
                 />
               </div>
               <div>
                 <label for="chatPanelFit">底圖顯示</label>
                 <select id="chatPanelFit">
+                  <option value="">用預設</option>
                   <option value="stretch">拉伸填滿</option>
                   <option value="contain">完整顯示</option>
                   <option value="cover">裁切填滿</option>
@@ -1932,8 +2168,7 @@
               <div></div>
             </div>
             <p class="hint">
-              底圖／單則底：勾選後才套用。外推＝內容內縮像素，避開圖框周圍裝飾（例如
-              <code>12 16</code>）。顯示方式：拉伸＝拉滿框；完整顯示＝整張都看得到（單則會依圖比例長高）；裁切＝填滿但可能切邊。
+              底圖／單則底：勾選後才套用。留言區底圖網址／顯示／外推空白＝用最上方預設。單則完整顯示會依圖比例長高。
             </p>
 
             <div class="field" style="align-items: flex-start">
@@ -2239,6 +2474,43 @@
                 <input id="spBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="spShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="spPanelFit">底圖顯示</label>
+                <select id="spPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="spPanelImgRow">
+              <div>
+                <label for="spPanelImg">底圖網址</label>
+                <input
+                  id="spPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="spPanelInset">外推（px）</label>
+                <input
+                  id="spPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -3262,20 +3534,38 @@
           defaultFontSize: $("defaultFontSize"),
           defaultColor: $("defaultColor"),
           defaultIconColor: $("defaultIconColor"),
+          defaultShowBg: $("defaultShowBg"),
+          defaultBg: $("defaultBg"),
+          defaultShowPanelImg: $("defaultShowPanelImg"),
+          defaultPanelImg: $("defaultPanelImg"),
+          defaultPanelFit: $("defaultPanelFit"),
+          defaultPanelInset: $("defaultPanelInset"),
           overlayFontSize: $("overlayFontSize"),
           overlayColor: $("overlayColor"),
           overlayIconColor: $("overlayIconColor"),
           overlayShowBg: $("overlayShowBg"),
           overlayBg: $("overlayBg"),
+          overlayShowPanelImg: $("overlayShowPanelImg"),
+          overlayPanelImg: $("overlayPanelImg"),
+          overlayPanelFit: $("overlayPanelFit"),
+          overlayPanelInset: $("overlayPanelInset"),
           viewersFontSize: $("viewersFontSize"),
           viewersColor: $("viewersColor"),
           viewersShowBg: $("viewersShowBg"),
           viewersBg: $("viewersBg"),
+          viewersShowPanelImg: $("viewersShowPanelImg"),
+          viewersPanelImg: $("viewersPanelImg"),
+          viewersPanelFit: $("viewersPanelFit"),
+          viewersPanelInset: $("viewersPanelInset"),
           countdownFontSize: $("countdownFontSize"),
           countdownColor: $("countdownColor"),
           countdownIconColor: $("countdownIconColor"),
           countdownShowBg: $("countdownShowBg"),
           countdownBg: $("countdownBg"),
+          countdownShowPanelImg: $("countdownShowPanelImg"),
+          countdownPanelImg: $("countdownPanelImg"),
+          countdownPanelFit: $("countdownPanelFit"),
+          countdownPanelInset: $("countdownPanelInset"),
           daysDate: $("daysDate"),
           daysLabel: $("daysLabel"),
           daysUnit: $("daysUnit"),
@@ -3286,6 +3576,10 @@
           daysColor: $("daysColor"),
           daysShowBg: $("daysShowBg"),
           daysBg: $("daysBg"),
+          daysShowPanelImg: $("daysShowPanelImg"),
+          daysPanelImg: $("daysPanelImg"),
+          daysPanelFit: $("daysPanelFit"),
+          daysPanelInset: $("daysPanelInset"),
           gameLabel: $("gameLabel"),
           gamePlatform: $("gamePlatform"),
           gameName: $("gameName"),
@@ -3296,6 +3590,10 @@
           gameColor: $("gameColor"),
           gameShowBg: $("gameShowBg"),
           gameBg: $("gameBg"),
+          gameShowPanelImg: $("gameShowPanelImg"),
+          gamePanelImg: $("gamePanelImg"),
+          gamePanelFit: $("gamePanelFit"),
+          gamePanelInset: $("gamePanelInset"),
           chatExtraTw: $("chatExtraTw"),
           chatExtraYt: $("chatExtraYt"),
           chatExtraYtVideo: $("chatExtraYtVideo"),
@@ -3349,6 +3647,10 @@
           spHideStatus: $("spHideStatus"),
           spShowBg: $("spShowBg"),
           spBg: $("spBg"),
+          spShowPanelImg: $("spShowPanelImg"),
+          spPanelImg: $("spPanelImg"),
+          spPanelFit: $("spPanelFit"),
+          spPanelInset: $("spPanelInset"),
         };
 
         /** @type {Array<{id:string,name:string,goal:string,keywords:string}>} */
@@ -3668,10 +3970,100 @@
             if (iconColor) p.set("iconColor", iconColor);
           }
           if (showBgEl.checked) {
-            p.set("bg", bgEl.value.trim() || "rgba(0,0,0,0.45)");
+            const bg =
+              bgEl.value.trim() ||
+              (fields.defaultBg && fields.defaultBg.value.trim()) ||
+              "rgba(0,0,0,0.45)";
+            p.set("bg", bg);
           } else {
             p.set("bg", "0");
           }
+        }
+
+        /** 各窗底圖：勾選後，網址／顯示／外推空白則用最上方預設 */
+        function applyPanelImageParams(p, showEl, imgEl, fitEl, insetEl) {
+          if (!showEl || !showEl.checked) return;
+          const localImg = (imgEl && imgEl.value ? imgEl.value : "").trim();
+          const defImg =
+            fields.defaultShowPanelImg && fields.defaultShowPanelImg.checked
+              ? (fields.defaultPanelImg.value || "").trim()
+              : "";
+          const img = localImg || defImg;
+          if (!img) return;
+          p.set("panelImg", resolveAssetUrl(img));
+          const fit = (
+            (fitEl && fitEl.value ? fitEl.value : "").trim() ||
+            (fields.defaultPanelFit.value || "").trim() ||
+            "stretch"
+          );
+          if (fit && fit !== "stretch") p.set("panelFit", fit);
+          const insetRaw =
+            (insetEl && insetEl.value ? insetEl.value : "").trim() ||
+            (fields.defaultPanelInset.value || "").trim();
+          const inset = normalizeInsetParam(insetRaw);
+          if (inset) p.set("panelInset", inset);
+        }
+
+        function syncPanelImgRow(showEl, rowId, imgEl, fitEl, insetEl) {
+          const on = !!(showEl && showEl.checked);
+          const row = rowId ? $(rowId) : null;
+          if (row) row.style.opacity = on ? "1" : "0.45";
+          if (imgEl) imgEl.disabled = !on;
+          if (fitEl) fitEl.disabled = !on;
+          if (insetEl) insetEl.disabled = !on;
+        }
+
+        function syncAllPanelImgRows() {
+          syncPanelImgRow(
+            fields.defaultShowPanelImg,
+            "defaultPanelImgRow",
+            fields.defaultPanelImg,
+            fields.defaultPanelFit,
+            fields.defaultPanelInset
+          );
+          syncPanelImgRow(
+            fields.overlayShowPanelImg,
+            "overlayPanelImgRow",
+            fields.overlayPanelImg,
+            fields.overlayPanelFit,
+            fields.overlayPanelInset
+          );
+          syncPanelImgRow(
+            fields.viewersShowPanelImg,
+            "viewersPanelImgRow",
+            fields.viewersPanelImg,
+            fields.viewersPanelFit,
+            fields.viewersPanelInset
+          );
+          syncPanelImgRow(
+            fields.countdownShowPanelImg,
+            "countdownPanelImgRow",
+            fields.countdownPanelImg,
+            fields.countdownPanelFit,
+            fields.countdownPanelInset
+          );
+          syncPanelImgRow(
+            fields.daysShowPanelImg,
+            "daysPanelImgRow",
+            fields.daysPanelImg,
+            fields.daysPanelFit,
+            fields.daysPanelInset
+          );
+          syncPanelImgRow(
+            fields.gameShowPanelImg,
+            "gamePanelImgRow",
+            fields.gamePanelImg,
+            fields.gamePanelFit,
+            fields.gamePanelInset
+          );
+          syncPanelImgRow(
+            fields.spShowPanelImg,
+            "spPanelImgRow",
+            fields.spPanelImg,
+            fields.spPanelFit,
+            fields.spPanelInset
+          );
+          // chat 既有 syncChatBgRows 會處理
         }
 
         function syncStylePlaceholders() {
@@ -3762,6 +4154,9 @@
         }
 
         function syncAllBgFields() {
+          if (fields.defaultShowBg && fields.defaultBg) {
+            syncBgField(fields.defaultShowBg, fields.defaultBg);
+          }
           syncBgField(fields.overlayShowBg, fields.overlayBg);
           syncBgField(fields.viewersShowBg, fields.viewersBg);
           syncBgField(fields.countdownShowBg, fields.countdownBg);
@@ -3769,6 +4164,7 @@
           syncBgField(fields.gameShowBg, fields.gameBg);
           syncBgField(fields.chatShowBg, fields.chatBg);
           syncBgField(fields.spShowBg, fields.spBg);
+          syncAllPanelImgRows();
         }
 
         const GAME_HISTORY_KEY = "my_obs_tools_game_history";
@@ -4178,6 +4574,13 @@
             fields.overlayColor,
             fields.overlayIconColor
           );
+          applyPanelImageParams(
+            p,
+            fields.overlayShowPanelImg,
+            fields.overlayPanelImg,
+            fields.overlayPanelFit,
+            fields.overlayPanelInset
+          );
           return { href: url.toString(), mods, moduleOrder };
         }
 
@@ -4202,6 +4605,13 @@
             fields.countdownFontSize,
             fields.countdownColor,
             fields.countdownIconColor
+          );
+          applyPanelImageParams(
+            p,
+            fields.countdownShowPanelImg,
+            fields.countdownPanelImg,
+            fields.countdownPanelFit,
+            fields.countdownPanelInset
           );
           return url.toString();
         }
@@ -4230,6 +4640,13 @@
             fields.daysFontSize,
             fields.daysColor,
             fields.daysIconColor
+          );
+          applyPanelImageParams(
+            p,
+            fields.daysShowPanelImg,
+            fields.daysPanelImg,
+            fields.daysPanelFit,
+            fields.daysPanelInset
           );
           return url.toString();
         }
@@ -4263,6 +4680,13 @@
             fields.viewersFontSize,
             fields.viewersColor
           );
+          applyPanelImageParams(
+            p,
+            fields.viewersShowPanelImg,
+            fields.viewersPanelImg,
+            fields.viewersPanelFit,
+            fields.viewersPanelInset
+          );
           return url.toString();
         }
 
@@ -4284,6 +4708,13 @@
             fields.gameFontSize,
             fields.gameColor,
             fields.gameIconColor
+          );
+          applyPanelImageParams(
+            p,
+            fields.gameShowPanelImg,
+            fields.gamePanelImg,
+            fields.gamePanelFit,
+            fields.gamePanelInset
           );
           return url.toString();
         }
@@ -4356,14 +4787,13 @@
             if (ytColor) p.set("ytColor", ytColor);
           }
           if (fields.chatHideStatus.checked) p.set("hideStatus", "1");
-          if (fields.chatShowPanelImg.checked) {
-            const panelImg = fields.chatPanelImg.value.trim();
-            if (panelImg) p.set("panelImg", resolveAssetUrl(panelImg));
-            const panelInset = normalizeInsetParam(fields.chatPanelInset.value);
-            if (panelInset) p.set("panelInset", panelInset);
-            const panelFit = (fields.chatPanelFit.value || "stretch").trim();
-            if (panelFit && panelFit !== "stretch") p.set("panelFit", panelFit);
-          }
+          applyPanelImageParams(
+            p,
+            fields.chatShowPanelImg,
+            fields.chatPanelImg,
+            fields.chatPanelFit,
+            fields.chatPanelInset
+          );
           if (fields.chatShowMsgBg.checked) {
             const msgImg = fields.chatMsgImg.value.trim();
             if (msgImg) p.set("msgImg", resolveAssetUrl(msgImg));
@@ -4535,6 +4965,13 @@
           if (fields.spHideStatus.checked) p.set("hideStatus", "1");
           if (opts.demo) p.set("demo", "1");
           styleParams(p, fields.spShowBg, fields.spBg, fields.spFontSize, fields.spColor);
+          applyPanelImageParams(
+            p,
+            fields.spShowPanelImg,
+            fields.spPanelImg,
+            fields.spPanelFit,
+            fields.spPanelInset
+          );
           return url.toString();
         }
 
@@ -4799,13 +5236,22 @@
         Object.values(fields).forEach((el) => {
           el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
             if (
+              el === fields.defaultShowBg ||
+              el === fields.defaultShowPanelImg ||
               el === fields.overlayShowBg ||
+              el === fields.overlayShowPanelImg ||
               el === fields.viewersShowBg ||
+              el === fields.viewersShowPanelImg ||
               el === fields.countdownShowBg ||
+              el === fields.countdownShowPanelImg ||
               el === fields.daysShowBg ||
+              el === fields.daysShowPanelImg ||
               el === fields.gameShowBg ||
+              el === fields.gameShowPanelImg ||
               el === fields.chatShowBg ||
-              el === fields.spShowBg
+              el === fields.chatShowPanelImg ||
+              el === fields.spShowBg ||
+              el === fields.spShowPanelImg
             ) {
               syncAllBgFields();
             }

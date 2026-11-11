@@ -299,6 +299,15 @@
         display: none;
       }
 
+      .preview-wrap + .subfold {
+        margin-top: 12px;
+      }
+
+      aside.card > .subfold {
+        margin-top: 12px;
+      }
+
+
 
       .band-body {
         display: contents;
@@ -1000,7 +1009,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.1</span>
+          <span class="brand-version" id="brandVersion">v1.3.2</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室可分開放來源。
@@ -1361,7 +1370,26 @@
                 </div>
               </div>
             </div>
-                        <div class="subfold is-collapsed" data-subfold="overlay-bg">
+            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。底圖空白＝用最上方預設底圖。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>① 資訊條網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="url" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 700–900、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copy">複製資訊條網址</button>
+              <a class="btn secondary" id="open" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="preview" title="overlay preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="overlay-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -1415,25 +1443,7 @@
 
               </div>
             </div>
-            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。底圖空白＝用最上方預設底圖。</p>
-          </section>
 
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>① 資訊條網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="url" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 700–900、高度 40–60。</p>
-            <div class="actions">
-              <button type="button" id="copy">複製資訊條網址</button>
-              <a class="btn secondary" id="open" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="preview" title="overlay preview"></iframe>
-            </div>
           </aside>
         </div>
 
@@ -1502,7 +1512,26 @@
                 <input id="viewersColor" type="text" placeholder="用預設" />
               </div>
             </div>
-                        <div class="subfold is-collapsed" data-subfold="viewers-bg">
+            <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>② 觀眾人數網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="vcUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
+            <div class="actions">
+              <button type="button" id="copyVc">複製人數網址</button>
+              <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewVc" title="viewers preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="viewers-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -1556,25 +1585,7 @@
 
               </div>
             </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
-          </section>
 
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>② 觀眾人數網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="vcUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
-            <div class="actions">
-              <button type="button" id="copyVc">複製人數網址</button>
-              <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewVc" title="viewers preview"></iframe>
-            </div>
           </aside>
         </div>
 
@@ -1645,7 +1656,26 @@
                 </div>
               </div>
             </div>
-                        <div class="subfold is-collapsed" data-subfold="countdown-bg">
+            <p class="hint">目標時間與「從現在起」擇一。字級／文字色空白＝用最上方預設。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>③ 倒計時網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="cdUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–360、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyCd">複製倒計時網址</button>
+              <a class="btn secondary" id="openCd" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewCd" title="countdown preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="countdown-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -1699,25 +1729,7 @@
 
               </div>
             </div>
-            <p class="hint">目標時間與「從現在起」擇一。字級／文字色空白＝用最上方預設。</p>
-          </section>
 
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>③ 倒計時網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="cdUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 220–360、高度 40–60。</p>
-            <div class="actions">
-              <button type="button" id="copyCd">複製倒計時網址</button>
-              <a class="btn secondary" id="openCd" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewCd" title="countdown preview"></iframe>
-            </div>
           </aside>
         </div>
 
@@ -1787,7 +1799,25 @@
                 </div>
               </div>
             </div>
-                        <div class="subfold is-collapsed" data-subfold="days-bg">
+                                  </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑤ 倒數天數網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="daysUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 180–320、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyDays">複製倒數天數網址</button>
+              <a class="btn secondary" id="openDays" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewDays" title="days preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="days-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -1841,24 +1871,7 @@
 
               </div>
             </div>
-          </section>
 
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑤ 倒數天數網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="daysUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 180–320、高度 40–60。</p>
-            <div class="actions">
-              <button type="button" id="copyDays">複製倒數天數網址</button>
-              <a class="btn secondary" id="openDays" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewDays" title="days preview"></iframe>
-            </div>
           </aside>
         </div>
 
@@ -1954,7 +1967,26 @@
                 </div>
               </div>
             </div>
-                        <div class="subfold is-collapsed" data-subfold="game-bg">
+            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑥ 遊戲名稱網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="gameUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 360–720、高度 40–60。換遊戲時改設定頁再複製，或直接改 OBS 網址參數。</p>
+            <div class="actions">
+              <button type="button" id="copyGame">複製遊戲名稱網址</button>
+              <a class="btn secondary" id="openGame" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewGame" title="game title preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="game-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -2008,25 +2040,7 @@
 
               </div>
             </div>
-            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。</p>
-          </section>
 
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑥ 遊戲名稱網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="gameUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 360–720、高度 40–60。換遊戲時改設定頁再複製，或直接改 OBS 網址參數。</p>
-            <div class="actions">
-              <button type="button" id="copyGame">複製遊戲名稱網址</button>
-              <a class="btn secondary" id="openGame" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewGame" title="game title preview"></iframe>
-            </div>
           </aside>
         </div>
 
@@ -2173,7 +2187,86 @@
               <div></div>
             </div>
             <p class="hint">字級／文字色空白＝用最上方預設。</p>
-            <div class="subfold is-collapsed" data-subfold="chat-bg">
+            
+            <div class="field" style="align-items: flex-start">
+              <label for="chatCss">5. 自訂 CSS</label>
+              <textarea
+                id="chatCss"
+                class="css-box"
+                placeholder=".msg { font-size: 20px; }&#10;.plat.tw { color: #a970ff; }"
+              ></textarea>
+            </div>
+            <p class="hint">
+              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
+              每頁建議寬 360–480、高 500–720。
+            </p>
+
+            <div class="row">
+              <div>
+                <label for="chatStyleName">樣式預設名稱</label>
+                <input
+                  id="chatStyleName"
+                  type="text"
+                  placeholder="例如：粉框完整顯示"
+                  maxlength="40"
+                />
+              </div>
+              <div style="display: flex; align-items: flex-end">
+                <button type="button" id="saveChatStyleBtn" class="secondary">
+                  儲存目前樣式
+                </button>
+              </div>
+            </div>
+            <div class="chip-row" id="chatStyleList" aria-label="聊天室樣式預設"></div>
+            <p class="hint">
+              樣式含底圖／單則底／外推／顯示方式／圖示與顏色／字級／底色／CSS
+              等外觀；不含頻道帳號。點一下套用，右鍵刪除。會一併進頁面最下方備份。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑦ 聊天室網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+
+            <div id="chatMergePanel">
+              <textarea id="chatUrl" class="url-box" readonly></textarea>
+              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
+              <div class="actions">
+                <button type="button" id="copyChat">複製聊天室網址</button>
+                <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 220px">
+                <iframe id="previewChat" title="chat preview" style="height: 220px"></iframe>
+              </div>
+            </div>
+
+            <div id="chatSplitPanel" hidden>
+              <p class="hint" style="margin-top: 0">分開：請在 OBS <strong>各加一個</strong>瀏覽器來源。</p>
+              <h3 style="margin: 12px 0 8px; font-size: 0.95rem">Twitch 聊天室</h3>
+              <textarea id="chatUrlTw" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatTw">複製 TW 網址</button>
+                <a class="btn secondary" id="openChatTw" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatTw" title="twitch chat preview" style="height: 160px"></iframe>
+              </div>
+
+              <h3 style="margin: 18px 0 8px; font-size: 0.95rem">YouTube 聊天室</h3>
+              <textarea id="chatUrlYt" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatYt">複製 YT 網址</button>
+                <a class="btn secondary" id="openChatYt" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="chat-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -2277,85 +2370,6 @@
             <p class="hint">
               底圖／單則底：勾選後才套用。留言區底圖網址／顯示／外推空白＝用最上方預設。單則完整顯示會依圖比例長高。
             </p>
-              </div>
-            </div>
-
-            <div class="field" style="align-items: flex-start">
-              <label for="chatCss">5. 自訂 CSS</label>
-              <textarea
-                id="chatCss"
-                class="css-box"
-                placeholder=".msg { font-size: 20px; }&#10;.plat.tw { color: #a970ff; }"
-              ></textarea>
-            </div>
-            <p class="hint">
-              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
-              每頁建議寬 360–480、高 500–720。
-            </p>
-
-            <div class="row">
-              <div>
-                <label for="chatStyleName">樣式預設名稱</label>
-                <input
-                  id="chatStyleName"
-                  type="text"
-                  placeholder="例如：粉框完整顯示"
-                  maxlength="40"
-                />
-              </div>
-              <div style="display: flex; align-items: flex-end">
-                <button type="button" id="saveChatStyleBtn" class="secondary">
-                  儲存目前樣式
-                </button>
-              </div>
-            </div>
-            <div class="chip-row" id="chatStyleList" aria-label="聊天室樣式預設"></div>
-            <p class="hint">
-              樣式含底圖／單則底／外推／顯示方式／圖示與顏色／字級／底色／CSS
-              等外觀；不含頻道帳號。點一下套用，右鍵刪除。會一併進頁面最下方備份。
-            </p>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑦ 聊天室網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-
-            <div id="chatMergePanel">
-              <textarea id="chatUrl" class="url-box" readonly></textarea>
-              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
-              <div class="actions">
-                <button type="button" id="copyChat">複製聊天室網址</button>
-                <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 220px">
-                <iframe id="previewChat" title="chat preview" style="height: 220px"></iframe>
-              </div>
-            </div>
-
-            <div id="chatSplitPanel" hidden>
-              <p class="hint" style="margin-top: 0">分開：請在 OBS <strong>各加一個</strong>瀏覽器來源。</p>
-              <h3 style="margin: 12px 0 8px; font-size: 0.95rem">Twitch 聊天室</h3>
-              <textarea id="chatUrlTw" class="url-box" readonly></textarea>
-              <div class="actions">
-                <button type="button" id="copyChatTw">複製 TW 網址</button>
-                <a class="btn secondary" id="openChatTw" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 160px">
-                <iframe id="previewChatTw" title="twitch chat preview" style="height: 160px"></iframe>
-              </div>
-
-              <h3 style="margin: 18px 0 8px; font-size: 0.95rem">YouTube 聊天室</h3>
-              <textarea id="chatUrlYt" class="url-box" readonly></textarea>
-              <div class="actions">
-                <button type="button" id="copyChatYt">複製 YT 網址</button>
-                <a class="btn secondary" id="openChatYt" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 160px">
-                <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
               </div>
             </div>
           </aside>
@@ -2574,7 +2588,25 @@
                 <label><input type="checkbox" id="spHideStatus" checked /> 隱藏連線狀態</label>
               </div>
             </div>
-                        <div class="subfold is-collapsed" data-subfold="sp-bg">
+                                  </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑨ 贊助條網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="spUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 700–1100；基金愈多高度愈高（約 70 + 每條 36）。預覽含示範。</p>
+            <div class="actions">
+              <button type="button" id="copySp">複製贊助條網址</button>
+              <a class="btn secondary" id="openSp" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap" style="min-height: 100px">
+              <iframe id="previewSp" title="sponsor preview" style="height: 100px"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="sp-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -2628,24 +2660,7 @@
 
               </div>
             </div>
-          </section>
 
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑨ 贊助條網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="spUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 700–1100；基金愈多高度愈高（約 70 + 每條 36）。預覽含示範。</p>
-            <div class="actions">
-              <button type="button" id="copySp">複製贊助條網址</button>
-              <a class="btn secondary" id="openSp" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap" style="min-height: 100px">
-              <iframe id="previewSp" title="sponsor preview" style="height: 100px"></iframe>
-            </div>
           </aside>
         </div>
 
@@ -2781,7 +2796,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.1</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.2</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -2795,7 +2810,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.1";
+        const APP_VERSION = "v1.3.2";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

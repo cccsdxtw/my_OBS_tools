@@ -70,10 +70,10 @@ panel-bg.js        ← 各覆蓋頁共用底圖／顯示方式／外推
 
 ## YouTube API Key
 
-入口頁最上方「Twitch／YouTube 帳號」區塊已有步驟與跳轉按鈕；也可寫在 `資料/帳號.txt` 的 `YouTube_API_Key=`。
+入口頁最上方「共用設定」區塊已有步驟與跳轉按鈕；也可寫在 `資料/帳號.txt` 的 `YouTube_API_Key=`。
 
 ## 版號
 
-見 GitHub Releases（目前最新例如 v1.2.0）。
+見 GitHub Releases（目前最新例如 v1.2.1）。
 
 版號會**跳過含「4」的數字**（例如沒有 v0.1.4、v0.1.14；4 之後接 5，13 之後接 15）。

@@ -1041,10 +1041,10 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.7</span>
+          <span class="brand-version" id="brandVersion">v1.3.8</span>
         </h1>
         <p>
-          先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室可分開放來源。
+          先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
         </p>
       </header>
 
@@ -2696,12 +2696,170 @@
           </aside>
         </div>
 
+        <!-- ⑩ 計數器 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑩ 計數器</h2>
+              <span class="side-title">留言區 +N／=N</span>
+            </div>
+            <p class="hint">
+              監聽 Twitch／YouTube 留言。只有<strong>台主</strong>與<strong>MOD</strong>的整句指令會生效：
+              <code>+1</code>／<code>+2</code> 累加、<code>-1</code> 減、<code>=3</code> 設成指定數字。一般觀眾無效。帳號用最上方共用設定。
+            </p>
+            <div class="row">
+              <div>
+                <label for="ctrLabel">標籤（選填）</label>
+                <input id="ctrLabel" type="text" placeholder="例如：死亡次數" />
+              </div>
+              <div>
+                <label for="ctrStart">起始值</label>
+                <input id="ctrStart" type="number" step="1" value="0" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="ctrId">計數器 ID（選填）</label>
+                <input
+                  id="ctrId"
+                  type="text"
+                  placeholder="多個計數器用不同 ID；空白＝依帳號＋標籤"
+                />
+              </div>
+              <div>
+                <label for="ctrMin">最小值（選填）</label>
+                <input id="ctrMin" type="number" step="1" placeholder="空白＝不限" />
+              </div>
+            </div>
+            <div class="actions" style="margin-top: 12px">
+              <button type="button" class="secondary" id="ctrResetBtn">重設為起始值</button>
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <p class="hint" style="margin-top: 8px">
+              「重設為起始值」會清掉本機記住的數字（OBS 與入口需同網域／同資料夾才共用）。
+            </p>
+            <div class="field">
+              <label><input type="checkbox" id="ctrShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
+              <label for="ctrIcon">計數器圖示</label>
+              <input
+                id="ctrIcon"
+                type="text"
+                list="materialIconSuggest"
+                placeholder="空白＝預設 plus_one；或圖片網址"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="ctrIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="ctrIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="ctrIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div>
+                <label><input type="checkbox" id="ctrHideStatus" /> 隱藏連線狀態</label>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="ctrFontSize">字級</label>
+                <input id="ctrFontSize" type="number" min="12" max="96" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="ctrColor">文字色</label>
+                <div class="color-pair">
+                  <input id="ctrColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="ctrColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑩ 計數器網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="ctrUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 200–360、高度 50–80。預覽為示範模式（會自動跳動）。</p>
+            <div class="actions">
+              <button type="button" id="copyCtr">複製計數器網址</button>
+              <a class="btn secondary" id="openCtr" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewCtr" title="counter preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="ctr-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label><input type="checkbox" id="ctrShowBg" checked /> 顯示底色</label>
+                  </div>
+                  <div class="field" style="margin-top: 0">
+                    <label for="ctrBg">底色</label>
+                    <input id="ctrBg" type="text" value="rgba(0,0,0,0.45)" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label
+                      ><input type="checkbox" id="ctrShowPanelImg" /> 顯示底圖</label
+                    >
+                  </div>
+                  <div>
+                    <label for="ctrPanelFit">底圖顯示</label>
+                    <select id="ctrPanelFit">
+                      <option value="">用預設</option>
+                      <option value="stretch">拉伸填滿</option>
+                      <option value="contain">完整顯示</option>
+                      <option value="cover">裁切填滿</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row" id="ctrPanelImgRow">
+                  <div>
+                    <label for="ctrPanelImg">底圖網址</label>
+                    <input
+                      id="ctrPanelImg"
+                      type="text"
+                      placeholder="空白＝用上方預設底圖"
+                    />
+                  </div>
+                  <div>
+                    <label for="ctrPanelInset">外推（px）</label>
+                    <input
+                      id="ctrPanelInset"
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="用預設"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
         <div class="note">
           <strong>為什麼不用一直驗證？</strong><br />
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          ①②③⑤⑥⑦⑨ 右邊網址各自加 OBS 瀏覽器來源即可（⑧ 回覆除外；編號跳過 ④）。
+          ①②③⑤⑥⑦⑨⑩ 右邊網址各自加 OBS 瀏覽器來源即可（⑧ 回覆除外；編號跳過 ④）。
         </div>
       </div>
 
@@ -2828,7 +2986,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.7</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.8</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -2842,7 +3000,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.7";
+        const APP_VERSION = "v1.3.8";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3861,6 +4019,22 @@
           spPanelImg: $("spPanelImg"),
           spPanelFit: $("spPanelFit"),
           spPanelInset: $("spPanelInset"),
+          ctrLabel: $("ctrLabel"),
+          ctrStart: $("ctrStart"),
+          ctrId: $("ctrId"),
+          ctrMin: $("ctrMin"),
+          ctrShowIcon: $("ctrShowIcon"),
+          ctrIcon: $("ctrIcon"),
+          ctrIconColor: $("ctrIconColor"),
+          ctrHideStatus: $("ctrHideStatus"),
+          ctrFontSize: $("ctrFontSize"),
+          ctrColor: $("ctrColor"),
+          ctrShowBg: $("ctrShowBg"),
+          ctrBg: $("ctrBg"),
+          ctrShowPanelImg: $("ctrShowPanelImg"),
+          ctrPanelImg: $("ctrPanelImg"),
+          ctrPanelFit: $("ctrPanelFit"),
+          ctrPanelInset: $("ctrPanelInset"),
         };
 
         /** @type {Array<{id:string,name:string,goal:string,keywords:string}>} */
@@ -4274,6 +4448,13 @@
             fields.spPanelFit,
             fields.spPanelInset
           );
+          syncPanelImgRow(
+            fields.ctrShowPanelImg,
+            "ctrPanelImgRow",
+            fields.ctrPanelImg,
+            fields.ctrPanelFit,
+            fields.ctrPanelInset
+          );
           // chat 既有 syncChatBgRows 會處理
         }
 
@@ -4290,7 +4471,9 @@
             fields.gameFontSize,
             fields.chatFontSize,
             fields.spFontSize,
+            fields.ctrFontSize,
           ].forEach((el) => {
+            if (!el) return;
             el.placeholder = `預設 ${fs}`;
           });
           [
@@ -4301,7 +4484,9 @@
             fields.gameColor,
             fields.chatColor,
             fields.spColor,
+            fields.ctrColor,
           ].forEach((el) => {
+            if (!el) return;
             el.placeholder = `預設 ${col}`;
           });
           [
@@ -4309,6 +4494,7 @@
             fields.countdownIconColor,
             fields.daysIconColor,
             fields.gameIconColor,
+            fields.ctrIconColor,
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = fields.defaultIconColor.value.trim()
@@ -4375,6 +4561,7 @@
           syncBgField(fields.gameShowBg, fields.gameBg);
           syncBgField(fields.chatShowBg, fields.chatBg);
           syncBgField(fields.spShowBg, fields.spBg);
+          syncBgField(fields.ctrShowBg, fields.ctrBg);
           syncAllPanelImgRows();
         }
 
@@ -5186,6 +5373,53 @@
           return url.toString();
         }
 
+        function counterStorageKey() {
+          const id = (fields.ctrId.value || "").trim();
+          if (id) return `my_obs_tools_counter:id:${id}`;
+          const login = (fields.channel.value || "").trim().toLowerCase();
+          const yt = resolveYtChannelForUrl(fields.ytChannel.value) || "";
+          const label = (fields.ctrLabel.value || "").trim() || "count";
+          return `my_obs_tools_counter:${login}|${String(yt).toLowerCase()}|${label}`;
+        }
+
+        function buildCounterUrl(opts = {}) {
+          const url = pageUrl("counter.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
+          const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
+          const ytKey = fields.ytKey.value.trim();
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          if (fields.ctrLabel.value.trim()) p.set("label", fields.ctrLabel.value.trim());
+          if (fields.ctrId.value.trim()) p.set("id", fields.ctrId.value.trim());
+          const start = (fields.ctrStart.value || "").trim();
+          if (start !== "") p.set("start", start);
+          const min = (fields.ctrMin.value || "").trim();
+          if (min !== "") p.set("min", min);
+          setIconParam(p, "icon", fields.ctrShowIcon, fields.ctrIcon, "plus_one");
+          if (fields.ctrHideStatus.checked) p.set("hideStatus", "1");
+          if (opts.demo) p.set("demo", "1");
+          styleParams(
+            p,
+            fields.ctrShowBg,
+            fields.ctrBg,
+            fields.ctrFontSize,
+            fields.ctrColor,
+            fields.ctrIconColor
+          );
+          applyPanelImageParams(
+            p,
+            fields.ctrShowPanelImg,
+            fields.ctrPanelImg,
+            fields.ctrPanelFit,
+            fields.ctrPanelInset
+          );
+          return url.toString();
+        }
+
         function buildUrls() {
           syncStylePlaceholders();
           syncGamePlatformChips();
@@ -5254,6 +5488,12 @@
           $("openSp").href = spDemoHref;
           $("previewSp").src = spDemoHref;
 
+          const ctrHref = buildCounterUrl();
+          const ctrDemoHref = buildCounterUrl({ demo: true });
+          $("ctrUrl").value = ctrHref;
+          $("openCtr").href = ctrDemoHref;
+          $("previewCtr").src = ctrDemoHref;
+
           localStorage.setItem(
             "my_obs_tools_setup",
             JSON.stringify({
@@ -5281,6 +5521,7 @@
             chatHrefYt,
             chatReplyHref,
             spHref,
+            ctrHref,
           };
         }
 
@@ -5383,6 +5624,27 @@
           $("spUrl").select();
           await copyText(spHref, $("copySp"), "複製贊助條網址");
         });
+        $("copyCtr").addEventListener("click", async () => {
+          const { ctrHref } = buildUrls();
+          $("ctrUrl").select();
+          await copyText(ctrHref, $("copyCtr"), "複製計數器網址");
+        });
+        const ctrResetBtn = $("ctrResetBtn");
+        if (ctrResetBtn) {
+          ctrResetBtn.addEventListener("click", () => {
+            const key = counterStorageKey();
+            const start = (fields.ctrStart.value || "").trim() || "0";
+            try {
+              localStorage.setItem(key, start);
+            } catch (_) {}
+            buildUrls();
+            const old = ctrResetBtn.textContent;
+            ctrResetBtn.textContent = "已重設";
+            setTimeout(() => {
+              ctrResetBtn.textContent = old;
+            }, 1200);
+          });
+        }
 
         $("spAddFund").addEventListener("click", () => {
           readSponsorFundsFromDom();
@@ -5462,7 +5724,9 @@
               el === fields.chatShowBg ||
               el === fields.chatShowPanelImg ||
               el === fields.spShowBg ||
-              el === fields.spShowPanelImg
+              el === fields.spShowPanelImg ||
+              el === fields.ctrShowBg ||
+              el === fields.ctrShowPanelImg
             ) {
               syncAllBgFields();
             }

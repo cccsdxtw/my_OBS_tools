@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS 計數器 · MOD／台主 +N／=N</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="../material-icons.js"></script>
+    <script src="../panel-bg.js"></script>
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.85);
+        --icon: var(--fg);
+        --muted: rgba(255, 255, 255, 0.55);
+        --size: 28px;
+        --bar-h: calc(var(--size) + 18px);
+        --pad-x: 12px;
+        --gap: 10px;
+        --radius: 0;
+        --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
+          "PingFang TC", sans-serif;
+        --font-num: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        color: var(--fg);
+      }
+
+      #wrap {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      #bar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: var(--gap);
+        min-height: var(--bar-h);
+        padding: var(--panel-inset, 0 var(--pad-x));
+        background-color: var(--bg);
+        background-image: var(--panel-img, none);
+        background-size: var(--panel-fit, 100% 100%);
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: var(--radius);
+        white-space: nowrap;
+        line-height: 1;
+      }
+
+      #bar.is-bump .value {
+        animation: bump 0.28s ease-out;
+      }
+
+      @keyframes bump {
+        0% {
+          transform: translateY(0.02em) scale(1);
+        }
+        40% {
+          transform: translateY(0.02em) scale(1.12);
+        }
+        100% {
+          transform: translateY(0.02em) scale(1);
+        }
+      }
+
+      .icon-slot {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(var(--size) * 0.9);
+        height: calc(var(--size) * 0.9);
+        flex: 0 0 auto;
+      }
+
+      .icon-slot[hidden] {
+        display: none;
+      }
+
+      .icon,
+      .custom-icon {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+      }
+
+      .material-symbols-outlined.icon {
+        width: auto;
+        height: auto;
+        font-size: calc(var(--size) * 0.9);
+        line-height: 1;
+        color: var(--icon);
+        font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+        user-select: none;
+      }
+
+      .ms-svg-icon.icon,
+      .svg-icon {
+        width: 100%;
+        height: 100%;
+        color: var(--icon);
+        fill: currentColor;
+      }
+
+      .label,
+      .value {
+        display: flex;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        line-height: 1;
+      }
+
+      .label {
+        color: var(--muted);
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.72);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        transform: translateY(0.06em);
+      }
+
+      .value {
+        font-family: var(--font-num);
+        font-size: var(--size);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        transform: translateY(0.02em);
+      }
+
+      #status {
+        font-family: var(--font-zh);
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        padding-left: 2px;
+      }
+
+      #status[hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrap">
+      <div id="bar" aria-live="polite">
+        <span class="icon-slot" id="ctr-icon" hidden></span>
+        <span class="label" id="ctr-label" hidden></span>
+        <span class="value" id="ctr-value">0</span>
+      </div>
+      <div id="status" hidden></div>
+    </div>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(location.search);
+        const YT_API = "https://www.googleapis.com/youtube/v3";
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        cssVar("--fg", params.get("color"));
+        cssVar("--icon", params.get("iconColor") || params.get("iconColour"));
+        const bgParam = (params.get("bg") || "").trim();
+        if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {
+          cssVar("--bg", "transparent");
+        } else {
+          cssVar("--bg", bgParam);
+        }
+        if (window.ObsPanelBg) {
+          ObsPanelBg.applyOverlayPanelBg(params, cssVar, { defaultInset: 12 });
+        }
+        cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
+        cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+
+        const els = {
+          bar: document.getElementById("bar"),
+          icon: document.getElementById("ctr-icon"),
+          label: document.getElementById("ctr-label"),
+          value: document.getElementById("ctr-value"),
+          status: document.getElementById("status"),
+        };
+
+        const labelText = (params.get("label") || params.get("ctrLabel") || "").trim();
+        if (labelText) {
+          els.label.hidden = false;
+          els.label.textContent = labelText;
+        }
+
+        const twitchLogin = (params.get("login") || params.get("channel") || "").trim().toLowerCase();
+        const ytChannel = (params.get("yt") || "").trim();
+        const ytVideoParam = (params.get("ytVideo") || "").trim();
+        const ytKey = (params.get("ytKey") || "").trim();
+        const demo = ["1", "true", "yes", "demo"].includes(
+          (params.get("demo") || "").trim().toLowerCase()
+        );
+        const hideStatus = ["1", "true", "yes", "hide"].includes(
+          (params.get("hideStatus") || "").trim().toLowerCase()
+        );
+        const wantTw = !!twitchLogin;
+        const wantYt = !!(ytKey || ytVideoParam) && !!(ytChannel || ytVideoParam);
+
+        const minRaw = params.get("min");
+        const maxRaw = params.get("max");
+        const minVal = minRaw != null && minRaw !== "" ? Number(minRaw) : null;
+        const maxVal = maxRaw != null && maxRaw !== "" ? Number(maxRaw) : null;
+        const startVal = (() => {
+          const n = Number(params.get("start") || params.get("value") || "0");
+          return Number.isFinite(n) ? Math.trunc(n) : 0;
+        })();
+
+        const storageKey = (() => {
+          const id = (params.get("id") || params.get("ctrId") || "").trim();
+          if (id) return `my_obs_tools_counter:id:${id}`;
+          return `my_obs_tools_counter:${twitchLogin || ""}|${(ytChannel || "").toLowerCase()}|${
+            labelText || "count"
+          }`;
+        })();
+
+        function clamp(n) {
+          let v = Math.trunc(n);
+          if (Number.isFinite(minVal)) v = Math.max(minVal, v);
+          if (Number.isFinite(maxVal)) v = Math.min(maxVal, v);
+          return v;
+        }
+
+        function readStored() {
+          try {
+            const raw = localStorage.getItem(storageKey);
+            if (raw == null || raw === "") return null;
+            const n = Number(raw);
+            return Number.isFinite(n) ? Math.trunc(n) : null;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function writeStored(n) {
+          try {
+            localStorage.setItem(storageKey, String(n));
+          } catch (_) {}
+        }
+
+        if (["1", "true", "yes"].includes((params.get("reset") || "").trim().toLowerCase())) {
+          try {
+            localStorage.removeItem(storageKey);
+          } catch (_) {}
+        }
+
+        let count = clamp(readStored() ?? startVal);
+        let bumpTimer = 0;
+
+        function render(bump) {
+          els.value.textContent = String(count);
+          if (bump) {
+            els.bar.classList.remove("is-bump");
+            // reflow for restart
+            void els.bar.offsetWidth;
+            els.bar.classList.add("is-bump");
+            clearTimeout(bumpTimer);
+            bumpTimer = setTimeout(() => els.bar.classList.remove("is-bump"), 320);
+          }
+        }
+
+        function setCount(n, bump) {
+          const next = clamp(n);
+          if (next === count && !bump) {
+            render(false);
+            return;
+          }
+          count = next;
+          writeStored(count);
+          render(!!bump);
+        }
+
+        function applyDelta(delta) {
+          setCount(count + delta, true);
+        }
+
+        function applySet(n) {
+          setCount(n, true);
+        }
+
+        /** 留言整句是 +N／-N／=N（全形也可） */
+        function parseCounterCommand(text) {
+          const raw = String(text || "")
+            .trim()
+            .replace(/［/g, "[")
+            .replace(/］/g, "]");
+          const normalized = raw
+            .replace(/＋/g, "+")
+            .replace(/－/g, "-")
+            .replace(/—|–/g, "-")
+            .replace(/＝/g, "=");
+          const m = normalized.match(/^([+\-=])(\d{1,7})$/);
+          if (!m) return null;
+          const op = m[1];
+          const n = parseInt(m[2], 10);
+          if (!Number.isFinite(n)) return null;
+          return { op, n };
+        }
+
+        function isTwPrivileged(tags, nick) {
+          const badges = String(tags.badges || "");
+          if (/(^|,)broadcaster\//.test(badges)) return true;
+          if (/(^|,)moderator\//.test(badges)) return true;
+          if (tags.mod === "1") return true;
+          if (String(tags["user-type"] || "").toLowerCase() === "mod") return true;
+          const login = String(tags.login || nick || "")
+            .trim()
+            .toLowerCase();
+          if (login && twitchLogin && login === twitchLogin) return true;
+          return false;
+        }
+
+        function isYtPrivileged(author) {
+          if (!author) return false;
+          return !!(author.isChatOwner || author.isChatModerator);
+        }
+
+        function handleCommand(cmd) {
+          if (!cmd) return;
+          if (cmd.op === "+") applyDelta(cmd.n);
+          else if (cmd.op === "-") applyDelta(-cmd.n);
+          else if (cmd.op === "=") applySet(cmd.n);
+        }
+
+        function isUrlIcon(raw) {
+          const s = String(raw || "").trim();
+          return /^https?:\/\//i.test(s) || /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s);
+        }
+
+        const iconRaw = (params.get("icon") || params.get("ctrIcon") || "plus_one").trim();
+        const hideIcon =
+          !iconRaw ||
+          iconRaw === "0" ||
+          iconRaw === "none" ||
+          iconRaw === "off" ||
+          iconRaw === "false" ||
+          iconRaw === "hide";
+        if (els.icon && hideIcon) {
+          els.icon.hidden = true;
+          els.icon.innerHTML = "";
+        } else if (iconRaw && els.icon) {
+          els.icon.hidden = false;
+          if (isUrlIcon(iconRaw)) {
+            els.icon.innerHTML = "";
+            const img = document.createElement("img");
+            img.className = "custom-icon";
+            img.alt = "";
+            img.referrerPolicy = "no-referrer";
+            img.src = iconRaw;
+            img.onerror = () => {
+              els.icon.innerHTML = "";
+            };
+            els.icon.appendChild(img);
+          } else if (window.MyObsMaterialIcons) {
+            window.MyObsMaterialIcons.mountIcon(els.icon, iconRaw || "plus_one", {
+              forceSvg: true,
+            });
+          }
+        }
+
+        const connected = { tw: false, yt: false };
+
+        function refreshStatus() {
+          if (hideStatus || (!wantTw && !wantYt && !demo)) {
+            els.status.hidden = true;
+            return;
+          }
+          els.status.hidden = false;
+          const parts = [];
+          if (wantTw) parts.push(connected.tw ? "TW✓" : "TW…");
+          if (wantYt) parts.push(connected.yt ? "YT✓" : "YT…");
+          if (demo) parts.push("DEMO");
+          parts.push("僅 MOD／台主：+N　=N");
+          els.status.textContent = parts.join(" · ");
+        }
+
+        render(false);
+        refreshStatus();
+
+        if (demo) {
+          connected.tw = wantTw;
+          connected.yt = wantYt;
+          refreshStatus();
+          const demoCmds = [
+            { op: "+", n: 1 },
+            { op: "+", n: 2 },
+            { op: "=", n: 3 },
+            { op: "+", n: 1 },
+            { op: "-", n: 1 },
+          ];
+          let i = 0;
+          setInterval(() => {
+            handleCommand(demoCmds[i % demoCmds.length]);
+            i += 1;
+          }, 2800);
+          return;
+        }
+
+        if (!wantTw && !wantYt) {
+          els.status.hidden = false;
+          els.status.textContent = "請在入口填 Twitch／YouTube（與聊天室共用帳號）";
+          return;
+        }
+
+        function connectTwitch() {
+          if (!wantTw) return;
+          const nick = `justinfan${Math.floor(10000 + Math.random() * 80000)}`;
+          let ws;
+          let closed = false;
+          let retry = 0;
+
+          function connect() {
+            ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
+            ws.addEventListener("open", () => {
+              ws.send("PASS SCHMOOPIIE");
+              ws.send(`NICK ${nick}`);
+              ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands");
+              ws.send(`JOIN #${twitchLogin}`);
+            });
+            ws.addEventListener("message", (ev) => {
+              String(ev.data || "")
+                .split("\r\n")
+                .forEach((line) => {
+                  if (!line) return;
+                  if (line.startsWith("PING")) {
+                    ws.send("PONG :tmi.twitch.tv");
+                    return;
+                  }
+                  if (line.includes(" JOIN #")) {
+                    connected.tw = true;
+                    refreshStatus();
+                  }
+                  const m = line.match(
+                    /^(?:@([^ ]+) )?(?::([^ ]+) )?PRIVMSG #[^ ]+ :(.*)$/
+                  );
+                  if (!m) return;
+                  const tags = {};
+                  if (m[1]) {
+                    m[1].split(";").forEach((kv) => {
+                      const i = kv.indexOf("=");
+                      if (i > -1) tags[kv.slice(0, i)] = kv.slice(i + 1);
+                    });
+                  }
+                  const fromNick = (m[2] || "").split("!")[0] || "";
+                  if (!isTwPrivileged(tags, fromNick)) return;
+                  handleCommand(parseCounterCommand(m[3] || ""));
+                });
+            });
+            ws.addEventListener("close", () => {
+              connected.tw = false;
+              refreshStatus();
+              if (closed) return;
+              retry = Math.min(retry + 1, 6);
+              setTimeout(connect, 1000 * retry);
+            });
+            ws.addEventListener("error", () => {
+              try {
+                ws.close();
+              } catch (_) {}
+            });
+          }
+          connect();
+          window.addEventListener("beforeunload", () => {
+            closed = true;
+            try {
+              ws && ws.close();
+            } catch (_) {}
+          });
+        }
+
+        async function ytFetchJson(url, label) {
+          let res;
+          try {
+            res = await fetch(url);
+          } catch (_) {
+            throw new Error(`${label} network`);
+          }
+          let json = null;
+          try {
+            json = await res.json();
+          } catch (_) {}
+          if (!res.ok) throw new Error(`${label} ${res.status}`);
+          return json;
+        }
+
+        function normalizeHandle(input) {
+          let s = String(input || "").trim();
+          if (s.startsWith("http://") || s.startsWith("https://")) {
+            try {
+              const u = new URL(s);
+              const parts = u.pathname.split("/").filter(Boolean);
+              if (parts[0] === "channel" && parts[1]) return parts[1];
+              if (parts[0]?.startsWith("@")) return parts[0];
+              if (parts[0]) return parts[0];
+            } catch (_) {}
+          }
+          return s;
+        }
+
+        const ytLiveCacheKey = `laji_obs_yt_live_cache:${(
+          ytChannel ||
+          ytVideoParam ||
+          "counter"
+        ).toLowerCase()}`;
+
+        function readYtLiveCache() {
+          try {
+            return JSON.parse(localStorage.getItem(ytLiveCacheKey) || "null");
+          } catch (_) {
+            return null;
+          }
+        }
+        function writeYtLiveCache(data) {
+          try {
+            localStorage.setItem(ytLiveCacheKey, JSON.stringify(data));
+          } catch (_) {}
+        }
+        function clearYtLiveCache() {
+          try {
+            localStorage.removeItem(ytLiveCacheKey);
+          } catch (_) {}
+        }
+
+        async function resolveYtChannelId() {
+          const raw = normalizeHandle(ytChannel);
+          if (/^UC[\w-]{22}$/.test(raw)) return raw;
+          const cache = readYtLiveCache();
+          if (cache?.channelId && /^UC[\w-]{22}$/.test(cache.channelId)) return cache.channelId;
+          const handle = raw.startsWith("@") ? raw.slice(1) : raw;
+          const url = `${YT_API}/channels?part=id&forHandle=${encodeURIComponent(
+            handle
+          )}&key=${encodeURIComponent(ytKey)}`;
+          const json = await ytFetchJson(url, "yt channel");
+          const id = json?.items?.[0]?.id;
+          if (!id) throw new Error("yt channel not found");
+          return id;
+        }
+
+        async function resolveLiveViaUploads(channelId) {
+          const chJson = await ytFetchJson(
+            `${YT_API}/channels?part=contentDetails&id=${encodeURIComponent(
+              channelId
+            )}&key=${encodeURIComponent(ytKey)}`,
+            "yt channel details"
+          );
+          const uploads = chJson?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+          if (!uploads) return null;
+          const plJson = await ytFetchJson(
+            `${YT_API}/playlistItems?part=contentDetails&playlistId=${encodeURIComponent(
+              uploads
+            )}&maxResults=15&key=${encodeURIComponent(ytKey)}`,
+            "yt uploads"
+          );
+          const ids = (plJson?.items || [])
+            .map((it) => it?.contentDetails?.videoId)
+            .filter(Boolean);
+          if (!ids.length) return null;
+          const vJson = await ytFetchJson(
+            `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+              ids.join(",")
+            )}&key=${encodeURIComponent(ytKey)}`,
+            "yt recent videos"
+          );
+          const live = (vJson?.items || []).find((it) => {
+            const d = it?.liveStreamingDetails;
+            return d && d.actualStartTime && !d.actualEndTime;
+          });
+          return live?.id || null;
+        }
+
+        async function resolveLiveVideoId() {
+          if (ytVideoParam) return ytVideoParam;
+          const cache = readYtLiveCache();
+          if (cache?.videoId) {
+            try {
+              const vJson = await ytFetchJson(
+                `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+                  cache.videoId
+                )}&key=${encodeURIComponent(ytKey)}`,
+                "yt videos"
+              );
+              const d = vJson?.items?.[0]?.liveStreamingDetails;
+              if (d && d.actualStartTime && !d.actualEndTime) return cache.videoId;
+            } catch (_) {}
+            clearYtLiveCache();
+          }
+          const channelId = await resolveYtChannelId();
+          let id = null;
+          try {
+            id = await resolveLiveViaUploads(channelId);
+          } catch (e) {
+            console.warn(e);
+          }
+          if (!id) {
+            const json = await ytFetchJson(
+              `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
+                channelId
+              )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`,
+              "yt search"
+            );
+            id = json?.items?.[0]?.id?.videoId || null;
+          }
+          if (id) writeYtLiveCache({ channelId, videoId: id, ts: Date.now() });
+          return id;
+        }
+
+        async function resolveLiveChatId(videoId) {
+          const json = await ytFetchJson(
+            `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+              videoId
+            )}&key=${encodeURIComponent(ytKey)}`,
+            "yt videos"
+          );
+          const d = json?.items?.[0]?.liveStreamingDetails;
+          if (!d || d.actualEndTime) return null;
+          return d.activeLiveChatId || null;
+        }
+
+        async function pollYoutube() {
+          if (!wantYt) return;
+          if (!ytKey && !ytVideoParam) return;
+          let chatId = null;
+          let pageToken = "";
+          let fail = 0;
+          let seen = new Set();
+
+          async function ensure() {
+            const videoId = await resolveLiveVideoId();
+            if (!videoId) throw new Error("yt offline");
+            chatId = await resolveLiveChatId(videoId);
+            if (!chatId) throw new Error("yt no live chat");
+            connected.yt = true;
+            refreshStatus();
+            fail = 0;
+          }
+
+          async function tick() {
+            try {
+              if (!chatId) await ensure();
+              const url = new URL(`${YT_API}/liveChat/messages`);
+              url.searchParams.set("liveChatId", chatId);
+              url.searchParams.set("part", "snippet,authorDetails");
+              url.searchParams.set("maxResults", "40");
+              url.searchParams.set("key", ytKey);
+              if (pageToken) url.searchParams.set("pageToken", pageToken);
+              const res = await fetch(url);
+              if (!res.ok) {
+                if (res.status === 403 || res.status === 404) {
+                  chatId = null;
+                  connected.yt = false;
+                  refreshStatus();
+                  clearYtLiveCache();
+                }
+                throw new Error("yt chat " + res.status);
+              }
+              const json = await res.json();
+              pageToken = json.nextPageToken || pageToken;
+              const wait = Math.max(2500, Number(json.pollingIntervalMillis || 5000));
+              (json.items || []).forEach((item) => {
+                const id = item.id;
+                if (!id || seen.has(id)) return;
+                seen.add(id);
+                if (seen.size > 400) seen = new Set(Array.from(seen).slice(-200));
+                if (!isYtPrivileged(item.authorDetails)) return;
+                const text =
+                  item.snippet?.textMessageDetails?.messageText ||
+                  item.snippet?.displayMessage ||
+                  "";
+                handleCommand(parseCounterCommand(text));
+              });
+              setTimeout(tick, wait);
+            } catch (err) {
+              console.warn(err);
+              connected.yt = false;
+              refreshStatus();
+              fail += 1;
+              chatId = fail >= 3 ? null : chatId;
+              setTimeout(tick, Math.min(15000, 3000 * fail));
+            }
+          }
+
+          tick();
+        }
+
+        connectTwitch();
+        pollYoutube();
+      })();
+    </script>
+  </body>
+</html>

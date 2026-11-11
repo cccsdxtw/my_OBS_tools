@@ -295,6 +295,56 @@
         // 起始值可為 0；有記住的數字才蓋過起始值
         let count = clamp(readStored() ?? startVal);
         let bumpTimer = 0;
+        const counterId = (params.get("id") || params.get("ctrId") || "").trim();
+        const isEmbed = flagOn(params.get("embed"));
+        // 同瀏覽器多開（入口 embed + 預覽）共用 localStorage 時，只讓一個實例處理聊天，避免 +2
+        const instanceId =
+          Math.random().toString(36).slice(2) + String(Date.now()).slice(-4);
+        const lockKey = `my_obs_tools_counter_lock:${storageKey}`;
+        let isChatLeader = true;
+
+        function refreshChatLeader() {
+          if (demo || !persist) {
+            isChatLeader = true;
+            return isChatLeader;
+          }
+          const now = Date.now();
+          try {
+            const cur = JSON.parse(localStorage.getItem(lockKey) || "null");
+            const stale = !cur || !cur.id || now - Number(cur.ts || 0) > 2500;
+            if (stale || cur.id === instanceId) {
+              localStorage.setItem(
+                lockKey,
+                JSON.stringify({ id: instanceId, ts: now, embed: isEmbed })
+              );
+              isChatLeader = true;
+            } else {
+              isChatLeader = false;
+            }
+          } catch (_) {
+            isChatLeader = true;
+          }
+          return isChatLeader;
+        }
+        refreshChatLeader();
+        setInterval(refreshChatLeader, 1000);
+
+        /** 入口用 iframe 嵌入時回報數字；聊天只在計數器頁加一次，父頁只顯示 */
+        function notifyParent() {
+          if (demo) return;
+          try {
+            if (!window.parent || window.parent === window) return;
+            window.parent.postMessage(
+              {
+                source: "my_obs_tools_counter",
+                id: counterId,
+                count,
+                embed: isEmbed,
+              },
+              "*"
+            );
+          } catch (_) {}
+        }
 
         function render(bump) {
           els.value.textContent = String(count);
@@ -306,6 +356,7 @@
             clearTimeout(bumpTimer);
             bumpTimer = setTimeout(() => els.bar.classList.remove("is-bump"), 320);
           }
+          notifyParent();
         }
 
         function setCount(n, bump) {
@@ -318,6 +369,33 @@
           writeStored(count);
           render(!!bump);
         }
+
+        window.addEventListener("message", (ev) => {
+          const d = ev && ev.data;
+          if (!d || d.source !== "my_obs_tools_counter_cmd") return;
+          if (demo) return;
+          if (d.id && counterId && String(d.id) !== counterId) return;
+          if (d.op === "set") {
+            const n = Number(d.value);
+            if (Number.isFinite(n)) applySet(n);
+            return;
+          }
+          if (d.op === "reset") {
+            applySet(startVal);
+          }
+        });
+
+        // 跟隨其它分頁／iframe 寫入的正式數字（不重算聊天）
+        window.addEventListener("storage", (ev) => {
+          if (demo || !persist) return;
+          if (!ev || ev.key !== storageKey) return;
+          const n = Number(ev.newValue);
+          if (!Number.isFinite(n)) return;
+          const next = clamp(n);
+          if (next === count) return;
+          count = next;
+          render(true);
+        });
 
         function applyDelta(delta) {
           setCount(count + delta, true);
@@ -423,6 +501,8 @@
 
         function handleCommand(cmd) {
           if (!cmd) return;
+          // 非 leader 只跟 storage，避免同來源多實例把一次聊天加兩次
+          if (!demo && persist && !refreshChatLeader()) return;
           if (cmd.op === "+") applyDelta(cmd.n);
           else if (cmd.op === "-") applyDelta(-cmd.n);
           else if (cmd.op === "=") applySet(cmd.n);

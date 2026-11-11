@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.19</span>
+          <span class="brand-version" id="brandVersion">v1.3.20</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2791,9 +2791,15 @@
               >
             </div>
             <div id="ctrList" class="checks" style="margin-top: 8px"></div>
+            <div
+              id="ctrSyncFrames"
+              hidden
+              aria-hidden="true"
+              style="position: absolute; width: 0; height: 0; overflow: hidden"
+            ></div>
             <p class="hint" style="margin-top: 8px">
-              「標籤／指令／起始／目前／最小」各有說明。「目前」是正式數字（給 OBS），不跟右側展示。
-              「重設」把目前改回起始（含 0）。預設「死亡／死」：留言 <code>!死</code> 就 +1。
+              「標籤／指令／起始／目前／最小」各有說明。「目前」跟計數器頁同一份數字（聊天只加一次，主頁不重算）。
+              右側是 DEMO 展示。「重設」改回起始（含 0）。預設 <code>!死</code>＝+1。
             </p>
             <div class="field">
               <label
@@ -3048,7 +3054,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.19</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.20</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3062,7 +3068,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.19";
+        const APP_VERSION = "v1.3.20";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4383,6 +4389,89 @@
           } catch (_) {}
         }
 
+        function setCounterCurDisplay(id, value) {
+          const row = document.querySelector(
+            `.ctr-item-row[data-id="${CSS.escape(String(id || ""))}"]`
+          );
+          const cur = row && row.querySelector("[data-k=cur]");
+          if (!cur) return;
+          if (document.activeElement === cur) return;
+          cur.value = String(value);
+        }
+
+        /** 與計數器頁同一份邏輯：隱藏 iframe 聽聊天，主頁只顯示、不重算 */
+        function buildCounterSyncSrc(item) {
+          const url = pageUrl("counter.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
+          const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
+          const ytKey = fields.ytKey.value.trim();
+          if (channel) p.set("login", channel);
+          if (ytChannel) p.set("yt", ytChannel);
+          if (ytVideo) p.set("ytVideo", ytVideo);
+          if (ytKey) p.set("ytKey", ytKey);
+          if (item.label) p.set("label", item.label);
+          if (item.id) p.set("id", item.id);
+          if (item.cmd) p.set("cmd", item.cmd);
+          if (item.start !== "") p.set("start", item.start);
+          if (item.min !== "") p.set("min", item.min);
+          const roles = [];
+          if (fields.ctrRoleOwner.checked) roles.push("owner");
+          if (fields.ctrRoleHammer.checked) roles.push("hammer");
+          if (fields.ctrRoleSword.checked) roles.push("sword");
+          if (fields.ctrRoleVip.checked) roles.push("vip");
+          if (fields.ctrRoleSub.checked) roles.push("sub");
+          p.set("roles", roles.join(",") || "none");
+          if (fields.ctrPersist && !fields.ctrPersist.checked) p.set("persist", "0");
+          p.set("embed", "1");
+          p.set("hideStatus", "1");
+          return url.toString();
+        }
+
+        function getCounterSyncFrame(id) {
+          const box = $("ctrSyncFrames");
+          if (!box || !id) return null;
+          return box.querySelector(`iframe[data-ctr-id="${CSS.escape(String(id))}"]`);
+        }
+
+        function postCounterCmd(id, payload) {
+          const frame = getCounterSyncFrame(id);
+          if (!frame || !frame.contentWindow) return;
+          try {
+            frame.contentWindow.postMessage(
+              { source: "my_obs_tools_counter_cmd", id, ...payload },
+              "*"
+            );
+          } catch (_) {}
+        }
+
+        function syncCounterEmbedFrames() {
+          const box = $("ctrSyncFrames");
+          if (!box) return;
+          const items = normalizeCounterItems(counterItems);
+          const want = new Set(items.map((c) => c.id));
+          Array.from(box.querySelectorAll("iframe[data-ctr-id]")).forEach((frame) => {
+            if (!want.has(frame.dataset.ctrId)) frame.remove();
+          });
+          items.forEach((item) => {
+            const src = buildCounterSyncSrc(item);
+            let frame = getCounterSyncFrame(item.id);
+            if (!frame) {
+              frame = document.createElement("iframe");
+              frame.dataset.ctrId = item.id;
+              frame.title = "counter-sync-" + item.id;
+              frame.setAttribute("aria-hidden", "true");
+              frame.tabIndex = -1;
+              box.appendChild(frame);
+            }
+            if (frame.dataset.syncSrc !== src) {
+              frame.dataset.syncSrc = src;
+              frame.src = src;
+            }
+          });
+        }
+
         function syncCtrPreviewPick() {
           const sel = fields.ctrPreviewPick;
           if (!sel) return;
@@ -4444,6 +4533,7 @@
             list.appendChild(row);
           });
           syncCtrPreviewPick();
+          syncCounterEmbedFrames();
         }
 
         function syncManualFundOptions() {
@@ -5916,6 +6006,7 @@
 
           readCounterItemsFromDom();
           syncCtrPreviewPick();
+          syncCounterEmbedFrames();
           const ctrItem = getSelectedCounterItem();
           const ctrHref = buildCounterUrl({ item: ctrItem });
           const ctrDemoHref = buildCounterUrl({ item: ctrItem, demo: true });
@@ -6080,6 +6171,18 @@
             buildUrls();
           });
         }
+        window.addEventListener("message", (ev) => {
+          const d = ev && ev.data;
+          if (!d || d.source !== "my_obs_tools_counter") return;
+          if (d.demo) return;
+          const id = String(d.id || "").trim();
+          if (!id || !Number.isFinite(Number(d.count))) return;
+          const n = Math.trunc(Number(d.count));
+          const item = counterItems.find((c) => c.id === id) || { id, start: "0" };
+          writeFormalCounterValue(item, String(n));
+          setCounterCurDisplay(id, n);
+        });
+
         const ctrListEl = $("ctrList");
         if (ctrListEl) {
           ctrListEl.addEventListener("input", (ev) => {
@@ -6088,7 +6191,10 @@
             if (row && ev.target && ev.target.getAttribute("data-k") === "cur") {
               const id = row.dataset.id;
               const item = counterItems.find((c) => c.id === id);
-              if (item) writeFormalCounterValue(item, ev.target.value);
+              if (item) {
+                writeFormalCounterValue(item, ev.target.value);
+                postCounterCmd(id, { op: "set", value: ev.target.value });
+              }
             }
             syncCtrPreviewPick();
             buildUrls();
@@ -6114,6 +6220,7 @@
               writeFormalCounterValue(item, item.start || "0");
               const cur = row.querySelector("[data-k=cur]");
               if (cur) cur.value = item.start || "0";
+              postCounterCmd(id, { op: "reset" });
               const btn = ev.target.closest(".ctr-reset");
               const old = btn.textContent;
               btn.textContent = "已重設";

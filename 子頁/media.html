@@ -204,8 +204,9 @@
             playsinline: "1",
             controls: "1",
             enablejsapi: "1",
+            // OBS／瀏覽器自動播通常要求靜音；否則會卡住不播
+            mute: "1",
           });
-          if (mute) q.set("mute", "1");
           if (isHttp) {
             try {
               q.set("origin", location.origin);
@@ -332,7 +333,8 @@
             fit === "cover" ? "fit-cover" : fit === "fill" ? "fit-fill" : "fit-contain";
           v.autoplay = true;
           v.playsInline = true;
-          v.muted = mute;
+          // 先靜音才能自動播；成功後再依設定取消靜音
+          v.muted = true;
           v.volume = volume;
           v.controls = false;
           v.addEventListener("ended", () => {
@@ -347,8 +349,28 @@
           currentEl = v;
           v.src = src;
           const p = v.play();
-          if (p && p.catch) p.catch(() => {});
+          if (p && p.then) {
+            p.then(() => {
+              if (!mute) {
+                try {
+                  v.muted = false;
+                } catch (_) {}
+              }
+            }).catch(() => {
+              const retry = v.play();
+              if (retry && retry.catch) retry.catch(() => {});
+            });
+          }
           return v;
+        }
+
+        function ytCommand(win, func, args) {
+          try {
+            win.postMessage(
+              JSON.stringify({ event: "command", func, args: args || [] }),
+              "*"
+            );
+          } catch (_) {}
         }
 
         function mountIframe(src, { onEndedSafetySec, listenYt } = {}) {
@@ -366,18 +388,18 @@
           if (listenYt) {
             f.addEventListener("load", () => {
               try {
-                f.contentWindow.postMessage(
-                  JSON.stringify({ event: "listening", id: 1 }),
-                  "*"
-                );
-                f.contentWindow.postMessage(
-                  JSON.stringify({
-                    event: "command",
-                    func: "addEventListener",
-                    args: ["onStateChange"],
-                  }),
-                  "*"
-                );
+                const w = f.contentWindow;
+                ytCommand(w, "addEventListener", ["onStateChange"]);
+                // 多催幾次 play，避免 OBS 載入後不自動播
+                let n = 0;
+                const kick = setInterval(() => {
+                  if (n++ > 8 || currentEl !== f) {
+                    clearInterval(kick);
+                    return;
+                  }
+                  ytCommand(w, "playVideo");
+                  ytCommand(w, "mute");
+                }, 400);
               } catch (_) {}
             });
           }

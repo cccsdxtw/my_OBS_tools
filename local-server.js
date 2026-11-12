@@ -29,33 +29,48 @@ const mime = {
   ".txt": "text/plain; charset=utf-8",
   ".bat": "text/plain; charset=utf-8",
   ".md": "text/plain; charset=utf-8",
+  ".py": "text/plain; charset=utf-8",
 };
+
+function sendCors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  res.setHeader("Cache-Control", "no-store");
+}
 
 const server = http.createServer((req, res) => {
   try {
+    if (req.method === "OPTIONS") {
+      sendCors(res);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
     const u = new URL(req.url || "/", "http://127.0.0.1");
     let pathname = decodeURIComponent(u.pathname || "/");
     if (pathname === "/") pathname = "/入口.html";
     const fp = path.normalize(path.join(root, pathname.replace(/^\//, "")));
     if (!fp.startsWith(root)) {
+      sendCors(res);
       res.writeHead(403);
       res.end("forbidden");
       return;
     }
     fs.readFile(fp, (err, buf) => {
+      sendCors(res);
       if (err) {
         res.writeHead(404);
         res.end("not found");
         return;
       }
-      const type = mime[path.extname(fp).toLowerCase()] || "application/octet-stream";
-      res.writeHead(200, {
-        "Content-Type": type,
-        "Cache-Control": "no-store",
-      });
+      const type =
+        mime[path.extname(fp).toLowerCase()] || "application/octet-stream";
+      res.writeHead(200, { "Content-Type": type });
       res.end(buf);
     });
   } catch (err) {
+    sendCors(res);
     res.writeHead(500);
     res.end(String(err && err.message ? err.message : err));
   }
@@ -67,7 +82,6 @@ server.listen(port, "127.0.0.1", () => {
   console.log("  http://127.0.0.1:" + port + "/");
   console.log("");
   console.log("  Keep this window open.");
-  console.log("  Open 入口.html -> copy media URL -> paste into OBS.");
-  console.log("  URL should start with http://127.0.0.1:" + port + "/");
+  console.log("  Copy media URL from entry -> paste into OBS.");
   console.log("");
 });

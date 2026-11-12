@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>YT bridge</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      (() => {
+        // 類似 Streamlabs：先由本機頁當外殼（給 Referer），再進 YouTube embed。
+        // 不要把 embed 網址直接當 OBS 頂層來源（會 Error 153）。
+        const p = new URLSearchParams(location.search);
+        const id = String(p.get("v") || p.get("id") || "").trim();
+        if (!/^[\w-]{11}$/.test(id)) {
+          document.body.style.cssText =
+            "color:#ddd;font:14px sans-serif;display:grid;place-items:center;height:100%";
+          document.body.textContent = "缺少有效的 YouTube 影片 id";
+          return;
+        }
+        const mute = !["0", "false", "no", "off"].includes(
+          String(p.get("mute") || "1").toLowerCase()
+        );
+        const q = new URLSearchParams({
+          autoplay: "1",
+          rel: "0",
+          modestbranding: "1",
+          playsinline: "1",
+          controls: "1",
+          enablejsapi: "1",
+        });
+        if (mute) q.set("mute", "1");
+        // 用 replace：iframe／本機檔導向 embed 時會帶 Referer，避開 153
+        location.replace(
+          "https://www.youtube.com/embed/" + id + "?" + q.toString()
+        );
+      })();
+    </script>
+  </body>
+</html>

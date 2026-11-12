@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.9</span>
+          <span class="brand-version" id="brandVersion">v1.5.10</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2941,9 +2941,8 @@
               <span class="side-title">影片／網站清單</span>
             </div>
             <p class="hint">
-              實況斗內放片幾乎都是<strong>先準備好的 mp4</strong>（上傳到贊助系統或本機檔），不是現場去拉
-              YouTube。這裡也一樣：清單優先放
-              <code>C:\影片\a.mp4</code> 或多個 mp4。<strong>一個網址、OBS 一個來源</strong>自動接播。
+              <strong>一個網址、OBS 一個來源</strong>，清單會一個個接播。YouTube
+              走中轉頁再播（類似 Streamlabs Media Share，不囤片）。mp4 可直接播。
             </p>
             <div class="field" style="align-items: flex-start">
               <label for="mediaList">播放清單（多行＝整份歌單）</label>
@@ -2951,7 +2950,7 @@
                 id="mediaList"
                 class="css-box"
                 style="min-height: 140px"
-                placeholder="建議（跟斗內一樣用 mp4）&#10;C:\Videos\donate1.mp4&#10;C:\Videos\donate2.mp4&#10;圖片/loop.webm&#10;&#10;也可試 YouTube（常被擋，不穩）&#10;https://www.youtube.com/watch?v=……"
+                placeholder="例如&#10;https://www.youtube.com/watch?v=……&#10;https://www.youtube.com/watch?v=……&#10;C:\Videos\intro.mp4&#10;圖片/loop.webm"
               ></textarea>
             </div>
             <div class="row">
@@ -2990,7 +2989,7 @@
                 <label><input type="checkbox" id="mediaHud" checked /> 顯示左下角狀態</label>
               </div>
             </div>
-            <p class="hint">mp4 播完自動下一則。YouTube 能拉到串流才播，拉不到會跳過（請改 mp4）。</p>
+            <p class="hint">YouTube／mp4 播完自動下一則；一般網頁用「網頁停留」秒數。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -3144,7 +3143,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.9</p>
+          <p class="apply-status" id="versionStatus">本機 v1.5.10</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3158,7 +3157,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.9";
+        const APP_VERSION = "v1.5.10";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3183,6 +3182,7 @@
           "子頁/sponsor.html",
           "子頁/counter.html",
           "子頁/media.html",
+          "子頁/yt-bridge.html",
           "圖片/說明.txt",
           "README.md",
         ];
@@ -3392,6 +3392,7 @@
             "yt-live-sync.js",
             "子頁/counter.html",
             "子頁/media.html",
+            "子頁/yt-bridge.html",
             "update-files.json",
           ].forEach((n) => merged.add(n));
           return Array.from(merged);
@@ -6324,8 +6325,8 @@
             frame.srcdoc = `<!DOCTYPE html><html><body style="margin:0;background:#111;color:#ddd;font:14px sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center;padding:16px">
               <div>
                 <div>${thumbs}</div>
-                <p style="margin:12px 0 4px">清單含 ${ytIds.length} 則 YouTube（可能拉不到）</p>
-                <p style="margin:0;opacity:.75;font-size:12px">穩定做法：改成本機 mp4 路徑再複製到 OBS</p>
+                <p style="margin:12px 0 4px">清單 ${ytIds.length} 則 · 中轉接播</p>
+                <p style="margin:0;opacity:.75;font-size:12px">複製後貼 OBS 一個瀏覽器來源即可</p>
               </div>
             </body></html>`;
             return;

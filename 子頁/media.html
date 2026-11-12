@@ -148,7 +148,8 @@
 
         const mode = String(params.get("mode") || "loop").toLowerCase();
         const fit = String(params.get("fit") || "contain").toLowerCase();
-        // mute=1 = 全程靜音。OBS 瀏覽器來源允許有聲自動播（不必點）；一般 Chrome 不行。
+        // mute=1 = 全程靜音。預設有聲；音量預設 50%。
+        // OBS 允許有聲自動播；一般 Chrome 若被擋再退回靜音＋點一下。
         const mute = ["1", "true", "yes", "on"].includes(
           String(params.get("mute") || "0").toLowerCase()
         );
@@ -160,12 +161,14 @@
               return navigator.getAutoplayPolicy("mediaelement") === "allowed";
             }
           } catch (_) {}
-          return false;
+          // 樂觀：先試有聲（OBS 常可播）；失敗再退回靜音
+          return wantSound;
         }
-        const freeAutoplay = canUnmutedAutoplay();
+        let freeAutoplay = canUnmutedAutoplay();
+        const volRaw = Number(params.get("volume"));
         const volume = Math.min(
           1,
-          Math.max(0, Number(params.get("volume") || (mute ? 0 : 1)))
+          Math.max(0, Number.isFinite(volRaw) ? volRaw : mute ? 0 : 0.5)
         );
         const dwellSec = Math.max(3, Number(params.get("dwell") || 15) || 15);
         const showHud = !["0", "false", "no", "off", "hide"].includes(
@@ -365,21 +368,40 @@
             setHud(lastHudBase + " · 靜音");
             return;
           }
+          const volPct = Math.round(volume * 100);
           if (soundUnlocked) {
             setHud(
-              lastHudBase + (freeAutoplay ? " · 有聲自動播" : " · 有聲")
+              lastHudBase +
+                (freeAutoplay
+                  ? " · 有聲自動播 " + volPct + "%"
+                  : " · 有聲 " + volPct + "%")
             );
             return;
           }
-          setHud(lastHudBase + " · 播放中（點一下開聲）");
+          setHud(lastHudBase + " · 播放中（點一下開聲 " + volPct + "%）");
         }
 
         function applySoundToYt(player) {
           if (!wantSound || !player) return;
           try {
             player.unMute();
-            player.setVolume(Math.round(volume * 100));
+            player.setVolume(Math.round(volume * 100) || 50);
           } catch (_) {}
+        }
+
+        function keepYtSoundAlive(player, token) {
+          if (!wantSound || !player) return;
+          let n = 0;
+          const tick = setInterval(() => {
+            if (token !== playToken || !soundUnlocked || n++ > 20) {
+              clearInterval(tick);
+              return;
+            }
+            applySoundToYt(player);
+            try {
+              if (player.getPlayerState() !== 1) player.playVideo();
+            } catch (_) {}
+          }, 500);
         }
 
         function unlockSound() {
@@ -519,9 +541,9 @@
           }
           if (token !== playToken) return null;
 
-          // OBS 有 autoplay-policy=no-user-gesture-required → 可直接有聲自動播
-          // 一般 Chrome 必須先靜音，否則會卡在 0:00
-          const startMuted = !(wantSound && freeAutoplay);
+          // 有聲：先以指定音量（預設 50%）自動播；若被瀏覽器擋再退回靜音救畫面
+          const startMuted = !wantSound;
+          let unmutedFailed = false;
           ytPlayer = new YT.Player(host.id, {
             width: "100%",
             height: "100%",
@@ -540,43 +562,62 @@
               onReady(ev) {
                 if (token !== playToken) return;
                 try {
-                  if (startMuted) ev.target.mute();
-                  else {
+                  if (wantSound) {
                     applySoundToYt(ev.target);
+                    soundUnlocked = true;
+                  } else {
+                    ev.target.mute();
                   }
                   ev.target.playVideo();
                 } catch (_) {}
+                if (wantSound) keepYtSoundAlive(ev.target, token);
                 tapTimer = setTimeout(() => {
                   if (token !== playToken) return;
                   try {
                     const st = ev.target.getPlayerState();
-                    if (st === -1 || st === 2 || st === 5) {
+                    const t =
+                      typeof ev.target.getCurrentTime === "function"
+                        ? Number(ev.target.getCurrentTime()) || 0
+                        : 0;
+                    const stuck =
+                      st === -1 ||
+                      st === 2 ||
+                      st === 5 ||
+                      (st !== 1 && t < 0.3);
+                    if (stuck && wantSound && !unmutedFailed) {
+                      // 有聲被擋 → 靜音讓畫面動起來
+                      unmutedFailed = true;
+                      freeAutoplay = false;
+                      soundUnlocked = false;
+                      ev.target.mute();
+                      ev.target.playVideo();
+                      showTap("點一下開聲音（50%）", false);
+                      refreshHud();
+                    } else if (stuck) {
                       showTap("點一下開始播放", true);
                     } else if (wantSound && !soundUnlocked && st === 1) {
-                      showTap("點一下開聲音");
+                      showTap("點一下開聲音（50%）");
                     }
                   } catch (_) {
                     showTap("點一下開始播放", true);
                   }
-                }, 2500);
+                }, 2200);
               },
               onStateChange(ev) {
                 if (token !== playToken) return;
                 const st = ev.data;
                 if (st === YT.PlayerState.PLAYING) {
-                  if (soundUnlocked) applySoundToYt(ev.target);
+                  if (soundUnlocked && wantSound) applySoundToYt(ev.target);
                   else {
                     try {
                       ev.target.mute();
                     } catch (_) {}
                   }
                   refreshHud();
-                  if (wantSound && !soundUnlocked) showTap("點一下開聲音");
+                  if (wantSound && !soundUnlocked) showTap("點一下開聲音（50%）");
                   else hideTap();
                 } else if (st === YT.PlayerState.PAUSED) {
-                  // 有聲自動播被擋：退回靜音播放，再請點一下（非 OBS）
-                  if (wantSound && freeAutoplay && soundUnlocked) {
-                    // OBS 偶發暫停：再催一次有聲播
+                  if (wantSound && soundUnlocked && !unmutedFailed) {
                     try {
                       applySoundToYt(ev.target);
                       ev.target.playVideo();
@@ -594,8 +635,8 @@
                   st === YT.PlayerState.UNSTARTED
                 ) {
                   try {
-                    if (startMuted || !soundUnlocked) ev.target.mute();
-                    else applySoundToYt(ev.target);
+                    if (wantSound && soundUnlocked) applySoundToYt(ev.target);
+                    else ev.target.mute();
                     ev.target.playVideo();
                   } catch (_) {}
                 }

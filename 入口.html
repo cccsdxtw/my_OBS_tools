@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.1</span>
+          <span class="brand-version" id="brandVersion">v1.5.2</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -3155,7 +3155,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.1</p>
+          <p class="apply-status" id="versionStatus">本機 v1.5.2</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3169,7 +3169,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.1";
+        const APP_VERSION = "v1.5.2";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -6284,9 +6284,14 @@
         }
 
         // GitHub Pages 目前未啟用；用 jsDelivr 提供 https 版 media.html（YT 內嵌需要 https）
-        // 固定 @main：清單在 query，不依賴本機尚未發佈的標籤
+        // 鎖定發版標籤，避免 @main 仍是舊播放器
         function mediaOnlinePlayerUrl() {
-          return "https://cdn.jsdelivr.net/gh/cccsdxtw/my_OBS_tools@main/%E5%AD%90%E9%A0%81/media.html";
+          const tag = String(APP_VERSION || "v1.5.2").replace(/^v?/, "v");
+          return (
+            "https://cdn.jsdelivr.net/gh/cccsdxtw/my_OBS_tools@" +
+            tag +
+            "/%E5%AD%90%E9%A0%81/media.html"
+          );
         }
 
         function mediaListHasYoutube(lines) {

@@ -154,17 +154,27 @@
           String(params.get("mute") || "0").toLowerCase()
         );
         const wantSound = !mute;
+        function isObsBrowser() {
+          return typeof window.obsstudio !== "undefined";
+        }
         function canUnmutedAutoplay() {
-          if (typeof window.obsstudio !== "undefined") return true;
+          if (isObsBrowser()) return true;
           try {
             if (typeof navigator.getAutoplayPolicy === "function") {
               return navigator.getAutoplayPolicy("mediaelement") === "allowed";
             }
           } catch (_) {}
-          // 樂觀：先試有聲（OBS 常可播）；失敗再退回靜音
+          // 樂觀：先試有聲；確認卡死才退回
           return wantSound;
         }
         let freeAutoplay = canUnmutedAutoplay();
+        // OBS／網址 obs=1：绝不因誤判跳出「點一下開聲音」
+        const forceAutoSound =
+          wantSound &&
+          (isObsBrowser() ||
+            ["1", "true", "yes", "on"].includes(
+              String(params.get("obs") || "1").toLowerCase()
+            ));
         const volRaw = Number(params.get("volume"));
         const volume = Math.min(
           1,
@@ -541,9 +551,11 @@
           }
           if (token !== playToken) return null;
 
-          // 有聲：先以指定音量（預設 50%）自動播；若被瀏覽器擋再退回靜音救畫面
+          // 有聲：直接 50% 自動播。緩衝中不算卡住（以前誤判會跳出「點一下開聲音」）。
+          // OBS／obs=1：绝不改靜音、不顯示點擊條。
           const startMuted = !wantSound;
           let unmutedFailed = false;
+          let sawPlaying = false;
           ytPlayer = new YT.Player(host.id, {
             width: "100%",
             height: "100%",
@@ -561,6 +573,7 @@
             events: {
               onReady(ev) {
                 if (token !== playToken) return;
+                if (isObsBrowser()) freeAutoplay = true;
                 try {
                   if (wantSound) {
                     applySoundToYt(ev.target);
@@ -571,21 +584,22 @@
                   ev.target.playVideo();
                 } catch (_) {}
                 if (wantSound) keepYtSoundAlive(ev.target, token);
+                hideTap();
+                // 只在「長時間真的停在暫停／未開始」才考慮退回（OBS 永不退回）
                 tapTimer = setTimeout(() => {
-                  if (token !== playToken) return;
+                  if (token !== playToken || forceAutoSound || unmutedFailed) return;
+                  if (sawPlaying) return;
                   try {
                     const st = ev.target.getPlayerState();
+                    // 1=播放 3=緩衝 → 都算正常，不要開「點一下」
+                    if (st === 1 || st === 3) return;
                     const t =
                       typeof ev.target.getCurrentTime === "function"
                         ? Number(ev.target.getCurrentTime()) || 0
                         : 0;
-                    const stuck =
-                      st === -1 ||
-                      st === 2 ||
-                      st === 5 ||
-                      (st !== 1 && t < 0.3);
-                    if (stuck && wantSound && !unmutedFailed) {
-                      // 有聲被擋 → 靜音讓畫面動起來
+                    const reallyStuck =
+                      (st === -1 || st === 2 || st === 5) && t < 0.2;
+                    if (reallyStuck && wantSound) {
                       unmutedFailed = true;
                       freeAutoplay = false;
                       soundUnlocked = false;
@@ -593,31 +607,34 @@
                       ev.target.playVideo();
                       showTap("點一下開聲音（50%）", false);
                       refreshHud();
-                    } else if (stuck) {
+                    } else if (reallyStuck) {
                       showTap("點一下開始播放", true);
-                    } else if (wantSound && !soundUnlocked && st === 1) {
-                      showTap("點一下開聲音（50%）");
                     }
-                  } catch (_) {
-                    showTap("點一下開始播放", true);
-                  }
-                }, 2200);
+                  } catch (_) {}
+                }, 5000);
               },
               onStateChange(ev) {
                 if (token !== playToken) return;
                 const st = ev.data;
                 if (st === YT.PlayerState.PLAYING) {
-                  if (soundUnlocked && wantSound) applySoundToYt(ev.target);
-                  else {
+                  sawPlaying = true;
+                  if (wantSound) {
+                    // 強制維持有聲 50%（含 OBS）；不要再 mute
+                    soundUnlocked = true;
+                    applySoundToYt(ev.target);
+                    hideTap();
+                  } else {
                     try {
                       ev.target.mute();
                     } catch (_) {}
                   }
                   refreshHud();
-                  if (wantSound && !soundUnlocked) showTap("點一下開聲音（50%）");
-                  else hideTap();
+                } else if (st === YT.PlayerState.BUFFERING) {
+                  // 緩衝中繼續催有聲，绝不顯示點擊
+                  if (wantSound) applySoundToYt(ev.target);
+                  hideTap();
                 } else if (st === YT.PlayerState.PAUSED) {
-                  if (wantSound && soundUnlocked && !unmutedFailed) {
+                  if (wantSound && (forceAutoSound || soundUnlocked) && !unmutedFailed) {
                     try {
                       applySoundToYt(ev.target);
                       ev.target.playVideo();
@@ -635,7 +652,7 @@
                   st === YT.PlayerState.UNSTARTED
                 ) {
                   try {
-                    if (wantSound && soundUnlocked) applySoundToYt(ev.target);
+                    if (wantSound) applySoundToYt(ev.target);
                     else ev.target.mute();
                     ev.target.playVideo();
                   } catch (_) {}

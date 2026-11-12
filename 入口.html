@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.20</span>
+          <span class="brand-version" id="brandVersion">v1.5.21</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -3151,7 +3151,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.20</p>
+          <p class="apply-status" id="versionStatus">本機 v1.5.21</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3165,7 +3165,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.20";
+        const APP_VERSION = "v1.5.21";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -6324,6 +6324,8 @@
           let vol = Number(fields.mediaVolume && fields.mediaVolume.value);
           if (!Number.isFinite(vol)) vol = 0.5;
           p.set("volume", String(Math.min(1, Math.max(0, vol))));
+          // 給 OBS 用：不要誤跳「點一下開聲音」
+          p.set("obs", "1");
           if (fields.mediaHud && !fields.mediaHud.checked) p.set("hud", "0");
           writeMediaPlaylistJsToDisk(lines, mode).catch(() => {});
           return finalUrl.toString();

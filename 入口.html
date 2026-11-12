@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.12</span>
+          <span class="brand-version" id="brandVersion">v1.5.13</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2942,8 +2942,7 @@
             </div>
             <p class="hint">
               <strong>一個網址、OBS 一個來源</strong>，清單一個個接播。有 YouTube
-              時請先雙擊工具夾 <code>啟動本機伺服器.bat</code>（跟 Streamlabs
-              一樣用 http 頁播，才不會 Error 153）。
+              時用右邊「啟動本機伺服器／啟動並播放」（本機 http，避免 Error 153）。
             </p>
             <div class="field" style="align-items: flex-start">
               <label for="mediaList">播放清單（多行＝整份歌單）</label>
@@ -3004,9 +3003,13 @@
             <p class="hint" id="mediaUrlHint">這一個網址＝整份清單。貼到 OBS 一個瀏覽器來源就會自動接播。</p>
             <p class="hint" id="mediaServerStatus" hidden></p>
             <div class="actions">
+              <button type="button" id="startMediaServerBtn">啟動本機伺服器</button>
+              <button type="button" id="startMediaServerPlayBtn">啟動並播放</button>
               <button type="button" id="copyMedia">複製媒體網址</button>
-              <a class="btn secondary" id="openMedia" href="#" target="_blank" rel="noopener">開播放頁</a>
-              <button type="button" class="secondary" id="checkMediaServerBtn" hidden>
+              <a class="btn secondary" id="openMedia" href="#" target="_blank" rel="noopener"
+                >開播放頁</a
+              >
+              <button type="button" class="secondary" id="checkMediaServerBtn">
                 檢查本機伺服器
               </button>
             </div>
@@ -3148,7 +3151,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.12</p>
+          <p class="apply-status" id="versionStatus">本機 v1.5.13</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3162,7 +3165,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.12";
+        const APP_VERSION = "v1.5.13";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -6319,14 +6322,21 @@
           const vol = Number(fields.mediaVolume && fields.mediaVolume.value);
           if (Number.isFinite(vol)) p.set("volume", String(Math.min(1, Math.max(0, vol))));
           if (fields.mediaHud && !fields.mediaHud.checked) p.set("hud", "0");
+          // 開連結自動播：確保 mute/autoplay 參數在網址上
+          if (!p.has("mute")) p.set("mute", "1");
           writeMediaPlaylistJsToDisk(lines, mode).catch(() => {});
           return finalUrl.toString();
         }
 
-        async function pingMediaServer() {
+        function setMediaServerStatus(text, ok) {
           const statusEl = $("mediaServerStatus");
-          const btn = $("checkMediaServerBtn");
-          if (btn) btn.hidden = false;
+          if (!statusEl) return;
+          statusEl.hidden = !text;
+          statusEl.textContent = text || "";
+          statusEl.style.color = ok === false ? "#c44" : ok === true ? "#2a7" : "";
+        }
+
+        async function pingMediaServer() {
           try {
             const ctrl = new AbortController();
             const t = setTimeout(() => ctrl.abort(), 1500);
@@ -6336,36 +6346,156 @@
             );
             clearTimeout(t);
             if (r.ok) {
-              if (statusEl) {
-                statusEl.hidden = false;
-                statusEl.textContent =
-                  "本機伺服器已開著（http://127.0.0.1:" + MEDIA_LOCAL_PORT + "）";
-                statusEl.style.color = "";
-              }
+              setMediaServerStatus(
+                "本機伺服器已開著（http://127.0.0.1:" + MEDIA_LOCAL_PORT + "）",
+                true
+              );
               return true;
             }
           } catch (_) {}
-          if (statusEl) {
-            statusEl.hidden = false;
-            statusEl.textContent =
-              "本機伺服器未開：請雙擊工具夾「啟動本機伺服器.bat」再複製網址";
-            statusEl.style.color = "#c44";
+          setMediaServerStatus(
+            "本機伺服器未開：按「啟動本機伺服器」或「啟動並播放」",
+            false
+          );
+          return false;
+        }
+
+        function getToolRootWinPath() {
+          try {
+            if (location.protocol !== "file:") return "";
+            let p = decodeURIComponent(location.pathname || "");
+            if (p.startsWith("/") && /^[A-Za-z]:/.test(p.slice(1))) p = p.slice(1);
+            p = p.replace(/\//g, "\\");
+            // 入口.html / index.html
+            p = p.replace(/\\[^\\]*$/i, "");
+            return p;
+          } catch (_) {
+            return "";
+          }
+        }
+
+        function downloadTextFile(filename, text) {
+          const blob = new Blob([text], { type: "application/octet-stream" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 2500);
+        }
+
+        function buildMediaServerStarterBat(rootWin) {
+          const root = String(rootWin || "").replace(/"/g, "");
+          return (
+            "@echo off\r\n" +
+            "cd /d \"" +
+            root +
+            "\"\r\n" +
+            "set PORT=8765\r\n" +
+            "echo Starting http://127.0.0.1:%PORT%/\r\n" +
+            "where py >nul 2>nul\r\n" +
+            "if %ERRORLEVEL%==0 (\r\n" +
+            "  start \"laji-obs-media\" cmd /k py -m http.server %PORT% --bind 127.0.0.1\r\n" +
+            "  exit /b 0\r\n" +
+            ")\r\n" +
+            "where python >nul 2>nul\r\n" +
+            "if %ERRORLEVEL%==0 (\r\n" +
+            "  start \"laji-obs-media\" cmd /k python -m http.server %PORT% --bind 127.0.0.1\r\n" +
+            "  exit /b 0\r\n" +
+            ")\r\n" +
+            "where node >nul 2>nul\r\n" +
+            "if %ERRORLEVEL%==0 (\r\n" +
+            "  start \"laji-obs-media\" cmd /k node local-server.js\r\n" +
+            "  exit /b 0\r\n" +
+            ")\r\n" +
+            "echo ERROR: install Python or Node.js\r\n" +
+            "pause\r\n"
+          );
+        }
+
+        function launchMediaServerFromEntry() {
+          // 瀏覽器不能直接執行 bat；改下載「已填路徑」的啟動檔，或開啟資料夾內 bat
+          const root = getToolRootWinPath();
+          if (root) {
+            downloadTextFile(
+              "start-obs-media-server.bat",
+              buildMediaServerStarterBat(root)
+            );
+            setMediaServerStatus(
+              "已下載 start-obs-media-server.bat，請開啟它（允許的話選「保留／開啟」）",
+              null
+            );
+            return "download";
+          }
+          // 從 http 開啟入口時：嘗試相對連結
+          try {
+            const a = document.createElement("a");
+            a.href = "啟動本機伺服器.bat";
+            a.download = "啟動本機伺服器.bat";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setMediaServerStatus(
+              "已觸發下載啟動檔；若沒出現請到工具夾雙擊 啟動本機伺服器.bat",
+              null
+            );
+            return "download";
+          } catch (_) {
+            setMediaServerStatus(
+              "請到工具夾雙擊 啟動本機伺服器.bat",
+              false
+            );
+            return "manual";
+          }
+        }
+
+        async function waitForMediaServer(ms) {
+          const deadline = Date.now() + (ms || 25000);
+          while (Date.now() < deadline) {
+            if (await pingMediaServer()) return true;
+            await new Promise((r) => setTimeout(r, 800));
           }
           return false;
+        }
+
+        async function startMediaServerAndMaybePlay(doPlay) {
+          if (await pingMediaServer()) {
+            if (doPlay) openMediaPlayerNow();
+            return;
+          }
+          launchMediaServerFromEntry();
+          setMediaServerStatus("等待本機伺服器啟動中…", null);
+          const ok = await waitForMediaServer(30000);
+          if (!ok) {
+            setMediaServerStatus(
+              "還是沒偵測到伺服器：請手動開啟剛下載的 bat 或工具夾啟動檔",
+              false
+            );
+            return;
+          }
+          if (doPlay) openMediaPlayerNow();
+        }
+
+        function openMediaPlayerNow() {
+          const mediaHref = buildMediaUrl();
+          if ($("mediaUrl")) $("mediaUrl").value = mediaHref;
+          if ($("openMedia")) $("openMedia").href = mediaHref;
+          updateMediaPreview(mediaHref);
+          window.open(mediaHref, "_blank", "noopener");
         }
 
         function updateMediaPreview(mediaHref) {
           const frame = $("previewMedia");
           const open = $("openMedia");
           const hint = $("mediaUrlHint");
-          const btn = $("checkMediaServerBtn");
           if (open) open.href = mediaHref || "#";
           const ytIds = mediaListYoutubeIds(readMediaListLines());
-          if (btn) btn.hidden = !ytIds.length;
           if (hint) {
             hint.textContent = ytIds.length
-              ? "有 YouTube：網址會是 http://127.0.0.1:8765/…（請先開啟動本機伺服器.bat）"
-              : "這一個網址＝整份清單。貼到 OBS 一個瀏覽器來源就會自動接播。";
+              ? "有 YouTube：請用「啟動並播放」或先「啟動本機伺服器」再複製 http://127.0.0.1:8765/… 到 OBS"
+              : "這一個網址＝整份清單。可按「開播放頁」自動播，或複製到 OBS。";
           }
           if (ytIds.length) pingMediaServer();
           else if ($("mediaServerStatus")) $("mediaServerStatus").hidden = true;
@@ -6382,8 +6512,8 @@
             frame.srcdoc = `<!DOCTYPE html><html><body style="margin:0;background:#111;color:#ddd;font:14px sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center;padding:16px">
               <div>
                 <div>${thumbs}</div>
-                <p style="margin:12px 0 4px">清單 ${ytIds.length} 則 · 需本機 http</p>
-                <p style="margin:0;opacity:.75;font-size:12px">先開「啟動本機伺服器.bat」，再複製網址到 OBS</p>
+                <p style="margin:12px 0 4px">清單 ${ytIds.length} 則</p>
+                <p style="margin:0;opacity:.75;font-size:12px">按「啟動並播放」會開本機 http 並自動播</p>
               </div>
             </body></html>`;
             return;
@@ -6634,6 +6764,24 @@
         if ($("checkMediaServerBtn")) {
           $("checkMediaServerBtn").addEventListener("click", () => {
             pingMediaServer();
+          });
+        }
+        if ($("startMediaServerBtn")) {
+          $("startMediaServerBtn").addEventListener("click", () => {
+            startMediaServerAndMaybePlay(false);
+          });
+        }
+        if ($("startMediaServerPlayBtn")) {
+          $("startMediaServerPlayBtn").addEventListener("click", () => {
+            startMediaServerAndMaybePlay(true);
+          });
+        }
+        if ($("openMedia")) {
+          $("openMedia").addEventListener("click", (ev) => {
+            const yt = mediaListYoutubeIds(readMediaListLines()).length > 0;
+            if (!yt) return; // 一般 file:// 播放頁即可
+            ev.preventDefault();
+            startMediaServerAndMaybePlay(true);
           });
         }
         if (fields.ctrPreviewPick) {

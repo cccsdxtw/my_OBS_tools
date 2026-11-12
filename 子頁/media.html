@@ -41,13 +41,31 @@
         background: #000;
       }
       #stage video,
-      #stage iframe {
+      #stage iframe,
+      #stage .yt-host,
+      #stage .yt-host iframe {
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
         border: 0;
         background: #000;
+      }
+      #tapPlay {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        display: none;
+        place-items: center;
+        background: rgba(0, 0, 0, 0.35);
+        color: #fff;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 0;
+      }
+      #tapPlay.show {
+        display: grid;
       }
       #stage video.fit-contain {
         object-fit: contain;
@@ -101,6 +119,7 @@
         尚未加入可播放項目。<br />
         請在入口⑪貼上網址或本機路徑（一行一個）。
       </div>
+      <button type="button" id="tapPlay" aria-label="開始播放">點一下開始播放</button>
       <div id="hud" hidden></div>
     </div>
     <script>
@@ -109,14 +128,17 @@
         const stage = document.getElementById("stage");
         const empty = document.getElementById("empty");
         const hud = document.getElementById("hud");
+        const tapPlay = document.getElementById("tapPlay");
         const isHttp =
           location.protocol === "http:" || location.protocol === "https:";
 
         const mode = String(params.get("mode") || "loop").toLowerCase();
         const fit = String(params.get("fit") || "contain").toLowerCase();
+        // mute=1 = 真的靜音；預設有聲（瀏覽器擋有聲自動播時：先靜音開播再立刻開聲）
         const mute = ["1", "true", "yes", "on"].includes(
           String(params.get("mute") || "0").toLowerCase()
         );
+        const wantSound = !mute;
         const volume = Math.min(
           1,
           Math.max(0, Number(params.get("volume") || (mute ? 0 : 1)))
@@ -196,31 +218,39 @@
           return "";
         }
 
-        function ytEmbedSrc(id) {
-          const q = new URLSearchParams({
-            autoplay: "1",
-            rel: "0",
-            modestbranding: "1",
-            playsinline: "1",
-            controls: "1",
-            enablejsapi: "1",
-            mute: mute ? "1" : "0",
-          });
-          if (isHttp) {
-            try {
-              q.set("origin", location.origin);
-            } catch (_) {}
-          }
-          return "https://www.youtube.com/embed/" + id + "?" + q.toString();
-        }
-
         function classify(url) {
           const yt = youtubeId(url);
-          if (yt) return { kind: "youtube", ytId: yt, src: ytEmbedSrc(yt) };
+          if (yt) return { kind: "youtube", ytId: yt, src: url };
           if (/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|#|$)/i.test(url)) {
             return { kind: "video", src: url };
           }
           return { kind: "page", src: url };
+        }
+
+        function loadYtApi() {
+          return new Promise((resolve, reject) => {
+            if (window.YT && window.YT.Player) {
+              resolve(window.YT);
+              return;
+            }
+            const prev = window.onYouTubeIframeAPIReady;
+            window.onYouTubeIframeAPIReady = function () {
+              try {
+                if (typeof prev === "function") prev();
+              } catch (_) {}
+              resolve(window.YT);
+            };
+            if (!document.getElementById("yt-iframe-api")) {
+              const s = document.createElement("script");
+              s.id = "yt-iframe-api";
+              s.src = "https://www.youtube.com/iframe_api";
+              s.onerror = () => reject(new Error("yt api"));
+              document.head.appendChild(s);
+            }
+            setTimeout(() => {
+              if (window.YT && window.YT.Player) resolve(window.YT);
+            }, 8000);
+          });
         }
 
         function shuffle(arr) {
@@ -267,10 +297,10 @@
         let pos = -1;
         let dwellTimer = 0;
         let currentEl = null;
+        let ytPlayer = null;
         let stopped = false;
         let playToken = 0;
-        let awaitingYtEnd = false;
-        let ytMsgBound = false;
+        let tapTimer = 0;
 
         function rebuildOrder(startFresh) {
           if (!items.length) {
@@ -291,10 +321,34 @@
           hud.textContent = text || "";
         }
 
+        function hideTap() {
+          clearTimeout(tapTimer);
+          tapPlay.classList.remove("show");
+        }
+
+        function showTap(msg) {
+          tapPlay.textContent = msg || "點一下開始播放";
+          tapPlay.classList.add("show");
+        }
+
+        function applyYtSound(player) {
+          if (!wantSound || !player) return;
+          try {
+            player.unMute();
+            player.setVolume(Math.round(volume * 100));
+          } catch (_) {}
+        }
+
         function clearStageMedia() {
           clearTimeout(dwellTimer);
+          hideTap();
           playToken += 1;
-          awaitingYtEnd = false;
+          if (ytPlayer) {
+            try {
+              ytPlayer.destroy();
+            } catch (_) {}
+            ytPlayer = null;
+          }
           if (currentEl) {
             try {
               if (currentEl.tagName === "VIDEO") {
@@ -308,31 +362,14 @@
           }
         }
 
-        function bindYtEndedListener() {
-          if (ytMsgBound) return;
-          ytMsgBound = true;
-          window.addEventListener("message", (ev) => {
-            if (!awaitingYtEnd) return;
-            if (!String(ev.origin || "").includes("youtube.com")) return;
-            let data = ev.data;
-            try {
-              if (typeof data === "string") data = JSON.parse(data);
-            } catch (_) {
-              return;
-            }
-            if (data && data.event === "onStateChange" && Number(data.info) === 0) {
-              next(false);
-            }
-          });
-        }
-
         function mountVideo(src, { label, token } = {}) {
           const v = document.createElement("video");
           v.className =
             fit === "cover" ? "fit-cover" : fit === "fill" ? "fit-fill" : "fit-contain";
           v.autoplay = true;
           v.playsInline = true;
-          v.muted = mute;
+          // 有聲需求：先靜音開播，成功後再開聲（否則會卡在暫停）
+          v.muted = true;
           v.volume = volume;
           v.controls = false;
           v.addEventListener("ended", () => {
@@ -343,24 +380,37 @@
             setHud("播放失敗，跳下一則 · " + (label || src));
             setTimeout(() => next(false), 800);
           });
+          v.addEventListener("playing", () => {
+            if (!wantSound) return;
+            try {
+              v.muted = false;
+            } catch (_) {}
+            hideTap();
+          });
           stage.appendChild(v);
           currentEl = v;
           v.src = src;
           const p = v.play();
-          if (p && p.catch) p.catch(() => {});
+          if (p && p.then) {
+            p.then(() => {
+              if (wantSound) {
+                try {
+                  v.muted = false;
+                } catch (_) {}
+              } else {
+                v.muted = true;
+              }
+            }).catch(() => {
+              showTap("點一下開始播放");
+            });
+          }
+          tapTimer = setTimeout(() => {
+            if (token === playToken && v.paused) showTap("點一下開始播放");
+          }, 2500);
           return v;
         }
 
-        function ytCommand(win, func, args) {
-          try {
-            win.postMessage(
-              JSON.stringify({ event: "command", func, args: args || [] }),
-              "*"
-            );
-          } catch (_) {}
-        }
-
-        function mountIframe(src, { onEndedSafetySec, listenYt } = {}) {
+        function mountIframe(src, { onEndedSafetySec } = {}) {
           const f = document.createElement("iframe");
           f.src = src;
           f.allow =
@@ -372,26 +422,6 @@
             setHud("頁面載入失敗，跳下一則");
             setTimeout(() => next(false), 800);
           });
-          if (listenYt) {
-            f.addEventListener("load", () => {
-              try {
-                const w = f.contentWindow;
-                ytCommand(w, "addEventListener", ["onStateChange"]);
-                let n = 0;
-                const kick = setInterval(() => {
-                  if (n++ > 8 || currentEl !== f) {
-                    clearInterval(kick);
-                    return;
-                  }
-                  ytCommand(w, "playVideo");
-                  if (!mute) {
-                    ytCommand(w, "unMute");
-                    ytCommand(w, "setVolume", [Math.round(volume * 100)]);
-                  }
-                }, 400);
-              } catch (_) {}
-            });
-          }
           stage.appendChild(f);
           currentEl = f;
           if (onEndedSafetySec && onEndedSafetySec > 0) {
@@ -399,6 +429,126 @@
           }
           return f;
         }
+
+        async function mountYtPlayer(videoId, { token, label } = {}) {
+          const host = document.createElement("div");
+          host.className = "yt-host";
+          host.id = "yt-host-" + token;
+          stage.appendChild(host);
+          currentEl = host;
+          let YT;
+          try {
+            YT = await loadYtApi();
+          } catch (_) {
+            setHud("YouTube API 載入失敗，跳下一則");
+            setTimeout(() => next(false), 800);
+            return null;
+          }
+          if (token !== playToken) return null;
+
+          // 關鍵：一定要 mute 開播，才不會卡在大紅鍵；開播後立刻 unMute（有聲）
+          ytPlayer = new YT.Player(host.id, {
+            width: "100%",
+            height: "100%",
+            videoId: videoId,
+            playerVars: {
+              autoplay: 1,
+              mute: 1,
+              controls: 1,
+              rel: 0,
+              modestbranding: 1,
+              playsinline: 1,
+              enablejsapi: 1,
+              origin: location.origin,
+            },
+            events: {
+              onReady(ev) {
+                if (token !== playToken) return;
+                try {
+                  ev.target.mute();
+                  ev.target.playVideo();
+                } catch (_) {}
+                // 稍後開聲：使用者聽到的是有聲，不會卡在預覽
+                setTimeout(() => {
+                  if (token !== playToken) return;
+                  applyYtSound(ev.target);
+                  try {
+                    ev.target.playVideo();
+                  } catch (_) {}
+                }, 400);
+                tapTimer = setTimeout(() => {
+                  if (token !== playToken) return;
+                  try {
+                    const st = ev.target.getPlayerState();
+                    // -1 unstarted, 2 paused, 5 cued
+                    if (st === -1 || st === 2 || st === 5) {
+                      showTap("點一下開始播放（有聲）");
+                    }
+                  } catch (_) {
+                    showTap("點一下開始播放（有聲）");
+                  }
+                }, 2800);
+              },
+              onStateChange(ev) {
+                if (token !== playToken) return;
+                const st = ev.data;
+                if (st === YT.PlayerState.PLAYING) {
+                  applyYtSound(ev.target);
+                  hideTap();
+                  setHud(
+                    (label || "YouTube") + (wantSound ? " · 有聲播放中" : " · 靜音")
+                  );
+                } else if (st === YT.PlayerState.ENDED) {
+                  next(false);
+                } else if (
+                  st === YT.PlayerState.CUED ||
+                  st === YT.PlayerState.UNSTARTED
+                ) {
+                  try {
+                    ev.target.mute();
+                    ev.target.playVideo();
+                  } catch (_) {}
+                }
+              },
+              onError() {
+                if (token !== playToken) return;
+                setHud("YouTube 播放失敗，跳下一則");
+                setTimeout(() => next(false), 800);
+              },
+            },
+          });
+          dwellTimer = setTimeout(
+            () => next(false),
+            Math.max(dwellSec, 6 * 3600) * 1000
+          );
+          return ytPlayer;
+        }
+
+        tapPlay.addEventListener("click", () => {
+          hideTap();
+          if (ytPlayer) {
+            try {
+              ytPlayer.mute();
+              ytPlayer.playVideo();
+              setTimeout(() => {
+                applyYtSound(ytPlayer);
+                try {
+                  ytPlayer.playVideo();
+                } catch (_) {}
+              }, 200);
+            } catch (_) {}
+            return;
+          }
+          if (currentEl && currentEl.tagName === "VIDEO") {
+            currentEl.muted = true;
+            const p = currentEl.play();
+            if (p && p.then) {
+              p.then(() => {
+                if (wantSound) currentEl.muted = false;
+              }).catch(() => {});
+            }
+          }
+        });
 
         function playIndex(itemIndex) {
           const item = items[itemIndex];
@@ -424,13 +574,8 @@
               setHud(label + " · 需本機 http 伺服器");
               return;
             }
-            setHud(label + " · YouTube");
-            bindYtEndedListener();
-            awaitingYtEnd = true;
-            mountIframe(item.src, {
-              listenYt: true,
-              onEndedSafetySec: Math.max(dwellSec, 6 * 3600),
-            });
+            setHud(label + " · YouTube 啟動中…");
+            mountYtPlayer(item.ytId, { token, label: label + " · YouTube" });
             return;
           }
 

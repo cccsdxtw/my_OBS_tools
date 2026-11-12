@@ -210,7 +210,14 @@
           return { kind: "page", src: url };
         }
 
-        // Piped 實例（CORS *）；用來把 YT id 轉成可直接播的 mp4／HLS
+        // Invidious 直接導向 mp4（給 <video src>，不必 fetch／CORS）
+        const INVIDIOUS_LATEST = [
+          "https://inv.nadeko.net",
+          "https://invidious.projectsegfau.lt",
+          "https://invidious.privacyredirect.com",
+          "https://iv.ggtyler.dev",
+          "https://yewtu.be",
+        ];
         const PIPED_APIS = [
           "https://api.piped.private.coffee",
           "https://pipedapi.ducks.party",
@@ -219,7 +226,48 @@
           "https://pipedapi.syncpundit.io",
         ];
 
+        function probeVideoSrc(url, ms) {
+          return new Promise((resolve) => {
+            const v = document.createElement("video");
+            v.preload = "metadata";
+            v.muted = true;
+            v.playsInline = true;
+            let done = false;
+            const finish = (ok) => {
+              if (done) return;
+              done = true;
+              clearTimeout(timer);
+              try {
+                v.removeAttribute("src");
+                v.load();
+              } catch (_) {}
+              resolve(ok);
+            };
+            const timer = setTimeout(() => finish(false), ms || 7000);
+            v.addEventListener("loadedmetadata", () => finish(true));
+            v.addEventListener("loadeddata", () => finish(true));
+            v.addEventListener("error", () => finish(false));
+            v.src = url;
+          });
+        }
+
         async function resolveYoutubeStream(ytId) {
+          // 1) 直接把「會跳轉到 mp4」的網址丟給 video 試播（跟斗內播檔案同一路）
+          const itags = ["18", "22", "59", "16"];
+          for (const host of INVIDIOUS_LATEST) {
+            for (const itag of itags) {
+              const src =
+                host.replace(/\/$/, "") +
+                "/latest_version?id=" +
+                encodeURIComponent(ytId) +
+                "&itag=" +
+                itag;
+              if (await probeVideoSrc(src, 6000)) {
+                return { type: "video", src, title: "" };
+              }
+            }
+          }
+          // 2) 再試 Piped API（有的環境 file:// 會擋 fetch）
           for (const base of PIPED_APIS) {
             try {
               const r = await fetch(base + "/streams/" + encodeURIComponent(ytId), {
@@ -236,14 +284,10 @@
                     Number(b.height || 0) - Number(a.height || 0) ||
                     Number(b.bitrate || 0) - Number(a.bitrate || 0)
                 );
-              const mp4 = combined.find((s) =>
-                /mp4|mpeg/i.test(String(s.mimeType || s.format || s.codec || ""))
-              );
-              if (mp4) {
-                return { type: "video", src: mp4.url, title: d.title || "" };
-              }
-              if (combined[0]) {
-                return { type: "video", src: combined[0].url, title: d.title || "" };
+              for (const s of combined) {
+                if (await probeVideoSrc(s.url, 6000)) {
+                  return { type: "video", src: s.url, title: d.title || "" };
+                }
               }
               if (d.hls) return { type: "hls", src: d.hls, title: d.title || "" };
             } catch (_) {}
@@ -454,8 +498,8 @@
           const stream = await resolveYoutubeStream(item.ytId);
           if (token !== playToken) return;
           if (!stream || !stream.src) {
-            setHud(label + " · 找不到可播串流，跳下一則");
-            setTimeout(() => next(false), 1000);
+            setHud(label + " · YouTube 拉不到（請改放本機 mp4，跟斗內一樣）");
+            setTimeout(() => next(false), 2200);
             return;
           }
           setHud(

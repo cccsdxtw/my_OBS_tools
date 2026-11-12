@@ -198,21 +198,34 @@
           return "";
         }
 
+        function ytEmbedSrc(ids, { loopPlaylist } = {}) {
+          const list = (ids || []).filter((id) => /^[\w-]{11}$/.test(id));
+          if (!list.length) return "";
+          const first = list[0];
+          const q = new URLSearchParams({
+            autoplay: "1",
+            rel: "0",
+            modestbranding: "1",
+            playsinline: "1",
+            controls: "1",
+            enablejsapi: "1",
+          });
+          if (mute) q.set("mute", "1");
+          // 多支用 playlist 接播；單支循環也要 playlist=自己
+          if (list.length > 1) q.set("playlist", list.join(","));
+          if (loopPlaylist) {
+            q.set("loop", "1");
+            if (list.length === 1) q.set("playlist", first);
+          }
+          return "https://www.youtube.com/embed/" + first + "?" + q.toString();
+        }
+
         function classify(url) {
           const yt = youtubeId(url);
           if (yt) {
-            // 必須由「外層網頁」包 iframe（OBS 勾本機檔案），不能把 embed 網址當頂層開啟（會 Error 153 缺 Referer）
-            const q = new URLSearchParams({
-              autoplay: "1",
-              rel: "0",
-              modestbranding: "1",
-              playsinline: "1",
-              controls: "1",
-            });
-            if (mute) q.set("mute", "1");
             return {
               kind: "youtube",
-              src: "https://www.youtube.com/embed/" + yt + "?" + q.toString(),
+              src: ytEmbedSrc([yt], { loopPlaylist: false }),
               ytId: yt,
             };
           }
@@ -273,6 +286,8 @@
         let dwellTimer = 0;
         let currentEl = null;
         let stopped = false;
+        let ytMsgBound = false;
+        let awaitingYtEnd = false;
 
         function rebuildOrder(startFresh) {
           if (!items.length) {
@@ -295,6 +310,7 @@
 
         function clearStageMedia() {
           clearTimeout(dwellTimer);
+          awaitingYtEnd = false;
           if (currentEl) {
             try {
               if (currentEl.tagName === "VIDEO") {
@@ -306,6 +322,79 @@
             currentEl.remove();
             currentEl = null;
           }
+        }
+
+        function bindYtEndedListener() {
+          if (ytMsgBound) return;
+          ytMsgBound = true;
+          window.addEventListener("message", (ev) => {
+            if (!awaitingYtEnd) return;
+            const origin = String(ev.origin || "");
+            if (!origin.includes("youtube.com")) return;
+            let data = ev.data;
+            try {
+              if (typeof data === "string") data = JSON.parse(data);
+            } catch (_) {
+              return;
+            }
+            // YT IFrame API：onStateChange info===0 → ended
+            if (data && data.event === "onStateChange" && Number(data.info) === 0) {
+              next(false);
+            }
+          });
+        }
+
+        function mountIframe(src, { onEndedSafetySec } = {}) {
+          const f = document.createElement("iframe");
+          f.src = src;
+          f.allow =
+            "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
+          f.allowFullscreen = true;
+          f.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+          f.referrerPolicy = "strict-origin-when-cross-origin";
+          f.addEventListener("error", () => {
+            setHud("頁面載入失敗，跳下一則");
+            setTimeout(() => next(false), 800);
+          });
+          f.addEventListener("load", () => {
+            try {
+              f.contentWindow.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*");
+              f.contentWindow.postMessage(
+                JSON.stringify({
+                  event: "command",
+                  func: "addEventListener",
+                  args: ["onStateChange"],
+                }),
+                "*"
+              );
+            } catch (_) {}
+          });
+          stage.appendChild(f);
+          currentEl = f;
+          if (onEndedSafetySec && onEndedSafetySec > 0) {
+            dwellTimer = setTimeout(() => next(false), onEndedSafetySec * 1000);
+          }
+          return f;
+        }
+
+        function allYoutube() {
+          return items.length > 0 && items.every((it) => it.kind === "youtube" && it.ytId);
+        }
+
+        /** 清單全是 YouTube：一支 iframe 用官方 playlist 接播（OBS 一個來源播完全部） */
+        function playAllYoutubeNative() {
+          clearStageMedia();
+          empty.hidden = true;
+          let ids = items.map((it) => it.ytId);
+          if (mode === "random") ids = shuffle(ids);
+          const loopPlaylist = mode !== "seq";
+          const src = ytEmbedSrc(ids, { loopPlaylist });
+          const label =
+            (mode === "random" ? "隨機" : mode === "seq" ? "順序" : "循環") +
+            ` · YouTube 清單 ${ids.length} 則 · 自動接播`;
+          setHud(label);
+          awaitingYtEnd = false; // 接播交給 YouTube playlist
+          mountIframe(src, { onEndedSafetySec: 0 });
         }
 
         function playIndex(itemIndex) {
@@ -340,22 +429,18 @@
             return;
           }
 
-          // youtube / page → iframe + dwell
-          // referrerpolicy 必須讓 YT 收到 Referer，否則 Error 153
-          const f = document.createElement("iframe");
-          f.src = item.src;
-          f.allow =
-            "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
-          f.allowFullscreen = true;
-          f.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-          f.referrerPolicy = "strict-origin-when-cross-origin";
-          f.addEventListener("error", () => {
-            setHud("頁面載入失敗，跳下一則 · " + item.raw);
-            setTimeout(() => next(false), 800);
-          });
-          stage.appendChild(f);
-          currentEl = f;
-          dwellTimer = setTimeout(() => next(false), dwellSec * 1000);
+          if (item.kind === "youtube") {
+            bindYtEndedListener();
+            awaitingYtEnd = true;
+            mountIframe(item.src, {
+              // 播完切下一則；安全網 6 小時避免極端卡死
+              onEndedSafetySec: Math.max(dwellSec, 6 * 3600),
+            });
+            return;
+          }
+
+          // 一般網頁 → 停留秒數後下一則
+          mountIframe(item.src, { onEndedSafetySec: dwellSec });
         }
 
         function next(fromUser) {
@@ -387,8 +472,13 @@
             setHud("");
             return;
           }
-          rebuildOrder(true);
-          next(true);
+          // 全 YouTube：官方清單接播（一個來源播完全部）
+          if (allYoutube()) {
+            playAllYoutubeNative();
+          } else {
+            rebuildOrder(true);
+            next(true);
+          }
           // 定期重讀共用清單（入口改了可跟上）
           setInterval(async () => {
             const before = items.map((x) => x.raw).join("\n");
@@ -397,8 +487,11 @@
             const after = items.map((x) => x.raw).join("\n");
             if (after !== before && items.length) {
               stopped = false;
-              rebuildOrder(true);
-              next(true);
+              if (allYoutube()) playAllYoutubeNative();
+              else {
+                rebuildOrder(true);
+                next(true);
+              }
             }
           }, 15000);
         }

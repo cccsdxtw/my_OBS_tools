@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.6</span>
+          <span class="brand-version" id="brandVersion">v1.5.7</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2940,14 +2940,16 @@
               <h2>⑪ 媒體播放</h2>
               <span class="side-title">影片／網站清單</span>
             </div>
-            <p class="hint">一行一個網址或本機路徑。選循環／順序／隨機後，右邊複製網址貼進 OBS。</p>
+            <p class="hint">
+              一次貼整份清單（多行）。<strong>只複製一次、OBS 只加一個來源</strong>，就會依序／循環／隨機接播。不是一支影片貼一次。
+            </p>
             <div class="field" style="align-items: flex-start">
-              <label for="mediaList">播放清單</label>
+              <label for="mediaList">播放清單（多行＝整份歌單）</label>
               <textarea
                 id="mediaList"
                 class="css-box"
                 style="min-height: 140px"
-                placeholder="例如&#10;https://www.youtube.com/watch?v=…&#10;C:\Videos\intro.mp4&#10;https://example.com/promo&#10;圖片/loop.webm"
+                placeholder="例如（一次貼很多行）&#10;https://www.youtube.com/watch?v=……&#10;https://www.youtube.com/watch?v=……&#10;C:\Videos\intro.mp4&#10;https://example.com/promo"
               ></textarea>
             </div>
             <div class="row">
@@ -2960,7 +2962,7 @@
                 </select>
               </div>
               <div>
-                <label for="mediaDwell">網站／YT 停留（秒）</label>
+                <label for="mediaDwell">網頁停留（秒）</label>
                 <input id="mediaDwell" type="number" min="3" step="1" value="15" />
               </div>
             </div>
@@ -2986,7 +2988,9 @@
                 <label><input type="checkbox" id="mediaHud" checked /> 顯示左下角狀態</label>
               </div>
             </div>
-            <p class="hint">貼清單 → 右邊「複製媒體網址」→ 貼到 OBS 瀏覽器來源。就這樣。</p>
+            <p class="hint">
+              YouTube／mp4 會播完自動下一則；一般網頁才用「網頁停留」秒數切換。
+            </p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -2994,10 +2998,10 @@
           <aside class="card">
             <div class="card-head">
               <h2>⑪ 媒體播放網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
+              <span class="side-title">整份清單 · 一個來源</span>
             </div>
             <textarea id="mediaUrl" class="url-box" readonly></textarea>
-            <p class="hint">貼到 OBS「瀏覽器」來源的網址欄即可（可全畫面）。</p>
+            <p class="hint">這一個網址＝整份清單。貼到 OBS 一個瀏覽器來源就會自動接播。</p>
             <div class="actions">
               <button type="button" id="copyMedia">複製媒體網址</button>
               <a class="btn secondary" id="openMedia" href="#" target="_blank" rel="noopener">開播放頁</a>
@@ -3140,7 +3144,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.6</p>
+          <p class="apply-status" id="versionStatus">本機 v1.5.7</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3154,7 +3158,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.6";
+        const APP_VERSION = "v1.5.7";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -6320,7 +6324,8 @@
             frame.srcdoc = `<!DOCTYPE html><html><body style="margin:0;background:#111;color:#ddd;font:14px sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center;padding:16px">
               <div>
                 <div>${thumbs}</div>
-                <p style="margin:12px 0 0">已就緒 · 複製網址貼到 OBS 即可播</p>
+                <p style="margin:12px 0 4px">清單 ${ytIds.length} 則 · 一個網址接播</p>
+                <p style="margin:0;opacity:.75;font-size:12px">複製後貼到 OBS 一個瀏覽器來源即可</p>
               </div>
             </body></html>`;
             return;

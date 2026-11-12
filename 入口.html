@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.3</span>
+          <span class="brand-version" id="brandVersion">v1.5.5</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2991,16 +2991,11 @@
                 <label><input type="checkbox" id="mediaHud" checked /> 顯示左下角狀態</label>
               </div>
             </div>
-            <div class="field">
-              <label
-                ><input type="checkbox" id="mediaUseOnline" checked /> YouTube
-                用官方內嵌網址（https；避免 file:// 破圖／顯示原始碼）</label
-              >
-            </div>
             <p class="hint">
-              OBS 建議來源寬高用你的畫面比例（例如 1920×1080）。清單只有
-              YouTube 時請勾上面選項再複製／預覽（會直接用 youtube 內嵌，可多支接續）。本機
-              mp4／一般網頁請取消勾選，用本機播放頁。
+              OBS：瀏覽器來源請勾「本機檔案」，選
+              <code>子頁/media.html</code>（或貼下方 file:// 網址）。不要直接貼
+              youtube.com/embed（會 <strong>Error 153</strong> 缺 Referer）。入口預覽若出現
+              153 可忽略，以 OBS 為準。影片須允許嵌入且可公開播放。
             </p>
           </section>
 
@@ -3155,7 +3150,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.3</p>
+          <p class="apply-status" id="versionStatus">本機 v1.5.5</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3169,7 +3164,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.3";
+        const APP_VERSION = "v1.5.5";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4389,7 +4384,6 @@
           mediaMute: $("mediaMute"),
           mediaVolume: $("mediaVolume"),
           mediaHud: $("mediaHud"),
-          mediaUseOnline: $("mediaUseOnline"),
         };
 
         /** @type {Array<{id:string,name:string,goal:string,keywords:string}>} */
@@ -6298,51 +6292,10 @@
           return ids;
         }
 
-        /** YouTube 官方內嵌（https）。jsDelivr 會把 .html 當 text/plain 顯示原始碼，不能當播放頁。 */
-        function buildYoutubeEmbedMediaUrl(ids, opts) {
-          const list = (ids || []).filter((id) => /^[\w-]{11}$/.test(id));
-          if (!list.length) return "";
-          const first = list[0];
-          const q = new URLSearchParams({
-            autoplay: "1",
-            rel: "0",
-            modestbranding: "1",
-            playsinline: "1",
-            controls: "1",
-          });
-          if (opts.mute) q.set("mute", "1");
-          // 多支或循環：用 playlist；單支循環也必須帶 playlist=自己
-          const mode = opts.mode || "loop";
-          if (list.length > 1) {
-            q.set("playlist", list.join(","));
-            if (mode === "loop") q.set("loop", "1");
-          } else if (mode === "loop") {
-            q.set("loop", "1");
-            q.set("playlist", first);
-          }
-          return "https://www.youtube-nocookie.com/embed/" + first + "?" + q.toString();
-        }
-
         function buildMediaUrl() {
           const lines = readMediaListLines();
           const mode = (fields.mediaMode && fields.mediaMode.value) || "loop";
-          const ytIds = mediaListYoutubeIds(lines);
-          const allAreYoutube =
-            lines.length > 0 && ytIds.length === lines.length;
-          // YouTube 在 file://／錯誤 MIME 下會破圖或顯示原始碼 → 改走官方 https 內嵌
-          const useOnline =
-            allAreYoutube &&
-            fields.mediaUseOnline &&
-            fields.mediaUseOnline.checked;
-          if (useOnline) {
-            const embed = buildYoutubeEmbedMediaUrl(ytIds, {
-              mode,
-              mute: !!(fields.mediaMute && fields.mediaMute.checked),
-            });
-            writeMediaPlaylistJsToDisk(lines, mode).catch(() => {});
-            if (embed) return embed;
-          }
-
+          // 一律用本機 media.html 包 iframe。直接貼 youtube /embed 當 OBS 網址會 Error 153（缺 Referer）。
           const finalUrl = pageUrl("media.html");
           const p = finalUrl.searchParams;
           if (lines.length) p.set("list", encodeMediaListForUrl(lines));
@@ -6358,6 +6311,36 @@
           if (fields.mediaHud && !fields.mediaHud.checked) p.set("hud", "0");
           writeMediaPlaylistJsToDisk(lines, mode).catch(() => {});
           return finalUrl.toString();
+        }
+
+        /** 入口在 Chrome 嵌 YT 常 Error 153；改顯示縮圖提示，真正播放以 OBS 本機檔為準 */
+        function updateMediaPreview(mediaHref) {
+          const frame = $("previewMedia");
+          const open = $("openMedia");
+          if (open) open.href = mediaHref || "#";
+          if (!frame) return;
+          const lines = readMediaListLines();
+          const ytIds = mediaListYoutubeIds(lines);
+          if (ytIds.length) {
+            const thumbs = ytIds
+              .slice(0, 4)
+              .map(
+                (id) =>
+                  `<img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" style="width:42%;max-width:160px;margin:4px;border:0;vertical-align:middle" />`
+              )
+              .join("");
+            frame.removeAttribute("src");
+            frame.srcdoc = `<!DOCTYPE html><html><body style="margin:0;background:#111;color:#ddd;font:14px sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center;padding:16px">
+              <div>
+                <div>${thumbs}</div>
+                <p style="margin:12px 0 4px">入口預覽無法嵌 YouTube（Error 153）</p>
+                <p style="margin:0;opacity:.75;font-size:12px">請在 OBS 瀏覽器來源勾「本機檔案」選 子頁/media.html</p>
+              </div>
+            </body></html>`;
+            return;
+          }
+          frame.removeAttribute("srcdoc");
+          frame.src = mediaHref || "about:blank";
         }
 
         function buildUrls() {
@@ -6446,8 +6429,7 @@
 
           const mediaHref = buildMediaUrl();
           if ($("mediaUrl")) $("mediaUrl").value = mediaHref;
-          if ($("openMedia")) $("openMedia").href = mediaHref;
-          if ($("previewMedia")) $("previewMedia").src = mediaHref;
+          updateMediaPreview(mediaHref);
 
           localStorage.setItem(
             "my_obs_tools_setup",

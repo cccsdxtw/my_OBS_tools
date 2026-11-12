@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>OBS 媒體播放 · 清單</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -197,29 +198,21 @@
           return "";
         }
 
-        const isFileOrigin = location.protocol === "file:";
-
         function classify(url) {
           const yt = youtubeId(url);
           if (yt) {
-            // youtube-nocookie + 明確 autoplay/mute；file:// 父頁常被 YT 擋，入口會改走 https 網址
+            // 必須由「外層網頁」包 iframe（OBS 勾本機檔案），不能把 embed 網址當頂層開啟（會 Error 153 缺 Referer）
             const q = new URLSearchParams({
               autoplay: "1",
               rel: "0",
               modestbranding: "1",
               playsinline: "1",
               controls: "1",
-              enablejsapi: "1",
             });
             if (mute) q.set("mute", "1");
-            if (!isFileOrigin) {
-              try {
-                q.set("origin", location.origin);
-              } catch (_) {}
-            }
             return {
               kind: "youtube",
-              src: "https://www.youtube-nocookie.com/embed/" + yt + "?" + q.toString(),
+              src: "https://www.youtube.com/embed/" + yt + "?" + q.toString(),
               ytId: yt,
             };
           }
@@ -348,24 +341,14 @@
           }
 
           // youtube / page → iframe + dwell
-          if (item.kind === "youtube" && isFileOrigin) {
-            const tip = document.createElement("div");
-            tip.id = "empty";
-            tip.style.cssText =
-              "position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:rgba(255,255,255,0.75);font-size:15px;line-height:1.5;background:#111;z-index:2";
-            tip.innerHTML =
-              "YouTube 無法在 <code>file://</code> 內嵌播放。<br />請在入口勾選「YouTube 用官方內嵌網址」後重新複製到 OBS／預覽。";
-            stage.appendChild(tip);
-            currentEl = tip;
-            dwellTimer = setTimeout(() => next(false), Math.min(dwellSec, 8) * 1000);
-            return;
-          }
+          // referrerpolicy 必須讓 YT 收到 Referer，否則 Error 153
           const f = document.createElement("iframe");
           f.src = item.src;
           f.allow =
             "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
           f.allowFullscreen = true;
-          f.referrerPolicy = "origin-when-cross-origin";
+          f.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+          f.referrerPolicy = "strict-origin-when-cross-origin";
           f.addEventListener("error", () => {
             setHud("頁面載入失敗，跳下一則 · " + item.raw);
             setTimeout(() => next(false), 800);

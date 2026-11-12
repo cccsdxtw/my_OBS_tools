@@ -198,42 +198,71 @@
           return "";
         }
 
-        function ytEmbedSrc(ids, { loopPlaylist } = {}) {
-          const list = (ids || []).filter((id) => /^[\w-]{11}$/.test(id));
-          if (!list.length) return "";
-          const first = list[0];
-          const q = new URLSearchParams({
-            autoplay: "1",
-            rel: "0",
-            modestbranding: "1",
-            playsinline: "1",
-            controls: "1",
-            enablejsapi: "1",
-          });
-          if (mute) q.set("mute", "1");
-          // 多支用 playlist 接播；單支循環也要 playlist=自己
-          if (list.length > 1) q.set("playlist", list.join(","));
-          if (loopPlaylist) {
-            q.set("loop", "1");
-            if (list.length === 1) q.set("playlist", first);
-          }
-          return "https://www.youtube.com/embed/" + first + "?" + q.toString();
-        }
-
         function classify(url) {
           const yt = youtubeId(url);
           if (yt) {
-            return {
-              kind: "youtube",
-              src: ytEmbedSrc([yt], { loopPlaylist: false }),
-              ytId: yt,
-            };
+            // 不走 YouTube 內嵌（OBS 常 Error 153）；改解析原始串流用 <video> 播
+            return { kind: "youtube", ytId: yt, src: "" };
           }
           if (/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|#|$)/i.test(url)) {
             return { kind: "video", src: url };
           }
-          // treat as website / page
           return { kind: "page", src: url };
+        }
+
+        // Piped 實例（CORS *）；用來把 YT id 轉成可直接播的 mp4／HLS
+        const PIPED_APIS = [
+          "https://api.piped.private.coffee",
+          "https://pipedapi.ducks.party",
+          "https://pipedapi.reallyaweso.me",
+          "https://pipedapi.darkness.services",
+          "https://pipedapi.syncpundit.io",
+        ];
+
+        async function resolveYoutubeStream(ytId) {
+          for (const base of PIPED_APIS) {
+            try {
+              const r = await fetch(base + "/streams/" + encodeURIComponent(ytId), {
+                credentials: "omit",
+              });
+              if (!r.ok) continue;
+              const d = await r.json();
+              const streams = Array.isArray(d.videoStreams) ? d.videoStreams : [];
+              const combined = streams
+                .filter((s) => s && s.url && !s.videoOnly)
+                .slice()
+                .sort(
+                  (a, b) =>
+                    Number(b.height || 0) - Number(a.height || 0) ||
+                    Number(b.bitrate || 0) - Number(a.bitrate || 0)
+                );
+              const mp4 = combined.find((s) =>
+                /mp4|mpeg/i.test(String(s.mimeType || s.format || s.codec || ""))
+              );
+              if (mp4) {
+                return { type: "video", src: mp4.url, title: d.title || "" };
+              }
+              if (combined[0]) {
+                return { type: "video", src: combined[0].url, title: d.title || "" };
+              }
+              if (d.hls) return { type: "hls", src: d.hls, title: d.title || "" };
+            } catch (_) {}
+          }
+          return null;
+        }
+
+        let hlsLibPromise = null;
+        function loadHlsLib() {
+          if (window.Hls) return Promise.resolve(window.Hls);
+          if (hlsLibPromise) return hlsLibPromise;
+          hlsLibPromise = new Promise((resolve, reject) => {
+            const s = document.createElement("script");
+            s.src = "https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js";
+            s.onload = () => resolve(window.Hls);
+            s.onerror = () => reject(new Error("hls.js"));
+            document.head.appendChild(s);
+          });
+          return hlsLibPromise;
         }
 
         function shuffle(arr) {
@@ -285,9 +314,9 @@
         let pos = -1;
         let dwellTimer = 0;
         let currentEl = null;
+        let currentHls = null;
         let stopped = false;
-        let ytMsgBound = false;
-        let awaitingYtEnd = false;
+        let playToken = 0;
 
         function rebuildOrder(startFresh) {
           if (!items.length) {
@@ -310,7 +339,13 @@
 
         function clearStageMedia() {
           clearTimeout(dwellTimer);
-          awaitingYtEnd = false;
+          playToken += 1;
+          if (currentHls) {
+            try {
+              currentHls.destroy();
+            } catch (_) {}
+            currentHls = null;
+          }
           if (currentEl) {
             try {
               if (currentEl.tagName === "VIDEO") {
@@ -324,24 +359,73 @@
           }
         }
 
-        function bindYtEndedListener() {
-          if (ytMsgBound) return;
-          ytMsgBound = true;
-          window.addEventListener("message", (ev) => {
-            if (!awaitingYtEnd) return;
-            const origin = String(ev.origin || "");
-            if (!origin.includes("youtube.com")) return;
-            let data = ev.data;
+        function mountVideo(src, { label, token } = {}) {
+          const v = document.createElement("video");
+          v.className =
+            fit === "cover" ? "fit-cover" : fit === "fill" ? "fit-fill" : "fit-contain";
+          v.autoplay = true;
+          v.playsInline = true;
+          v.muted = mute;
+          v.volume = volume;
+          v.controls = false;
+          v.addEventListener("ended", () => {
+            if (token === playToken) next(false);
+          });
+          v.addEventListener("error", () => {
+            if (token !== playToken) return;
+            setHud("播放失敗，跳下一則 · " + (label || src));
+            setTimeout(() => next(false), 800);
+          });
+          stage.appendChild(v);
+          currentEl = v;
+          v.src = src;
+          const p = v.play();
+          if (p && p.catch) p.catch(() => {});
+          return v;
+        }
+
+        async function mountHls(src, { label, token } = {}) {
+          const v = document.createElement("video");
+          v.className =
+            fit === "cover" ? "fit-cover" : fit === "fill" ? "fit-fill" : "fit-contain";
+          v.autoplay = true;
+          v.playsInline = true;
+          v.muted = mute;
+          v.volume = volume;
+          v.controls = false;
+          v.addEventListener("ended", () => {
+            if (token === playToken) next(false);
+          });
+          stage.appendChild(v);
+          currentEl = v;
+          if (v.canPlayType("application/vnd.apple.mpegurl")) {
+            v.src = src;
+          } else {
             try {
-              if (typeof data === "string") data = JSON.parse(data);
+              const Hls = await loadHlsLib();
+              if (token !== playToken) return;
+              if (Hls && Hls.isSupported()) {
+                const hls = new Hls({ enableWorker: true });
+                currentHls = hls;
+                hls.loadSource(src);
+                hls.attachMedia(v);
+                hls.on(Hls.Events.ERROR, () => {
+                  if (token !== playToken) return;
+                  setHud("串流失敗，跳下一則 · " + (label || ""));
+                  setTimeout(() => next(false), 800);
+                });
+              } else {
+                v.src = src;
+              }
             } catch (_) {
+              if (token !== playToken) return;
+              setHud("無法載入 HLS，跳下一則");
+              setTimeout(() => next(false), 800);
               return;
             }
-            // YT IFrame API：onStateChange info===0 → ended
-            if (data && data.event === "onStateChange" && Number(data.info) === 0) {
-              next(false);
-            }
-          });
+          }
+          const p = v.play();
+          if (p && p.catch) p.catch(() => {});
         }
 
         function mountIframe(src, { onEndedSafetySec } = {}) {
@@ -356,19 +440,6 @@
             setHud("頁面載入失敗，跳下一則");
             setTimeout(() => next(false), 800);
           });
-          f.addEventListener("load", () => {
-            try {
-              f.contentWindow.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*");
-              f.contentWindow.postMessage(
-                JSON.stringify({
-                  event: "command",
-                  func: "addEventListener",
-                  args: ["onStateChange"],
-                }),
-                "*"
-              );
-            } catch (_) {}
-          });
           stage.appendChild(f);
           currentEl = f;
           if (onEndedSafetySec && onEndedSafetySec > 0) {
@@ -377,24 +448,26 @@
           return f;
         }
 
-        function allYoutube() {
-          return items.length > 0 && items.every((it) => it.kind === "youtube" && it.ytId);
-        }
-
-        /** 清單全是 YouTube：一支 iframe 用官方 playlist 接播（OBS 一個來源播完全部） */
-        function playAllYoutubeNative() {
-          clearStageMedia();
-          empty.hidden = true;
-          let ids = items.map((it) => it.ytId);
-          if (mode === "random") ids = shuffle(ids);
-          const loopPlaylist = mode !== "seq";
-          const src = ytEmbedSrc(ids, { loopPlaylist });
-          const label =
-            (mode === "random" ? "隨機" : mode === "seq" ? "順序" : "循環") +
-            ` · YouTube 清單 ${ids.length} 則 · 自動接播`;
-          setHud(label);
-          awaitingYtEnd = false; // 接播交給 YouTube playlist
-          mountIframe(src, { onEndedSafetySec: 0 });
+        async function playYoutubeDirect(item, label) {
+          const token = playToken;
+          setHud(label + " · 解析原始串流…");
+          const stream = await resolveYoutubeStream(item.ytId);
+          if (token !== playToken) return;
+          if (!stream || !stream.src) {
+            setHud(label + " · 找不到可播串流，跳下一則");
+            setTimeout(() => next(false), 1000);
+            return;
+          }
+          setHud(
+            label +
+              " · 自有播放器" +
+              (stream.title ? " · " + stream.title : "")
+          );
+          if (stream.type === "hls") {
+            await mountHls(stream.src, { label: item.raw, token });
+          } else {
+            mountVideo(stream.src, { label: item.raw, token });
+          }
         }
 
         function playIndex(itemIndex) {
@@ -404,42 +477,22 @@
           empty.hidden = true;
           const label =
             (mode === "random" ? "隨機" : mode === "seq" ? "順序" : "循環") +
-            ` · ${itemIndex + 1}/${items.length} · ${item.kind}`;
-          setHud(label + " · " + item.raw);
+            ` · ${itemIndex + 1}/${items.length}`;
+          const token = playToken;
 
           if (item.kind === "video") {
-            const v = document.createElement("video");
-            v.className =
-              fit === "cover" ? "fit-cover" : fit === "fill" ? "fit-fill" : "fit-contain";
-            v.src = item.src;
-            v.autoplay = true;
-            v.playsInline = true;
-            v.muted = mute;
-            v.volume = volume;
-            v.controls = false;
-            v.addEventListener("ended", () => next(false));
-            v.addEventListener("error", () => {
-              setHud("播放失敗，跳下一則 · " + item.raw);
-              setTimeout(() => next(false), 800);
-            });
-            stage.appendChild(v);
-            currentEl = v;
-            const p = v.play();
-            if (p && p.catch) p.catch(() => {});
+            setHud(label + " · " + item.raw);
+            mountVideo(item.src, { label: item.raw, token });
             return;
           }
 
           if (item.kind === "youtube") {
-            bindYtEndedListener();
-            awaitingYtEnd = true;
-            mountIframe(item.src, {
-              // 播完切下一則；安全網 6 小時避免極端卡死
-              onEndedSafetySec: Math.max(dwellSec, 6 * 3600),
-            });
+            playYoutubeDirect(item, label);
             return;
           }
 
           // 一般網頁 → 停留秒數後下一則
+          setHud(label + " · 網頁 · " + item.raw);
           mountIframe(item.src, { onEndedSafetySec: dwellSec });
         }
 
@@ -465,21 +518,14 @@
         }
 
         async function boot() {
-          // 若網址沒帶 list，試讀入口寫入的共用檔
           if (!items.length) await pullSharedPlaylist();
           if (!items.length) {
             empty.hidden = false;
             setHud("");
             return;
           }
-          // 全 YouTube：官方清單接播（一個來源播完全部）
-          if (allYoutube()) {
-            playAllYoutubeNative();
-          } else {
-            rebuildOrder(true);
-            next(true);
-          }
-          // 定期重讀共用清單（入口改了可跟上）
+          rebuildOrder(true);
+          next(true);
           setInterval(async () => {
             const before = items.map((x) => x.raw).join("\n");
             const ok = await pullSharedPlaylist();
@@ -487,11 +533,8 @@
             const after = items.map((x) => x.raw).join("\n");
             if (after !== before && items.length) {
               stopped = false;
-              if (allYoutube()) playAllYoutubeNative();
-              else {
-                rebuildOrder(true);
-                next(true);
-              }
+              rebuildOrder(true);
+              next(true);
             }
           }, 15000);
         }

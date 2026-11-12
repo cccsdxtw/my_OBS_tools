@@ -828,12 +828,10 @@
           return live?.id || null;
         }
 
-        async function resolveLiveViaSearch(channelId) {
-          const url = `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
-            channelId
-          )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`;
-          const json = await ytFetchJson(url, "yt search");
-          return json?.items?.[0]?.id?.videoId || null;
+        async function resolveLiveViaSearch(_channelId) {
+          // 停用 search.list（一次 100 配額）；請在入口填直播網址
+          console.warn("yt: 已跳過 search 以省配額；請填 ytVideo");
+          return null;
         }
 
         async function videoStillLive(videoId) {

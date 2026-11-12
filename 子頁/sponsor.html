@@ -1133,14 +1133,9 @@
           } catch (e) {
             console.warn(e);
           }
+          // 不再打 search.list（一次 100 配額）；請在入口填直播網址／影片 ID
           if (!id) {
-            const json = await ytFetchJson(
-              `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
-                channelId
-              )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`,
-              "yt search"
-            );
-            id = json?.items?.[0]?.id?.videoId || null;
+            console.warn("yt: 找不到直播（已跳過 search 以省配額）；請填 ytVideo");
           }
           if (id) writeYtLiveCache({ channelId, videoId: id, ts: Date.now() });
           return id;

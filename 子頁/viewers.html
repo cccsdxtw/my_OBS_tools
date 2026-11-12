@@ -149,8 +149,12 @@
         const DECAPI_VIEWERS = (login) =>
           `https://decapi.me/twitch/viewercount/${encodeURIComponent(login)}`;
         const YT_API = "https://www.googleapis.com/youtube/v3";
-        const POLL_MS = 15000;
-        const YT_RESOLVE_MS = 5 * 60 * 1000;
+        // Twitch 可較密；YouTube 免費配額一天約 10000，search.list 一次就 100
+        const POLL_MS_TW = 15000;
+        const POLL_MS_YT = 60000;
+        const YT_RESOLVE_MS = 20 * 60 * 1000;
+        const YT_QUOTA_COOLDOWN_MS = 60 * 60 * 1000;
+        const YT_QUOTA_UNTIL_KEY = "my_obs_tools_yt_quota_until";
 
         const params = new URLSearchParams(location.search);
 
@@ -219,6 +223,22 @@
         const ytVideoParam = extractYoutubeVideoId(params.get("ytVideo") || "");
         const ytKey = (params.get("ytKey") || params.get("youtubeKey") || "").trim();
         const twitchSource = (params.get("viewersSource") || "auto").toLowerCase();
+        const isPreview = ["1", "true", "yes", "on"].includes(
+          String(params.get("preview") || params.get("demo") || "")
+            .trim()
+            .toLowerCase()
+        );
+        // 預覽／未填直播網址時更省；正式 OBS 有 ytVideo 時約 1 分鐘一查
+        const ytPollMs = isPreview
+          ? 3 * 60 * 1000
+          : ytVideoParam
+            ? POLL_MS_YT
+            : 90 * 1000;
+        const allowYtSearch = ["1", "true", "yes", "on"].includes(
+          String(params.get("ytSearch") || "")
+            .trim()
+            .toLowerCase()
+        );
         const mode = (params.get("vcMode") || "split").toLowerCase(); // split | total
         const twIconUrl = (params.get("twIcon") || "").trim();
         const ytIconUrl = (params.get("ytIcon") || "").trim();
@@ -437,7 +457,33 @@
           return s;
         }
 
+        function readYtQuotaUntil() {
+          try {
+            return Number(localStorage.getItem(YT_QUOTA_UNTIL_KEY) || 0) || 0;
+          } catch (_) {
+            return 0;
+          }
+        }
+        function markYtQuotaCooldown(ms) {
+          try {
+            localStorage.setItem(
+              YT_QUOTA_UNTIL_KEY,
+              String(Date.now() + (ms || YT_QUOTA_COOLDOWN_MS))
+            );
+          } catch (_) {}
+        }
+        function assertYtQuotaOk() {
+          const until = readYtQuotaUntil();
+          if (Date.now() < until) {
+            const mins = Math.max(1, Math.ceil((until - Date.now()) / 60000));
+            throw new Error(
+              `yt 403 quotaExceeded 配額冷卻中（約 ${mins} 分鐘後再試）`
+            );
+          }
+        }
+
         async function ytFetchJson(url, label) {
+          assertYtQuotaOk();
           let res;
           try {
             res = await fetch(url);
@@ -454,9 +500,18 @@
               json?.error?.message ||
               res.statusText ||
               "";
-            throw new Error(
-              `${label} ${res.status}${reason ? " " + String(reason).slice(0, 80) : ""}`
-            );
+            const msg = `${label} ${res.status}${
+              reason ? " " + String(reason).slice(0, 80) : ""
+            }`;
+            if (
+              res.status === 403 &&
+              /quotaExceeded|dailyLimitExceeded|rateLimitExceeded/i.test(
+                String(reason) + msg
+              )
+            ) {
+              markYtQuotaCooldown(YT_QUOTA_COOLDOWN_MS);
+            }
+            throw new Error(msg);
           }
           return json;
         }
@@ -465,6 +520,9 @@
           ytChannel ||
           ytVideoParam ||
           "default"
+        ).toLowerCase()}`;
+        const ytUploadsCacheKey = `laji_obs_yt_uploads:${(
+          ytChannel || "default"
         ).toLowerCase()}`;
 
         function readYtCache() {
@@ -482,6 +540,21 @@
         function clearYtCache() {
           try {
             localStorage.removeItem(ytCacheKey);
+          } catch (_) {}
+        }
+        function readUploadsPlaylistId(channelId) {
+          try {
+            const raw = JSON.parse(localStorage.getItem(ytUploadsCacheKey) || "null");
+            if (raw && raw.channelId === channelId && raw.uploads) return raw.uploads;
+          } catch (_) {}
+          return null;
+        }
+        function writeUploadsPlaylistId(channelId, uploads) {
+          try {
+            localStorage.setItem(
+              ytUploadsCacheKey,
+              JSON.stringify({ channelId, uploads, ts: Date.now() })
+            );
           } catch (_) {}
         }
 
@@ -530,6 +603,8 @@
         }
 
         async function resolveLiveViaSearch(channelId) {
+          // search.list = 100 配額；預設關閉，除非網址加 ytSearch=1
+          if (!allowYtSearch) return null;
           const url = `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
             channelId
           )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`;
@@ -538,13 +613,16 @@
         }
 
         async function resolveLiveViaUploads(channelId) {
-          // 優先用這個：配額低；search.list 一天很容易打爆變 ERR
-          const chUrl = `${YT_API}/channels?part=contentDetails&id=${encodeURIComponent(
-            channelId
-          )}&key=${encodeURIComponent(ytKey)}`;
-          const chJson = await ytFetchJson(chUrl, "yt channel details");
-          const uploads =
-            chJson?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+          // 便宜路徑：channels(1) + playlistItems(1) + videos(1)；可快取 uploads id
+          let uploads = readUploadsPlaylistId(channelId);
+          if (!uploads) {
+            const chUrl = `${YT_API}/channels?part=contentDetails&id=${encodeURIComponent(
+              channelId
+            )}&key=${encodeURIComponent(ytKey)}`;
+            const chJson = await ytFetchJson(chUrl, "yt channel details");
+            uploads = chJson?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+            if (uploads) writeUploadsPlaylistId(channelId, uploads);
+          }
           if (!uploads) return null;
           const plUrl = `${YT_API}/playlistItems?part=contentDetails&playlistId=${encodeURIComponent(
             uploads
@@ -565,55 +643,38 @@
           return live?.id || null;
         }
 
-        async function videoStillLive(videoId) {
-          if (!videoId) return false;
-          const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
-            videoId
-          )}&key=${encodeURIComponent(ytKey)}`;
-          const json = await ytFetchJson(url, "yt videos");
-          const details = json?.items?.[0]?.liveStreamingDetails;
-          return !!(details && details.actualStartTime && !details.actualEndTime);
-        }
-
         async function resolveYoutubeLiveVideoId(force = false) {
           if (ytVideoParam) {
             ytVideoId = ytVideoParam;
             return ytVideoId;
           }
           const now = Date.now();
-          if (ytVideoId && !force && now - lastYtResolve < YT_RESOLVE_MS) {
+          // 含「找不到直播」也要冷卻，避免離線時每分鐘狂打 uploads
+          if (!force && lastYtResolve && now - lastYtResolve < YT_RESOLVE_MS) {
             return ytVideoId;
           }
 
-          // 沿用本機快取的直播 ID（同一場不用每次重找／重貼）
+          // 直接沿用快取 ID；是否仍在直播交給後面那一次 videos.list 判斷（省一次請求）
           if (!force) {
             const cache = readYtCache();
             if (cache?.videoId) {
-              try {
-                if (await videoStillLive(cache.videoId)) {
-                  ytVideoId = cache.videoId;
-                  if (cache.channelId) ytChannelId = cache.channelId;
-                  lastYtResolve = now;
-                  return ytVideoId;
-                }
-              } catch (e) {
-                console.warn(e);
-              }
-              clearYtCache();
+              ytVideoId = cache.videoId;
+              if (cache.channelId) ytChannelId = cache.channelId;
+              lastYtResolve = now;
+              return ytVideoId;
             }
           }
 
           const channelId = await resolveYoutubeChannelId();
           let id = null;
           let lastErr = null;
-          // 先 uploads，後 search（search 配額貴，昨天能用今天 ERR 多半是配額）
           try {
             id = await resolveLiveViaUploads(channelId);
           } catch (e) {
             lastErr = e;
             console.warn(e);
           }
-          if (!id) {
+          if (!id && allowYtSearch) {
             try {
               id = await resolveLiveViaSearch(channelId);
             } catch (e) {
@@ -621,14 +682,15 @@
               console.warn("yt search failed", e);
             }
           }
+          lastYtResolve = Date.now();
           if (!id && lastErr) throw lastErr;
           ytVideoId = id;
-          lastYtResolve = now;
-          if (id) writeYtCache({ channelId, videoId: id, ts: now });
+          if (id) writeYtCache({ channelId, videoId: id, ts: lastYtResolve });
           return ytVideoId;
         }
 
         async function fetchYoutubeViewers() {
+          assertYtQuotaOk();
           const videoId = await resolveYoutubeLiveVideoId(false);
           if (!videoId) return 0;
           const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
@@ -637,11 +699,17 @@
           const json = await ytFetchJson(url, "yt videos");
           const details = json?.items?.[0]?.liveStreamingDetails;
           if (!details || details.actualEndTime) {
-            // 下播了：清快取，下一輪自動再找
             ytVideoId = null;
-            lastYtResolve = 0;
             clearYtCache();
+            lastYtResolve = Date.now();
             return 0;
+          }
+          if (!ytVideoParam) {
+            writeYtCache({
+              channelId: ytChannelId || (readYtCache() || {}).channelId,
+              videoId,
+              ts: Date.now(),
+            });
           }
           const n = parseInt(details.concurrentViewers || "0", 10);
           return Number.isNaN(n) ? 0 : n;
@@ -657,14 +725,23 @@
           }
         }
 
-        async function refresh() {
+        async function refreshTwitchOnly() {
+          await refreshTwitch();
+          render();
+        }
+
+        async function refreshAll() {
           await Promise.all([refreshTwitch(), refreshYoutube()]);
           render();
         }
 
         render();
-        refresh();
-        setInterval(refresh, POLL_MS);
+        refreshAll();
+        setInterval(refreshTwitchOnly, POLL_MS_TW);
+        setInterval(async () => {
+          await refreshYoutube();
+          render();
+        }, ytPollMs);
       })();
     </script>
   </body>

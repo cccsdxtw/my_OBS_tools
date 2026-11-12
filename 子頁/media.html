@@ -109,8 +109,10 @@
         const stage = document.getElementById("stage");
         const empty = document.getElementById("empty");
         const hud = document.getElementById("hud");
+        const isHttp =
+          location.protocol === "http:" || location.protocol === "https:";
 
-        const mode = String(params.get("mode") || "loop").toLowerCase(); // seq | loop | random
+        const mode = String(params.get("mode") || "loop").toLowerCase();
         const fit = String(params.get("fit") || "contain").toLowerCase();
         const mute = !["0", "false", "no", "off"].includes(
           String(params.get("mute") || "1").toLowerCase()
@@ -135,13 +137,9 @@
         function decodeListParam(raw) {
           const s = String(raw || "").trim();
           if (!s) return [];
-          // base64url JSON array
           if (s.startsWith("b64:")) {
             try {
-              const b64 = s
-                .slice(4)
-                .replace(/-/g, "+")
-                .replace(/_/g, "/");
+              const b64 = s.slice(4).replace(/-/g, "+").replace(/_/g, "/");
               const pad = b64.length % 4 ? "=".repeat(4 - (b64.length % 4)) : "";
               const json = decodeURIComponent(escape(atob(b64 + pad)));
               const arr = JSON.parse(json);
@@ -156,17 +154,12 @@
         function toPlayableUrl(raw) {
           let s = String(raw || "").trim();
           if (!s) return "";
-          // Windows path
           if (/^[a-zA-Z]:[\\/]/.test(s)) {
             s = "file:///" + s.replace(/\\/g, "/");
           } else if (s.startsWith("\\\\")) {
             s = "file:" + s.replace(/\\/g, "/");
           }
-          // relative → from tool root (parent of 子頁)
-          if (
-            !/^(https?:|file:|data:)/i.test(s) &&
-            !s.startsWith("//")
-          ) {
+          if (!/^(https?:|file:|data:)/i.test(s) && !s.startsWith("//")) {
             try {
               s = new URL("../" + s.replace(/^\.\//, ""), location.href).href;
             } catch (_) {}
@@ -182,12 +175,17 @@
               const id = u.pathname.split("/").filter(Boolean)[0] || "";
               return /^[\w-]{11}$/.test(id) ? id : "";
             }
-            if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
+            if (
+              host.endsWith("youtube.com") ||
+              host.endsWith("youtube-nocookie.com")
+            ) {
               const v = u.searchParams.get("v");
               if (v && /^[\w-]{11}$/.test(v)) return v;
               const parts = u.pathname.split("/").filter(Boolean);
               if (
-                (parts[0] === "embed" || parts[0] === "live" || parts[0] === "shorts") &&
+                (parts[0] === "embed" ||
+                  parts[0] === "live" ||
+                  parts[0] === "shorts") &&
                 parts[1] &&
                 /^[\w-]{11}$/.test(parts[1])
               ) {
@@ -198,12 +196,27 @@
           return "";
         }
 
+        function ytEmbedSrc(id) {
+          const q = new URLSearchParams({
+            autoplay: "1",
+            rel: "0",
+            modestbranding: "1",
+            playsinline: "1",
+            controls: "1",
+            enablejsapi: "1",
+          });
+          if (mute) q.set("mute", "1");
+          if (isHttp) {
+            try {
+              q.set("origin", location.origin);
+            } catch (_) {}
+          }
+          return "https://www.youtube.com/embed/" + id + "?" + q.toString();
+        }
+
         function classify(url) {
           const yt = youtubeId(url);
-          if (yt) {
-            // 類似 Streamlabs：經本機 yt-bridge 中轉再播，清單一個個接
-            return { kind: "youtube", ytId: yt, src: "" };
-          }
+          if (yt) return { kind: "youtube", ytId: yt, src: ytEmbedSrc(yt) };
           if (/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|#|$)/i.test(url)) {
             return { kind: "video", src: url };
           }
@@ -226,10 +239,8 @@
           .filter(Boolean)
           .map((src, i) => ({ i, ...classify(src), raw: src }));
 
-        // 入口寫入的共用清單（可更新已開著的 OBS）
         async function pullSharedPlaylist() {
           if (!window.MyObsYtLiveSync) return false;
-          // reuse script loader paths pattern via direct script for media playlist
           const paths = ["../資料/media-playlist.js", "資料/media-playlist.js"];
           for (const p of paths) {
             const ok = await new Promise((resolve) => {
@@ -247,9 +258,6 @@
               .map(toPlayableUrl)
               .filter(Boolean)
               .map((src, i) => ({ i, ...classify(src), raw: src }));
-            if (data.mode) {
-              /* mode from file only if URL didn't set? keep URL mode as source of truth */
-            }
             return true;
           }
           return false;
@@ -312,7 +320,6 @@
             } catch (_) {
               return;
             }
-            // 播完 → 下一則（清單一個個接，類似 Media Share）
             if (data && data.event === "onStateChange" && Number(data.info) === 0) {
               next(false);
             }
@@ -382,26 +389,6 @@
           return f;
         }
 
-        /** Streamlabs 那路：中轉頁給 Referer → embed 播完 → 下一則 */
-        function playYoutubeBridge(item, label) {
-          setHud(label + " · YouTube 接播");
-          bindYtEndedListener();
-          awaitingYtEnd = true;
-          let bridge;
-          try {
-            bridge = new URL("yt-bridge.html", location.href);
-          } catch (_) {
-            bridge = new URL("../子頁/yt-bridge.html", location.href);
-          }
-          bridge.searchParams.set("v", item.ytId);
-          bridge.searchParams.set("mute", mute ? "1" : "0");
-          mountIframe(bridge.href, {
-            listenYt: true,
-            // 正常靠播完事件；安全網避免卡死
-            onEndedSafetySec: Math.max(dwellSec, 6 * 3600),
-          });
-        }
-
         function playIndex(itemIndex) {
           const item = items[itemIndex];
           if (!item) return;
@@ -419,11 +406,23 @@
           }
 
           if (item.kind === "youtube") {
-            playYoutubeBridge(item, label);
+            if (!isHttp) {
+              empty.hidden = false;
+              empty.innerHTML =
+                "YouTube 在 <code>file://</code> 會 Error 153。<br />請雙擊工具夾 <code>啟動本機伺服器.bat</code>，<br />再用入口複製的 <code>http://127.0.0.1:8765/...</code> 貼到 OBS。";
+              setHud(label + " · 需本機 http 伺服器");
+              return;
+            }
+            setHud(label + " · YouTube");
+            bindYtEndedListener();
+            awaitingYtEnd = true;
+            mountIframe(item.src, {
+              listenYt: true,
+              onEndedSafetySec: Math.max(dwellSec, 6 * 3600),
+            });
             return;
           }
 
-          // 一般網頁 → 停留秒數後下一則
           setHud(label + " · 網頁 · " + item.raw);
           mountIframe(item.src, { onEndedSafetySec: dwellSec });
         }

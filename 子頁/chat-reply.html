@@ -10,6 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap"
       rel="stylesheet"
     />
+    <script src="../yt-live-sync.js"></script>
     <style>
       :root {
         --bg: #121814;
@@ -763,8 +764,23 @@
           return !!(details && details.actualStartTime && !details.actualEndTime);
         }
 
-        /** 自動找直播整場最多一次並記住；之後只連 chat，不再重找 */
+        let sharedOverrideVideoId = null;
+        async function refreshSharedLiveOverride() {
+          if (!window.MyObsYtLiveSync) return sharedOverrideVideoId;
+          try {
+            const data = await MyObsYtLiveSync.fetchSharedYtLive();
+            if (data && data.videoId) sharedOverrideVideoId = String(data.videoId);
+            else if (data && Object.prototype.hasOwnProperty.call(data, "videoId")) {
+              sharedOverrideVideoId = null;
+            }
+          } catch (_) {}
+          return sharedOverrideVideoId;
+        }
+
+        /** 入口 yt-live.js → 網址 → 快取；自動找整場最多一次 */
         async function resolveLiveVideoId() {
+          await refreshSharedLiveOverride();
+          if (sharedOverrideVideoId) return sharedOverrideVideoId;
           if (ytVideoParam) return ytVideoParam;
           const cache = readYtLiveCache();
           if (cache?.videoId) return cache.videoId;
@@ -845,6 +861,13 @@
 
           async function tick() {
             try {
+              const prevShared = sharedOverrideVideoId;
+              await refreshSharedLiveOverride();
+              if (prevShared !== sharedOverrideVideoId) {
+                chatId = null;
+                pageToken = "";
+                ytLiveChatId = null;
+              }
               if (!chatId) await ensure();
               const url = new URL(`${YT_API}/liveChat/messages`);
               url.searchParams.set("liveChatId", chatId);

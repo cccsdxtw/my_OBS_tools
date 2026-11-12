@@ -11,6 +11,7 @@
       rel="stylesheet"
     />
     <script src="../panel-bg.js"></script>
+    <script src="../yt-live-sync.js"></script>
     <style id="base-style">
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -854,8 +855,34 @@
           return !!(details && details.actualStartTime && !details.actualEndTime);
         }
 
-        /** 自動找直播整場最多一次並記住；之後只連 chat，不再重找 */
+        let sharedOverrideVideoId = null;
+        async function refreshSharedLiveOverride() {
+          if (!window.MyObsYtLiveSync) return sharedOverrideVideoId;
+          try {
+            const data = await MyObsYtLiveSync.fetchSharedYtLive();
+            if (data && data.videoId) sharedOverrideVideoId = String(data.videoId);
+            else if (data && Object.prototype.hasOwnProperty.call(data, "videoId")) {
+              sharedOverrideVideoId = null;
+            }
+          } catch (_) {}
+          return sharedOverrideVideoId;
+        }
+
+        /** 入口 yt-live.js → 快取；自動找整場最多一次 */
         async function resolveLiveVideoId(channelRaw) {
+          await refreshSharedLiveOverride();
+          const primary = String((ytChannels && ytChannels[0]) || "")
+            .trim()
+            .toLowerCase();
+          if (
+            sharedOverrideVideoId &&
+            primary &&
+            String(channelRaw || "")
+              .trim()
+              .toLowerCase() === primary
+          ) {
+            return sharedOverrideVideoId;
+          }
           const cache = readYtLiveCache(channelRaw);
           if (cache?.videoId) return cache.videoId;
           const now = Date.now();
@@ -936,6 +963,13 @@
 
           async function tick() {
             try {
+              const prevShared = sharedOverrideVideoId;
+              await refreshSharedLiveOverride();
+              if (prevShared !== sharedOverrideVideoId) {
+                chatId = null;
+                pageToken = "";
+                videoId = null;
+              }
               if (!chatId) await ensureChat();
               const url = new URL(`${YT_API}/liveChat/messages`);
               url.searchParams.set("liveChatId", chatId);
@@ -1001,12 +1035,19 @@
 
           // 有明確影片 ID 的各自輪詢；其餘依頻道自動找 live
           const jobs = [];
-          ytVideoIds.forEach((vid) => {
+          ytVideoIds.forEach((vid, idx) => {
             jobs.push({
               key: "vid:" + vid,
               label: vid,
               cacheRaw: "vid:" + vid,
-              getVideoId: async () => vid,
+              getVideoId: async () => {
+                // 第一個影片欄位可被入口本場直播覆寫（OBS 不用重貼網址）
+                if (idx === 0) {
+                  await refreshSharedLiveOverride();
+                  if (sharedOverrideVideoId) return sharedOverrideVideoId;
+                }
+                return vid;
+              },
             });
           });
           ytChannels.forEach((ch) => {

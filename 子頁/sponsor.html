@@ -11,6 +11,7 @@
       rel="stylesheet"
     />
     <script src="../panel-bg.js"></script>
+    <script src="../yt-live-sync.js"></script>
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -1120,8 +1121,23 @@
           return live?.id || null;
         }
 
-        /** 自動找直播整場最多一次並記住；之後只連 chat，不再重找 */
+        let sharedOverrideVideoId = null;
+        async function refreshSharedLiveOverride() {
+          if (!window.MyObsYtLiveSync) return sharedOverrideVideoId;
+          try {
+            const data = await MyObsYtLiveSync.fetchSharedYtLive();
+            if (data && data.videoId) sharedOverrideVideoId = String(data.videoId);
+            else if (data && Object.prototype.hasOwnProperty.call(data, "videoId")) {
+              sharedOverrideVideoId = null;
+            }
+          } catch (_) {}
+          return sharedOverrideVideoId;
+        }
+
+        /** 入口 yt-live.js → 網址 → 快取；自動找整場最多一次 */
         async function resolveLiveVideoId() {
+          await refreshSharedLiveOverride();
+          if (sharedOverrideVideoId) return sharedOverrideVideoId;
           if (ytVideoParam) return ytVideoParam;
           const cache = readYtLiveCache();
           if (cache?.videoId) return cache.videoId;
@@ -1192,6 +1208,12 @@
 
           async function tick() {
             try {
+              const prevShared = sharedOverrideVideoId;
+              await refreshSharedLiveOverride();
+              if (prevShared !== sharedOverrideVideoId) {
+                chatId = null;
+                pageToken = "";
+              }
               if (!chatId) await ensure();
               const url = new URL(`${YT_API}/liveChat/messages`);
               url.searchParams.set("liveChatId", chatId);

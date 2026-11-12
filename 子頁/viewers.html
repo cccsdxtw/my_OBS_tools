@@ -11,6 +11,7 @@
       rel="stylesheet"
     />
     <script src="../panel-bg.js"></script>
+    <script src="../yt-live-sync.js"></script>
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -644,11 +645,31 @@
           return live?.id || null;
         }
 
+        let sharedOverrideVideoId = null;
+        async function refreshSharedLiveOverride() {
+          if (!window.MyObsYtLiveSync) return sharedOverrideVideoId;
+          try {
+            const data = await MyObsYtLiveSync.fetchSharedYtLive();
+            if (data && data.videoId) {
+              sharedOverrideVideoId = String(data.videoId);
+              if (data.channelId) ytChannelId = data.channelId;
+            } else if (data && Object.prototype.hasOwnProperty.call(data, "videoId")) {
+              sharedOverrideVideoId = null;
+            }
+          } catch (_) {}
+          return sharedOverrideVideoId;
+        }
+
         /**
-         * 自動找直播：整場最多成功找一次，之後只回傳記住的 videoId。
-         * 人數輪詢不會再打 uploads／search。
+         * 優先用入口寫入的 資料/yt-live.js（OBS 可跟著更新），
+         * 再才是網址參數／快取；自動找整場最多一次。
          */
         async function resolveYoutubeLiveVideoId(force = false) {
+          await refreshSharedLiveOverride();
+          if (sharedOverrideVideoId) {
+            ytVideoId = sharedOverrideVideoId;
+            return ytVideoId;
+          }
           if (ytVideoParam) {
             ytVideoId = ytVideoParam;
             return ytVideoId;

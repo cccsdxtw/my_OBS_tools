@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.27</span>
+          <span class="brand-version" id="brandVersion">v1.3.28</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -1154,7 +1154,8 @@
               <button type="button" id="ytClearLiveBtn" class="secondary">清除本場直播</button>
             </div>
             <p class="hint" id="ytLiveStatus" style="margin-top: 6px">
-              建議在入口找一次或手動貼上直播網址；人數／留言／贊助／計數器都會用同一份，不必各自重找。金鑰需在專案「函式庫」啟用 YouTube Data API v3。
+              建議在入口找一次或手動貼上直播網址。會寫入 <code>資料/yt-live.js</code>，已開著的 OBS
+              來源約數十秒內會跟上（第一次可能要請你選工具資料夾以允許寫入）。金鑰需啟用 YouTube Data API v3。
             </p>
 
             <div class="row">
@@ -3064,7 +3065,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.27</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.28</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3078,7 +3079,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.27";
+        const APP_VERSION = "v1.3.28";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3090,6 +3091,7 @@
           "入口.html",
           "material-icons.js",
           "panel-bg.js",
+          "yt-live-sync.js",
           "update-files.json",
           "fonts/MaterialSymbolsOutlined.ttf",
           "子頁/overlay.html",
@@ -3307,6 +3309,7 @@
           // 舊入口升級時清單可能沒有這些；強制補上避免空白覆蓋頁
           [
             "panel-bg.js",
+            "yt-live-sync.js",
             "子頁/counter.html",
             "update-files.json",
           ].forEach((n) => merged.add(n));
@@ -5435,6 +5438,36 @@
               localStorage.setItem(k, JSON.stringify(payload));
             } catch (_) {}
           });
+          // 非同步寫檔給 OBS（不等待呼叫端）
+          writeYtLiveJsToDisk(payload).catch(() => {});
+        }
+
+        async function writeYtLiveJsToDisk(payload) {
+          if (!canUseDirPicker()) return false;
+          const data = {
+            videoId: payload && payload.videoId ? payload.videoId : null,
+            channelId: (payload && payload.channelId) || "",
+            title: (payload && payload.title) || "",
+            ts: (payload && payload.ts) || Date.now(),
+          };
+          const body =
+            "// 由入口自動覆寫；OBS 子頁會定期讀取\n" +
+            "window.__MY_OBS_YT_LIVE__ = " +
+            JSON.stringify(data, null, 2) +
+            ";\n";
+          try {
+            let dir = await pickInstallDir({ force: false });
+            if (!dir) return false;
+            const dataDir = await dir.getDirectoryHandle("資料", { create: true });
+            const fh = await dataDir.getFileHandle("yt-live.js", { create: true });
+            const w = await fh.createWritable();
+            await w.write(body);
+            await w.close();
+            return true;
+          } catch (err) {
+            console.warn("write yt-live.js", err);
+            return false;
+          }
         }
         function setYtLiveStatus(text, ok) {
           const el = $("ytLiveStatus");
@@ -5525,8 +5558,20 @@
             const title = live?.snippet?.title || live.id;
             fields.ytVideo.value = live.id;
             writeSharedYtLiveCache(channelId, live.id, { title });
-            setYtLiveStatus(`已記住本場直播：${title}（${live.id}）。子頁會共用，不必再找。`, true);
+            const wrote = await writeYtLiveJsToDisk({
+              videoId: live.id,
+              channelId,
+              title,
+              ts: Date.now(),
+            });
+            setYtLiveStatus(
+              wrote
+                ? `已記住本場直播：${title}（${live.id}）。已寫入 資料/yt-live.js，OBS 來源稍後會跟上。`
+                : `已記住本場直播：${title}（${live.id}）。若 OBS 沒跟上，請允許選工具資料夾後再找一次，或重新整理瀏覽器來源。`,
+              true
+            );
             buildUrls();
+            syncAccountTxtToDisk({ ask: false, downloadFallback: false }).catch(() => {});
           } catch (err) {
             setYtLiveStatus(String((err && err.message) || err || "尋找失敗"), false);
           } finally {
@@ -5536,13 +5581,24 @@
             }
           }
         }
-        function entryClearCurrentLive() {
+        async function entryClearCurrentLive() {
           fields.ytVideo.value = "";
           const channelId = resolveYtChannelForUrl(fields.ytChannel.value.trim());
           writeSharedYtLiveCache(channelId || fields.ytChannel.value.trim(), null, {
             endedAt: Date.now(),
           });
-          setYtLiveStatus("已清除本場直播。可手動貼新網址，或再按「找目前直播」。", true);
+          const wrote = await writeYtLiveJsToDisk({
+            videoId: null,
+            channelId: channelId || "",
+            title: "",
+            ts: Date.now(),
+          });
+          setYtLiveStatus(
+            wrote
+              ? "已清除本場直播（含 資料/yt-live.js）。可手動貼新網址或再找一次。"
+              : "已清除本場欄位。若 OBS 仍用舊直播，請重新整理來源或允許寫入資料夾後再清一次。",
+            true
+          );
           buildUrls();
         }
 
@@ -6624,7 +6680,7 @@
         const ytClearLiveBtn = $("ytClearLiveBtn");
         if (ytClearLiveBtn) {
           ytClearLiveBtn.addEventListener("click", () => {
-            entryClearCurrentLive();
+            entryClearCurrentLive().catch(() => {});
           });
         }
         // 手動貼直播網址／ID 也寫入共用快取，子頁就不用再自動找

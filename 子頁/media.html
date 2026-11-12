@@ -114,8 +114,8 @@
 
         const mode = String(params.get("mode") || "loop").toLowerCase();
         const fit = String(params.get("fit") || "contain").toLowerCase();
-        const mute = !["0", "false", "no", "off"].includes(
-          String(params.get("mute") || "1").toLowerCase()
+        const mute = ["1", "true", "yes", "on"].includes(
+          String(params.get("mute") || "0").toLowerCase()
         );
         const volume = Math.min(
           1,
@@ -204,8 +204,7 @@
             playsinline: "1",
             controls: "1",
             enablejsapi: "1",
-            // OBS／瀏覽器自動播通常要求靜音；否則會卡住不播
-            mute: "1",
+            mute: mute ? "1" : "0",
           });
           if (isHttp) {
             try {
@@ -333,8 +332,7 @@
             fit === "cover" ? "fit-cover" : fit === "fill" ? "fit-fill" : "fit-contain";
           v.autoplay = true;
           v.playsInline = true;
-          // 先靜音才能自動播；成功後再依設定取消靜音
-          v.muted = true;
+          v.muted = mute;
           v.volume = volume;
           v.controls = false;
           v.addEventListener("ended", () => {
@@ -349,18 +347,7 @@
           currentEl = v;
           v.src = src;
           const p = v.play();
-          if (p && p.then) {
-            p.then(() => {
-              if (!mute) {
-                try {
-                  v.muted = false;
-                } catch (_) {}
-              }
-            }).catch(() => {
-              const retry = v.play();
-              if (retry && retry.catch) retry.catch(() => {});
-            });
-          }
+          if (p && p.catch) p.catch(() => {});
           return v;
         }
 
@@ -390,7 +377,6 @@
               try {
                 const w = f.contentWindow;
                 ytCommand(w, "addEventListener", ["onStateChange"]);
-                // 多催幾次 play，避免 OBS 載入後不自動播
                 let n = 0;
                 const kick = setInterval(() => {
                   if (n++ > 8 || currentEl !== f) {
@@ -398,7 +384,10 @@
                     return;
                   }
                   ytCommand(w, "playVideo");
-                  ytCommand(w, "mute");
+                  if (!mute) {
+                    ytCommand(w, "unMute");
+                    ytCommand(w, "setVolume", [Math.round(volume * 100)]);
+                  }
                 }, 400);
               } catch (_) {}
             });

@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.0</span>
+          <span class="brand-version" id="brandVersion">v1.5.1</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -2991,9 +2991,16 @@
                 <label><input type="checkbox" id="mediaHud" checked /> 顯示左下角狀態</label>
               </div>
             </div>
+            <div class="field">
+              <label
+                ><input type="checkbox" id="mediaUseOnline" checked /> YouTube
+                用線上網址（https；file:// 內嵌 YT 會被擋）</label
+              >
+            </div>
             <p class="hint">
-              OBS 建議來源寬高用你的畫面比例（例如 1920×1080）。本機影片若播不出來，改用
-              <code>file:///C:/...</code> 或把檔案放在工具資料夾內用相對路徑。
+              OBS 建議來源寬高用你的畫面比例（例如 1920×1080）。清單含 YouTube
+              時請勾「線上網址」再複製／預覽。本機 mp4 與 YouTube
+              不要混在同一份線上清單（https 頁讀不到本機檔）；純本機影片請取消勾選。
             </p>
           </section>
 
@@ -3148,7 +3155,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.0</p>
+          <p class="apply-status" id="versionStatus">本機 v1.5.1</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3162,7 +3169,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.0";
+        const APP_VERSION = "v1.5.1";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4382,6 +4389,7 @@
           mediaMute: $("mediaMute"),
           mediaVolume: $("mediaVolume"),
           mediaHud: $("mediaHud"),
+          mediaUseOnline: $("mediaUseOnline"),
         };
 
         /** @type {Array<{id:string,name:string,goal:string,keywords:string}>} */
@@ -6275,12 +6283,37 @@
           }
         }
 
+        // GitHub Pages 目前未啟用；用 jsDelivr 提供 https 版 media.html（YT 內嵌需要 https）
+        // 固定 @main：清單在 query，不依賴本機尚未發佈的標籤
+        function mediaOnlinePlayerUrl() {
+          return "https://cdn.jsdelivr.net/gh/cccsdxtw/my_OBS_tools@main/%E5%AD%90%E9%A0%81/media.html";
+        }
+
+        function mediaListHasYoutube(lines) {
+          return (lines || []).some((l) =>
+            /youtu\.be\/|youtube\.com\/|youtube-nocookie\.com\//i.test(String(l || ""))
+          );
+        }
+
         function buildMediaUrl() {
-          const url = pageUrl("media.html");
-          const p = url.searchParams;
           const lines = readMediaListLines();
-          if (lines.length) p.set("list", encodeMediaListForUrl(lines));
           const mode = (fields.mediaMode && fields.mediaMode.value) || "loop";
+          const hasYt = mediaListHasYoutube(lines);
+          // YouTube 在 file:// 內嵌常被擋 → 勾選時改走 https（jsDelivr）
+          const useOnline =
+            hasYt && fields.mediaUseOnline && fields.mediaUseOnline.checked;
+          let finalUrl;
+          if (useOnline) {
+            try {
+              finalUrl = new URL(mediaOnlinePlayerUrl());
+            } catch (_) {
+              finalUrl = pageUrl("media.html");
+            }
+          } else {
+            finalUrl = pageUrl("media.html");
+          }
+          const p = finalUrl.searchParams;
+          if (lines.length) p.set("list", encodeMediaListForUrl(lines));
           p.set("mode", mode);
           const dwell = parseInt(fields.mediaDwell && fields.mediaDwell.value, 10);
           if (dwell && dwell >= 3) p.set("dwell", String(dwell));
@@ -6291,9 +6324,8 @@
           const vol = Number(fields.mediaVolume && fields.mediaVolume.value);
           if (Number.isFinite(vol)) p.set("volume", String(Math.min(1, Math.max(0, vol))));
           if (fields.mediaHud && !fields.mediaHud.checked) p.set("hud", "0");
-          // 非同步寫共用檔，已開 OBS 可跟上
           writeMediaPlaylistJsToDisk(lines, mode).catch(() => {});
-          return url.toString();
+          return finalUrl.toString();
         }
 
         function buildUrls() {

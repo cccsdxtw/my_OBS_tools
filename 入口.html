@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.11</span>
+          <span class="brand-version" id="brandVersion">v1.5.12</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -3148,7 +3148,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.11</p>
+          <p class="apply-status" id="versionStatus">本機 v1.5.12</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3162,7 +3162,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.11";
+        const APP_VERSION = "v1.5.12";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3189,6 +3189,7 @@
           "子頁/media.html",
           "子頁/yt-bridge.html",
           "啟動本機伺服器.bat",
+          "local-server.js",
           "圖片/說明.txt",
           "README.md",
         ];
@@ -3400,6 +3401,7 @@
             "子頁/media.html",
             "子頁/yt-bridge.html",
             "啟動本機伺服器.bat",
+            "local-server.js",
             "update-files.json",
           ].forEach((n) => merged.add(n));
           return Array.from(merged);

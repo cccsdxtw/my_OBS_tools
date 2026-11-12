@@ -152,7 +152,8 @@
         // Twitch 可較密；YouTube 免費配額一天約 10000，search.list 一次就 100
         const POLL_MS_TW = 15000;
         const POLL_MS_YT = 60000;
-        const YT_RESOLVE_MS = 20 * 60 * 1000;
+        // 自動「找直播」成功後就記住；下播後至少隔這麼久才准再找下一次
+        const YT_REFIND_MS = 2 * 60 * 60 * 1000;
         const YT_QUOTA_COOLDOWN_MS = 60 * 60 * 1000;
         const YT_QUOTA_UNTIL_KEY = "my_obs_tools_yt_quota_until";
 
@@ -643,26 +644,37 @@
           return live?.id || null;
         }
 
+        /**
+         * 自動找直播：整場最多成功找一次，之後只回傳記住的 videoId。
+         * 人數輪詢不會再打 uploads／search。
+         */
         async function resolveYoutubeLiveVideoId(force = false) {
           if (ytVideoParam) {
             ytVideoId = ytVideoParam;
             return ytVideoId;
           }
-          const now = Date.now();
-          // 含「找不到直播」也要冷卻，避免離線時每分鐘狂打 uploads
-          if (!force && lastYtResolve && now - lastYtResolve < YT_RESOLVE_MS) {
+
+          const cache = readYtCache();
+          if (cache?.channelId) ytChannelId = cache.channelId;
+
+          // 已記住本場直播 → 直接用（後面 videos.list 只查人數）
+          if (!force && (ytVideoId || cache?.videoId)) {
+            ytVideoId = ytVideoId || cache.videoId;
             return ytVideoId;
           }
 
-          // 直接沿用快取 ID；是否仍在直播交給後面那一次 videos.list 判斷（省一次請求）
-          if (!force) {
-            const cache = readYtCache();
-            if (cache?.videoId) {
-              ytVideoId = cache.videoId;
-              if (cache.channelId) ytChannelId = cache.channelId;
-              lastYtResolve = now;
-              return ytVideoId;
-            }
+          const now = Date.now();
+          // 剛找失敗／剛下播：不要一直重找
+          const waitUntil = Math.max(
+            Number(cache?.huntFailedAt || 0),
+            Number(cache?.endedAt || 0)
+          );
+          if (!force && waitUntil && now - waitUntil < YT_REFIND_MS) {
+            ytVideoId = null;
+            return null;
+          }
+          if (!force && lastYtResolve && now - lastYtResolve < YT_REFIND_MS && !cache?.videoId) {
+            return null;
           }
 
           const channelId = await resolveYoutubeChannelId();
@@ -683,10 +695,24 @@
             }
           }
           lastYtResolve = Date.now();
-          if (!id && lastErr) throw lastErr;
-          ytVideoId = id;
-          if (id) writeYtCache({ channelId, videoId: id, ts: lastYtResolve });
-          return ytVideoId;
+          if (id) {
+            ytVideoId = id;
+            writeYtCache({
+              channelId,
+              videoId: id,
+              ts: lastYtResolve,
+              foundOnce: true,
+            });
+            return id;
+          }
+          writeYtCache({
+            channelId,
+            videoId: null,
+            huntFailedAt: lastYtResolve,
+            ts: lastYtResolve,
+          });
+          if (lastErr) throw lastErr;
+          return null;
         }
 
         async function fetchYoutubeViewers() {
@@ -699,8 +725,15 @@
           const json = await ytFetchJson(url, "yt videos");
           const details = json?.items?.[0]?.liveStreamingDetails;
           if (!details || details.actualEndTime) {
+            // 下播：忘掉本場，但兩小時內不再自動找下一場
+            const channelId = ytChannelId || (readYtCache() || {}).channelId || "";
             ytVideoId = null;
-            clearYtCache();
+            writeYtCache({
+              channelId,
+              videoId: null,
+              endedAt: Date.now(),
+              ts: Date.now(),
+            });
             lastYtResolve = Date.now();
             return 0;
           }
@@ -709,6 +742,7 @@
               channelId: ytChannelId || (readYtCache() || {}).channelId,
               videoId,
               ts: Date.now(),
+              foundOnce: true,
             });
           }
           const n = parseInt(details.concurrentViewers || "0", 10);

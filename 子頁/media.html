@@ -354,7 +354,7 @@
             tip.style.cssText =
               "position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:rgba(255,255,255,0.75);font-size:15px;line-height:1.5;background:#111;z-index:2";
             tip.innerHTML =
-              "YouTube 無法在 <code>file://</code> 內嵌播放。<br />請在入口勾選「YouTube 用線上網址（https）」後重新複製到 OBS／預覽。";
+              "YouTube 無法在 <code>file://</code> 內嵌播放。<br />請在入口勾選「YouTube 用官方內嵌網址」後重新複製到 OBS／預覽。";
             stage.appendChild(tip);
             currentEl = tip;
             dwellTimer = setTimeout(() => next(false), Math.min(dwellSec, 8) * 1000);

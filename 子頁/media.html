@@ -53,19 +53,33 @@
       }
       #tapPlay {
         position: absolute;
-        inset: 0;
-        z-index: 4;
+        left: 50%;
+        bottom: 48px;
+        transform: translateX(-50%);
+        z-index: 6;
         display: none;
-        place-items: center;
-        background: rgba(0, 0, 0, 0.35);
+        padding: 10px 18px;
+        border: 0;
+        border-radius: 0;
+        background: rgba(0, 0, 0, 0.72);
         color: #fff;
-        font-size: 18px;
+        font-size: 15px;
         font-weight: 600;
         cursor: pointer;
-        border: 0;
+        white-space: nowrap;
       }
       #tapPlay.show {
-        display: grid;
+        display: block;
+      }
+      #tapPlay.blocked {
+        inset: 0;
+        left: 0;
+        bottom: 0;
+        transform: none;
+        width: 100%;
+        height: 100%;
+        font-size: 18px;
+        background: rgba(0, 0, 0, 0.45);
       }
       #stage video.fit-contain {
         object-fit: contain;
@@ -119,7 +133,7 @@
         尚未加入可播放項目。<br />
         請在入口⑪貼上網址或本機路徑（一行一個）。
       </div>
-      <button type="button" id="tapPlay" aria-label="開始播放">點一下開始播放</button>
+      <button type="button" id="tapPlay" aria-label="開聲音">點一下開聲音</button>
       <div id="hud" hidden></div>
     </div>
     <script>
@@ -301,6 +315,8 @@
         let stopped = false;
         let playToken = 0;
         let tapTimer = 0;
+        let soundUnlocked = !wantSound;
+        let lastHudBase = "";
 
         function rebuildOrder(startFresh) {
           if (!items.length) {
@@ -323,26 +339,58 @@
 
         function hideTap() {
           clearTimeout(tapTimer);
-          tapPlay.classList.remove("show");
+          tapPlay.classList.remove("show", "blocked");
         }
 
-        function showTap(msg) {
-          tapPlay.textContent = msg || "點一下開始播放";
+        function showTap(msg, blocked) {
+          tapPlay.textContent = msg || "點一下開聲音";
           tapPlay.classList.add("show");
+          tapPlay.classList.toggle("blocked", !!blocked);
         }
 
-        function applyYtSound(player) {
-          if (!wantSound || !player) return;
-          try {
-            player.unMute();
-            player.setVolume(Math.round(volume * 100));
-          } catch (_) {}
+        function refreshHud() {
+          if (!lastHudBase) return;
+          if (!wantSound) {
+            setHud(lastHudBase + " · 靜音");
+            return;
+          }
+          if (soundUnlocked) setHud(lastHudBase + " · 有聲");
+          else setHud(lastHudBase + " · 播放中（點一下開聲）");
+        }
+
+        /** 瀏覽器規定：自動取消靜音會把播放停掉。開聲只能在使用者點一下之後。 */
+        function unlockSound() {
+          if (!wantSound) {
+            hideTap();
+            return true;
+          }
+          soundUnlocked = true;
+          hideTap();
+          if (ytPlayer) {
+            try {
+              ytPlayer.unMute();
+              ytPlayer.setVolume(Math.round(volume * 100));
+              ytPlayer.playVideo();
+            } catch (_) {}
+          }
+          if (currentEl && currentEl.tagName === "VIDEO") {
+            try {
+              currentEl.muted = false;
+              currentEl.volume = volume;
+              const p = currentEl.play();
+              if (p && p.catch) p.catch(() => {});
+            } catch (_) {}
+          }
+          refreshHud();
+          return true;
         }
 
         function clearStageMedia() {
           clearTimeout(dwellTimer);
           hideTap();
           playToken += 1;
+          soundUnlocked = !wantSound;
+          lastHudBase = "";
           if (ytPlayer) {
             try {
               ytPlayer.destroy();
@@ -368,10 +416,11 @@
             fit === "cover" ? "fit-cover" : fit === "fill" ? "fit-fill" : "fit-contain";
           v.autoplay = true;
           v.playsInline = true;
-          // 有聲需求：先靜音開播，成功後再開聲（否則會卡在暫停）
+          // 保持靜音才能自動播；有聲等使用者點一下
           v.muted = true;
           v.volume = volume;
           v.controls = false;
+          lastHudBase = label || src;
           v.addEventListener("ended", () => {
             if (token === playToken) next(false);
           });
@@ -381,31 +430,22 @@
             setTimeout(() => next(false), 800);
           });
           v.addEventListener("playing", () => {
-            if (!wantSound) return;
-            try {
-              v.muted = false;
-            } catch (_) {}
-            hideTap();
+            if (token !== playToken) return;
+            refreshHud();
+            if (wantSound && !soundUnlocked) showTap("點一下開聲音");
+            else hideTap();
           });
           stage.appendChild(v);
           currentEl = v;
           v.src = src;
           const p = v.play();
-          if (p && p.then) {
-            p.then(() => {
-              if (wantSound) {
-                try {
-                  v.muted = false;
-                } catch (_) {}
-              } else {
-                v.muted = true;
-              }
-            }).catch(() => {
-              showTap("點一下開始播放");
+          if (p && p.catch) {
+            p.catch(() => {
+              showTap("點一下開始播放", true);
             });
           }
           tapTimer = setTimeout(() => {
-            if (token === playToken && v.paused) showTap("點一下開始播放");
+            if (token === playToken && v.paused) showTap("點一下開始播放", true);
           }, 2500);
           return v;
         }
@@ -436,6 +476,7 @@
           host.id = "yt-host-" + token;
           stage.appendChild(host);
           currentEl = host;
+          lastHudBase = label || "YouTube";
           let YT;
           try {
             YT = await loadYtApi();
@@ -446,7 +487,7 @@
           }
           if (token !== playToken) return null;
 
-          // 關鍵：一定要 mute 開播，才不會卡在大紅鍵；開播後立刻 unMute（有聲）
+          // 必須靜音開播，畫面才會動。不要自動 unMute——那會讓它停在 0:00。
           ytPlayer = new YT.Player(host.id, {
             width: "100%",
             height: "100%",
@@ -468,36 +509,39 @@
                   ev.target.mute();
                   ev.target.playVideo();
                 } catch (_) {}
-                // 稍後開聲：使用者聽到的是有聲，不會卡在預覽
-                setTimeout(() => {
-                  if (token !== playToken) return;
-                  applyYtSound(ev.target);
-                  try {
-                    ev.target.playVideo();
-                  } catch (_) {}
-                }, 400);
                 tapTimer = setTimeout(() => {
                   if (token !== playToken) return;
                   try {
                     const st = ev.target.getPlayerState();
-                    // -1 unstarted, 2 paused, 5 cued
                     if (st === -1 || st === 2 || st === 5) {
-                      showTap("點一下開始播放（有聲）");
+                      showTap("點一下開始播放", true);
+                    } else if (wantSound && !soundUnlocked && st === 1) {
+                      showTap("點一下開聲音");
                     }
                   } catch (_) {
-                    showTap("點一下開始播放（有聲）");
+                    showTap("點一下開始播放", true);
                   }
-                }, 2800);
+                }, 2500);
               },
               onStateChange(ev) {
                 if (token !== playToken) return;
                 const st = ev.data;
                 if (st === YT.PlayerState.PLAYING) {
-                  applyYtSound(ev.target);
-                  hideTap();
-                  setHud(
-                    (label || "YouTube") + (wantSound ? " · 有聲播放中" : " · 靜音")
-                  );
+                  // 保持靜音播放；有聲等點擊。絕不在這裡 unMute。
+                  try {
+                    if (!soundUnlocked) ev.target.mute();
+                  } catch (_) {}
+                  refreshHud();
+                  if (wantSound && !soundUnlocked) showTap("點一下開聲音");
+                  else hideTap();
+                } else if (st === YT.PlayerState.PAUSED) {
+                  // 若因誤觸 unMute 被暫停：立刻靜音救回播放
+                  if (!soundUnlocked) {
+                    try {
+                      ev.target.mute();
+                      ev.target.playVideo();
+                    } catch (_) {}
+                  }
                 } else if (st === YT.PlayerState.ENDED) {
                   next(false);
                 } else if (
@@ -524,31 +568,50 @@
           return ytPlayer;
         }
 
-        tapPlay.addEventListener("click", () => {
-          hideTap();
+        tapPlay.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          unlockSound();
           if (ytPlayer) {
             try {
-              ytPlayer.mute();
-              ytPlayer.playVideo();
-              setTimeout(() => {
-                applyYtSound(ytPlayer);
-                try {
-                  ytPlayer.playVideo();
-                } catch (_) {}
-              }, 200);
+              const st = ytPlayer.getPlayerState();
+              if (st !== 1) {
+                ytPlayer.mute();
+                ytPlayer.playVideo();
+                if (soundUnlocked && wantSound) {
+                  setTimeout(() => {
+                    try {
+                      ytPlayer.unMute();
+                      ytPlayer.setVolume(Math.round(volume * 100));
+                      ytPlayer.playVideo();
+                    } catch (_) {}
+                  }, 150);
+                }
+              }
             } catch (_) {}
-            return;
           }
-          if (currentEl && currentEl.tagName === "VIDEO") {
-            currentEl.muted = true;
+          if (currentEl && currentEl.tagName === "VIDEO" && currentEl.paused) {
+            currentEl.muted = !soundUnlocked || !wantSound;
             const p = currentEl.play();
             if (p && p.then) {
               p.then(() => {
-                if (wantSound) currentEl.muted = false;
+                if (soundUnlocked && wantSound) currentEl.muted = false;
               }).catch(() => {});
             }
           }
         });
+
+        // OBS「互動」或滑鼠點一下即可開聲
+        document.addEventListener(
+          "pointerdown",
+          () => {
+            if (wantSound && !soundUnlocked && ytPlayer) {
+              try {
+                if (ytPlayer.getPlayerState() === 1) unlockSound();
+              } catch (_) {}
+            }
+          },
+          true
+        );
 
         function playIndex(itemIndex) {
           const item = items[itemIndex];

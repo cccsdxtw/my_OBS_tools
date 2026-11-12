@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.3.25</span>
+          <span class="brand-version" id="brandVersion">v1.3.26</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -1149,8 +1149,7 @@
             </div>
             <p class="hint">
               輸入會即時更新預覽與網址；下方「確定」只是確認回饋，不會備份。換機／備份請用頁面最下方「備份／還原」。
-              YouTube 頻道填 <code>@頻道</code> 即可自動解析成 <code>UC…</code> 並找直播。金鑰需在該專案「函式庫」啟用
-              YouTube Data API v3（金鑰限制選到它 ≠ 已啟用）。若顯示 403：看人數上的紅字提示，常見是未啟用 API 或配額用完，不一定是應用程式限制。
+              YouTube 頻道填 <code>@頻道</code>；建議再填本場「直播網址／影片 ID」。沒填時人數／留言／贊助／計數器會共用「自動找直播」（整場最多一次並記住）。金鑰需在專案「函式庫」啟用 YouTube Data API v3。
             </p>
 
             <div class="row">
@@ -2139,7 +2138,8 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              預設用最上方「本人」帳號。下面可再加<strong>連動／其他台</strong>的 Twitch、YouTube（逗號或換行分隔）。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。
+              預設用最上方「本人」帳號。下面可再加<strong>連動／其他台</strong>的 Twitch、YouTube（逗號或換行分隔）。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。YouTube
+              建議填直播網址；沒填時自動找直播整場只找一次並與人數／贊助共用記住。
             </p>
             <div class="field" style="align-items: flex-start">
               <label for="chatExtraTw">額外 Twitch（非本人）</label>
@@ -2526,7 +2526,7 @@
             <p class="hint">
               自動抓 <strong>Twitch Cheer／小奇點</strong>（聊天 IRC，免 OAuth）與
               <strong>YouTube 超級留言</strong>（用最上方帳號＋API Key）。不支援 Ko-fi。
-              只計算你指定的時段內事件；時段外不計入。
+              只計算你指定的時段內事件；時段外不計入。YT 直播與留言／人數共用記住的本場 ID（自動找最多一次）。
             </p>
             <div class="row">
               <div>
@@ -3059,7 +3059,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.3.25</p>
+          <p class="apply-status" id="versionStatus">本機 v1.3.26</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3073,7 +3073,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.3.25";
+        const APP_VERSION = "v1.3.26";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

@@ -747,6 +747,7 @@
           return json;
         }
 
+        const YT_REFIND_MS = 2 * 60 * 60 * 1000;
         function ytLiveCacheKey(channelRaw) {
           return `laji_obs_yt_live_cache:${String(channelRaw || "")
             .trim()
@@ -768,6 +769,15 @@
           try {
             localStorage.removeItem(ytLiveCacheKey(channelRaw));
           } catch (_) {}
+        }
+        function markYtLiveEnded(channelRaw) {
+          const cache = readYtLiveCache(channelRaw) || {};
+          writeYtLiveCache(channelRaw, {
+            channelId: cache.channelId || "",
+            videoId: null,
+            endedAt: Date.now(),
+            ts: Date.now(),
+          });
         }
 
         async function resolveYtChannelId(channelRaw) {
@@ -844,16 +854,17 @@
           return !!(details && details.actualStartTime && !details.actualEndTime);
         }
 
+        /** 自動找直播整場最多一次並記住；之後只連 chat，不再重找 */
         async function resolveLiveVideoId(channelRaw) {
           const cache = readYtLiveCache(channelRaw);
-          if (cache?.videoId) {
-            try {
-              if (await videoStillLive(cache.videoId)) return cache.videoId;
-            } catch (e) {
-              console.warn(e);
-            }
-            clearYtLiveCache(channelRaw);
-          }
+          if (cache?.videoId) return cache.videoId;
+          const now = Date.now();
+          const waitUntil = Math.max(
+            Number(cache?.huntFailedAt || 0),
+            Number(cache?.endedAt || 0)
+          );
+          if (waitUntil && now - waitUntil < YT_REFIND_MS) return null;
+
           const channelId = await resolveYtChannelId(channelRaw);
           let id = null;
           let lastErr = null;
@@ -871,24 +882,35 @@
               console.warn(e);
             }
           }
-          if (!id && lastErr) throw lastErr;
-          if (id) {
+          if (!id) {
             writeYtLiveCache(channelRaw, {
               channelId,
-              videoId: id,
+              videoId: null,
+              huntFailedAt: Date.now(),
               ts: Date.now(),
             });
+            if (lastErr) throw lastErr;
+            return null;
           }
+          writeYtLiveCache(channelRaw, {
+            channelId,
+            videoId: id,
+            ts: Date.now(),
+            foundOnce: true,
+          });
           return id;
         }
 
-        async function resolveLiveChatId(videoId) {
+        async function resolveLiveChatId(videoId, channelRaw) {
           const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
             videoId
           )}&key=${encodeURIComponent(ytKey)}`;
           const json = await ytFetchJson(url, "yt videos");
           const details = json?.items?.[0]?.liveStreamingDetails;
-          if (!details || details.actualEndTime) return null;
+          if (!details || details.actualEndTime) {
+            if (channelRaw) markYtLiveEnded(channelRaw);
+            return null;
+          }
           return details.activeLiveChatId || null;
         }
 
@@ -902,9 +924,9 @@
           async function ensureChat() {
             videoId = await getVideoId();
             if (!videoId) throw new Error("yt offline " + label);
-            chatId = await resolveLiveChatId(videoId);
+            chatId = await resolveLiveChatId(videoId, cacheRaw);
             if (!chatId) {
-              if (cacheRaw) clearYtLiveCache(cacheRaw);
+              if (cacheRaw) markYtLiveEnded(cacheRaw);
               throw new Error("yt no live chat " + label);
             }
             ytConnected.add(key);
@@ -936,7 +958,7 @@
                   pageToken = "";
                   ytConnected.delete(key);
                   refreshStatus();
-                  if (cacheRaw) clearYtLiveCache(cacheRaw);
+                  if (cacheRaw) markYtLiveEnded(cacheRaw);
                 }
                 throw new Error(
                   `yt chat ${res.status}${reason ? " " + String(reason).slice(0, 60) : ""}`

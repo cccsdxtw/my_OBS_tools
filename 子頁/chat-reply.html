@@ -656,6 +656,7 @@
           return json;
         }
 
+        const YT_REFIND_MS = 2 * 60 * 60 * 1000;
         const ytLiveCacheKey = `laji_obs_yt_live_cache:${(
           ytChannel ||
           ytVideoParam ||
@@ -677,6 +678,15 @@
           try {
             localStorage.removeItem(ytLiveCacheKey);
           } catch (_) {}
+        }
+        function markYtLiveEnded() {
+          const cache = readYtLiveCache() || {};
+          writeYtLiveCache({
+            channelId: cache.channelId || "",
+            videoId: null,
+            endedAt: Date.now(),
+            ts: Date.now(),
+          });
         }
 
         async function resolveYtChannelId() {
@@ -753,17 +763,18 @@
           return !!(details && details.actualStartTime && !details.actualEndTime);
         }
 
+        /** 自動找直播整場最多一次並記住；之後只連 chat，不再重找 */
         async function resolveLiveVideoId() {
           if (ytVideoParam) return ytVideoParam;
           const cache = readYtLiveCache();
-          if (cache?.videoId) {
-            try {
-              if (await videoStillLive(cache.videoId)) return cache.videoId;
-            } catch (e) {
-              console.warn(e);
-            }
-            clearYtLiveCache();
-          }
+          if (cache?.videoId) return cache.videoId;
+          const now = Date.now();
+          const waitUntil = Math.max(
+            Number(cache?.huntFailedAt || 0),
+            Number(cache?.endedAt || 0)
+          );
+          if (waitUntil && now - waitUntil < YT_REFIND_MS) return null;
+
           const channelId = await resolveYtChannelId();
           let id = null;
           let lastErr = null;
@@ -781,8 +792,22 @@
               console.warn(e);
             }
           }
-          if (!id && lastErr) throw lastErr;
-          if (id) writeYtLiveCache({ channelId, videoId: id, ts: Date.now() });
+          if (!id) {
+            writeYtLiveCache({
+              channelId,
+              videoId: null,
+              huntFailedAt: Date.now(),
+              ts: Date.now(),
+            });
+            if (lastErr) throw lastErr;
+            return null;
+          }
+          writeYtLiveCache({
+            channelId,
+            videoId: id,
+            ts: Date.now(),
+            foundOnce: true,
+          });
           return id;
         }
 
@@ -792,7 +817,10 @@
           )}&key=${encodeURIComponent(ytKey)}`;
           const json = await ytFetchJson(url, "yt videos");
           const details = json?.items?.[0]?.liveStreamingDetails;
-          if (!details || details.actualEndTime) return null;
+          if (!details || details.actualEndTime) {
+            markYtLiveEnded();
+            return null;
+          }
           return details.activeLiveChatId || null;
         }
 
@@ -831,6 +859,7 @@
                   ytLiveChatId = null;
                   connected.yt = false;
                   setStatus();
+                  markYtLiveEnded();
                 }
                 throw new Error(`yt chat ${res.status}`);
               }

@@ -715,10 +715,11 @@
           return s;
         }
 
+        const YT_REFIND_MS = 2 * 60 * 60 * 1000;
         const ytLiveCacheKey = `laji_obs_yt_live_cache:${(
           ytChannel ||
           ytVideoParam ||
-          "counter"
+          "default"
         ).toLowerCase()}`;
 
         function readYtLiveCache() {
@@ -737,6 +738,15 @@
           try {
             localStorage.removeItem(ytLiveCacheKey);
           } catch (_) {}
+        }
+        function markYtLiveEnded() {
+          const cache = readYtLiveCache() || {};
+          writeYtLiveCache({
+            channelId: cache.channelId || "",
+            videoId: null,
+            endedAt: Date.now(),
+            ts: Date.now(),
+          });
         }
 
         async function resolveYtChannelId() {
@@ -786,22 +796,18 @@
           return live?.id || null;
         }
 
+        /** 自動找直播整場最多一次並記住；之後只連 chat，不再重找 */
         async function resolveLiveVideoId() {
           if (ytVideoParam) return ytVideoParam;
           const cache = readYtLiveCache();
-          if (cache?.videoId) {
-            try {
-              const vJson = await ytFetchJson(
-                `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
-                  cache.videoId
-                )}&key=${encodeURIComponent(ytKey)}`,
-                "yt videos"
-              );
-              const d = vJson?.items?.[0]?.liveStreamingDetails;
-              if (d && d.actualStartTime && !d.actualEndTime) return cache.videoId;
-            } catch (_) {}
-            clearYtLiveCache();
-          }
+          if (cache?.videoId) return cache.videoId;
+          const now = Date.now();
+          const waitUntil = Math.max(
+            Number(cache?.huntFailedAt || 0),
+            Number(cache?.endedAt || 0)
+          );
+          if (waitUntil && now - waitUntil < YT_REFIND_MS) return null;
+
           const channelId = await resolveYtChannelId();
           let id = null;
           try {
@@ -809,11 +815,22 @@
           } catch (e) {
             console.warn(e);
           }
-          // 不再打 search.list（一次 100 配額）；請在入口填直播網址／影片 ID
           if (!id) {
-            console.warn("yt: 找不到直播（已跳過 search 以省配額）；請填 ytVideo");
+            console.warn("yt: 找不到直播（已跳過 search）；請填 ytVideo");
+            writeYtLiveCache({
+              channelId,
+              videoId: null,
+              huntFailedAt: Date.now(),
+              ts: Date.now(),
+            });
+            return null;
           }
-          if (id) writeYtLiveCache({ channelId, videoId: id, ts: Date.now() });
+          writeYtLiveCache({
+            channelId,
+            videoId: id,
+            ts: Date.now(),
+            foundOnce: true,
+          });
           return id;
         }
 
@@ -825,7 +842,10 @@
             "yt videos"
           );
           const d = json?.items?.[0]?.liveStreamingDetails;
-          if (!d || d.actualEndTime) return null;
+          if (!d || d.actualEndTime) {
+            markYtLiveEnded();
+            return null;
+          }
           return d.activeLiveChatId || null;
         }
 
@@ -866,7 +886,7 @@
                   chatId = null;
                   connected.yt = false;
                   refreshStatus();
-                  clearYtLiveCache();
+                  markYtLiveEnded();
                 }
                 throw new Error("yt chat " + res.status);
               }

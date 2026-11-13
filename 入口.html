@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.6.0</span>
+          <span class="brand-version" id="brandVersion">v1.6.1</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -3047,6 +3047,15 @@
                 </select>
               </div>
               <div>
+                <label for="dmDir">方向</label>
+                <select id="dmDir">
+                  <option value="left" selected>從右往左</option>
+                  <option value="right">從左往右</option>
+                  <option value="up">從下往上</option>
+                  <option value="down">從上往下</option>
+                </select>
+              </div>
+              <div>
                 <label for="dmSpeed">速度</label>
                 <select id="dmSpeed">
                   <option value="slow">慢</option>
@@ -3058,6 +3067,8 @@
                 <label for="dmDuration">飛過秒數</label>
                 <input id="dmDuration" type="number" min="4" max="40" value="12" />
               </div>
+            </div>
+            <div class="row">
               <div>
                 <label for="dmTracks">軌道數</label>
                 <input id="dmTracks" type="number" min="3" max="24" value="10" />
@@ -3096,7 +3107,10 @@
               >
             </div>
           </section>
-          <aside class="side">
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
             <div class="card-head">
               <h2>⑫ 彈幕網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
@@ -3247,7 +3261,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.6.0</p>
+          <p class="apply-status" id="versionStatus">本機 v1.6.1</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3261,7 +3275,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.6.0";
+        const APP_VERSION = "v1.6.1";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4493,6 +4507,7 @@
           mediaHud: $("mediaHud"),
           dmUseChatExtra: $("dmUseChatExtra"),
           dmSource: $("dmSource"),
+          dmDir: $("dmDir"),
           dmSpeed: $("dmSpeed"),
           dmDuration: $("dmDuration"),
           dmTracks: $("dmTracks"),
@@ -6221,6 +6236,7 @@
           if (ytVideos.length) p.set("ytVideo", ytVideos.join(","));
           if (ytKey) p.set("ytKey", ytKey);
           p.set("chatSource", fields.dmSource.value || "auto");
+          if (fields.dmDir && fields.dmDir.value) p.set("dir", fields.dmDir.value);
           if (fields.dmSpeed.value) p.set("speed", fields.dmSpeed.value);
           if (fields.dmDuration.value) p.set("duration", fields.dmDuration.value);
           if (fields.dmTracks.value) p.set("tracks", fields.dmTracks.value);

@@ -52,12 +52,26 @@
       #stage.pos-right {
         justify-content: flex-end;
       }
+      /* 一排橫向：整底絕對定位，隨機左右跳 */
+      #stage.pos-random {
+        display: block;
+        padding: 0;
+      }
       #stack {
         display: flex;
         flex-direction: column-reverse;
         gap: 18px;
         max-width: min(520px, 92vw);
         width: 100%;
+      }
+      #stage.pos-random #stack {
+        position: absolute;
+        inset: 0;
+        display: block;
+        max-width: none;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
       }
       .pop {
         display: flex;
@@ -66,11 +80,40 @@
         gap: 10px;
         animation: pop-in 0.35s ease-out;
         transform-origin: bottom center;
+        max-width: min(360px, 42vw);
+      }
+      #stage.pos-random .pop {
+        position: absolute;
+        bottom: 28px;
+        width: max-content;
+        max-width: min(320px, 34vw);
       }
       .pop.out {
         animation: pop-out 0.3s ease-in forwards;
       }
       @keyframes pop-in {
+        from {
+          opacity: 0;
+          transform: translate(-50%, 24px) scale(0.92);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, 0) scale(1);
+        }
+      }
+      @keyframes pop-out {
+        to {
+          opacity: 0;
+          transform: translate(-50%, 16px) scale(0.94);
+        }
+      }
+      #stage:not(.pos-random) .pop {
+        animation-name: pop-in-stack;
+      }
+      #stage:not(.pos-random) .pop.out {
+        animation-name: pop-out-stack;
+      }
+      @keyframes pop-in-stack {
         from {
           opacity: 0;
           transform: translateY(24px) scale(0.92);
@@ -80,7 +123,7 @@
           transform: translateY(0) scale(1);
         }
       }
-      @keyframes pop-out {
+      @keyframes pop-out-stack {
         to {
           opacity: 0;
           transform: translateY(16px) scale(0.94);
@@ -215,21 +258,42 @@
           2,
           Math.min(30, Number(params.get("hold") || 6) || 6)
         );
+        const posRaw = String(params.get("pos") || "random").toLowerCase();
+        const pos =
+          posRaw === "left" ||
+          posRaw === "center" ||
+          posRaw === "right" ||
+          posRaw === "random" ||
+          posRaw === "row"
+            ? posRaw === "row"
+              ? "random"
+              : posRaw
+            : "random";
+        const rowMode = pos === "random";
         const maxOnScreen = Math.max(
           1,
-          Math.min(5, parseInt(params.get("max") || "2", 10) || 2)
+          Math.min(
+            rowMode ? 8 : 5,
+            parseInt(params.get("max") || (rowMode ? "4" : "2"), 10) ||
+              (rowMode ? 4 : 2)
+          )
         );
         const queueCap = Math.max(
           5,
           Math.min(80, parseInt(params.get("queue") || "30", 10) || 30)
         );
-        const pos = String(params.get("pos") || "center").toLowerCase();
+        const slots = Math.max(
+          maxOnScreen,
+          Math.min(12, parseInt(params.get("slots") || "8", 10) || 8)
+        );
         stage.className =
           pos === "left"
             ? "pos-left"
             : pos === "right"
               ? "pos-right"
-              : "pos-center";
+              : pos === "random"
+                ? "pos-random"
+                : "pos-center";
 
         const showSource = params.get("showSource") !== "0";
         const showUser = params.get("showUser") !== "0";
@@ -238,6 +302,9 @@
           document.body.classList.add("hide-status");
         if (!showSource) document.body.classList.add("hide-source");
         if (!showUser) document.body.classList.add("hide-user");
+
+        // 橫排槽位：標記是否占用，隨機挑空位
+        const slotBusy = Array.from({ length: slots }, () => false);
 
         function splitParamList(raw) {
           return String(raw || "")
@@ -411,7 +478,38 @@
           return Promise.resolve("");
         }
 
+        function pickRandomSlot() {
+          const free = [];
+          for (let i = 0; i < slotBusy.length; i++) {
+            if (!slotBusy[i]) free.push(i);
+          }
+          if (!free.length) return -1;
+          return free[Math.floor(Math.random() * free.length)];
+        }
+
+        function placePopInRow(pop, slot) {
+          // 槽位均分底部；用 transform 置中，避免超出左右
+          const pad = 0.06;
+          const usable = 1 - pad * 2;
+          const center =
+            pad + (usable * (slot + 0.5)) / Math.max(1, slotBusy.length);
+          pop.style.left = center * 100 + "%";
+          pop.style.transform = "translateX(-50%)";
+          pop.dataset.slot = String(slot);
+        }
+
         function mountPop(msg) {
+          let slot = -1;
+          if (rowMode) {
+            slot = pickRandomSlot();
+            if (slot < 0) {
+              // 橫排已滿：先回佇列等下一輪
+              queue.unshift(msg);
+              return;
+            }
+            slotBusy[slot] = true;
+          }
+
           const pop = document.createElement("div");
           pop.className = "pop";
 
@@ -464,6 +562,7 @@
 
           pop.append(bubble, avatarWrap);
           stack.appendChild(pop);
+          if (rowMode && slot >= 0) placePopInRow(pop, slot);
           showing += 1;
 
           setTimeout(() => {
@@ -472,6 +571,7 @@
               try {
                 pop.remove();
               } catch (_) {}
+              if (rowMode && slot >= 0) slotBusy[slot] = false;
               showing = Math.max(0, showing - 1);
               pump();
             }, 320);

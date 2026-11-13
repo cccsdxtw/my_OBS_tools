@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.5.0</span>
+          <span class="brand-version" id="brandVersion">v1.6.0</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -3019,12 +3019,108 @@
           </aside>
         </div>
 
+        <!-- ⑫ 彈幕（獨立；可與⑦聊天室同時用） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑫ 彈幕（飛過畫面）</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              跟⑦聊天室<strong>分開</strong>：可同時加兩個 OBS 瀏覽器來源（一個清單聊天、一個彈幕）。
+              帳號預設用最上方本人；可勾選沿用⑦的額外台。
+            </p>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="dmUseChatExtra" checked />
+                沿用⑦聊天室的額外 TW／YT 台</label
+              >
+            </div>
+            <div class="row">
+              <div>
+                <label for="dmSource">來源</label>
+                <select id="dmSource">
+                  <option value="auto" selected>自動（有填就接）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只 Twitch</option>
+                  <option value="youtube">只 YouTube</option>
+                </select>
+              </div>
+              <div>
+                <label for="dmSpeed">速度</label>
+                <select id="dmSpeed">
+                  <option value="slow">慢</option>
+                  <option value="normal" selected>中</option>
+                  <option value="fast">快</option>
+                </select>
+              </div>
+              <div>
+                <label for="dmDuration">飛過秒數</label>
+                <input id="dmDuration" type="number" min="4" max="40" value="12" />
+              </div>
+              <div>
+                <label for="dmTracks">軌道數</label>
+                <input id="dmTracks" type="number" min="3" max="24" value="10" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="dmFontSize">字級</label>
+                <input id="dmFontSize" type="number" min="14" max="72" value="28" />
+              </div>
+              <div>
+                <label for="dmColor">文字色</label>
+                <input id="dmColor" type="text" value="#ffffff" />
+              </div>
+              <div>
+                <label for="dmOpacity">透明度（0.2–1）</label>
+                <input
+                  id="dmOpacity"
+                  type="number"
+                  min="0.2"
+                  max="1"
+                  step="0.05"
+                  value="0.95"
+                />
+              </div>
+            </div>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="dmShowUser" checked /> 顯示暱稱</label
+              >
+              <label
+                ><input type="checkbox" id="dmShowSource" checked /> 顯示來源圖示</label
+              >
+              <label
+                ><input type="checkbox" id="dmHideStatus" checked /> 隱藏連線狀態</label
+              >
+            </div>
+          </section>
+          <aside class="side">
+            <div class="card-head">
+              <h2>⑫ 彈幕網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="dmUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議全螢幕透明覆蓋（寬×高跟畫布一樣）。可與⑦同時使用。</p>
+            <div class="actions">
+              <button type="button" id="copyDm">複製彈幕網址</button>
+              <a class="btn secondary" id="openDm" href="#" target="_blank" rel="noopener"
+                >預覽</a
+              >
+            </div>
+            <div class="preview-wrap" style="min-height: 220px">
+              <iframe id="previewDm" title="danmaku preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
         <div class="note">
           <strong>為什麼不用一直驗證？</strong><br />
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          ①②③⑤⑥⑦⑨⑩⑪ 右邊網址各自加 OBS 瀏覽器來源即可（⑧ 回覆除外；編號跳過 ④）。
+          ①②③⑤⑥⑦⑨⑩⑪⑫ 右邊網址各自加 OBS 瀏覽器來源即可（⑧ 回覆除外；編號跳過 ④）。
         </div>
       </div>
 
@@ -3151,7 +3247,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.5.0</p>
+          <p class="apply-status" id="versionStatus">本機 v1.6.0</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3165,7 +3261,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.5.0";
+        const APP_VERSION = "v1.6.0";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3187,6 +3283,7 @@
           "子頁/game.html",
           "子頁/chat.html",
           "子頁/chat-reply.html",
+          "子頁/danmaku.html",
           "子頁/sponsor.html",
           "子頁/counter.html",
           "子頁/media.html",
@@ -3403,6 +3500,7 @@
             "yt-live-sync.js",
             "子頁/counter.html",
             "子頁/media.html",
+            "子頁/danmaku.html",
             "子頁/yt-bridge.html",
             "啟動本機伺服器.bat",
             "local-server.js",
@@ -4393,6 +4491,17 @@
           mediaMute: $("mediaMute"),
           mediaVolume: $("mediaVolume"),
           mediaHud: $("mediaHud"),
+          dmUseChatExtra: $("dmUseChatExtra"),
+          dmSource: $("dmSource"),
+          dmSpeed: $("dmSpeed"),
+          dmDuration: $("dmDuration"),
+          dmTracks: $("dmTracks"),
+          dmFontSize: $("dmFontSize"),
+          dmColor: $("dmColor"),
+          dmOpacity: $("dmOpacity"),
+          dmShowUser: $("dmShowUser"),
+          dmShowSource: $("dmShowSource"),
+          dmHideStatus: $("dmHideStatus"),
         };
 
         /** @type {Array<{id:string,name:string,goal:string,keywords:string}>} */
@@ -6082,6 +6191,49 @@
           return url.toString();
         }
 
+        function buildDanmakuUrl(opts = {}) {
+          const url = pageUrl("danmaku.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
+          const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
+          const ytKey = fields.ytKey.value.trim();
+          const useExtra =
+            !fields.dmUseChatExtra || fields.dmUseChatExtra.checked;
+          const extraTw = useExtra ? splitList(fields.chatExtraTw.value) : [];
+          const extraYt = useExtra
+            ? splitList(fields.chatExtraYt.value).map(resolveYtChannelForUrl)
+            : [];
+          const extraYtVideo = useExtra
+            ? splitList(fields.chatExtraYtVideo.value).map(extractYoutubeVideoId)
+            : [];
+          const twLogins = uniqueKeepOrder(
+            [channel, ...extraTw].map((s) => s.toLowerCase()).filter(Boolean)
+          );
+          const ytChannels = uniqueKeepOrder(
+            [ytChannel, ...extraYt].filter(Boolean)
+          );
+          const ytVideos = uniqueKeepOrder(
+            [ytVideo, ...extraYtVideo].filter(Boolean)
+          );
+          if (twLogins.length) p.set("login", twLogins.join(","));
+          if (ytChannels.length) p.set("yt", ytChannels.join(","));
+          if (ytVideos.length) p.set("ytVideo", ytVideos.join(","));
+          if (ytKey) p.set("ytKey", ytKey);
+          p.set("chatSource", fields.dmSource.value || "auto");
+          if (fields.dmSpeed.value) p.set("speed", fields.dmSpeed.value);
+          if (fields.dmDuration.value) p.set("duration", fields.dmDuration.value);
+          if (fields.dmTracks.value) p.set("tracks", fields.dmTracks.value);
+          if (fields.dmFontSize.value) p.set("fontSize", fields.dmFontSize.value);
+          if (fields.dmColor.value.trim()) p.set("color", fields.dmColor.value.trim());
+          if (fields.dmOpacity.value) p.set("opacity", fields.dmOpacity.value);
+          p.set("showUser", fields.dmShowUser.checked ? "1" : "0");
+          p.set("showSource", fields.dmShowSource.checked ? "1" : "0");
+          if (fields.dmHideStatus.checked) p.set("hideStatus", "1");
+          if (opts.demo) p.set("demo", "1");
+          return url.toString();
+        }
+
         function syncChatPanels() {
           const split = fields.chatLayout.value === "split";
           $("chatMergePanel").hidden = split;
@@ -6603,6 +6755,12 @@
           if ($("mediaUrl")) $("mediaUrl").value = mediaHref;
           updateMediaPreview(mediaHref);
 
+          const dmHref = buildDanmakuUrl();
+          const dmDemoHref = buildDanmakuUrl({ demo: true });
+          if ($("dmUrl")) $("dmUrl").value = dmHref;
+          if ($("openDm")) $("openDm").href = dmDemoHref;
+          if ($("previewDm")) $("previewDm").src = dmDemoHref;
+
           localStorage.setItem(
             "my_obs_tools_setup",
             JSON.stringify({
@@ -6633,6 +6791,7 @@
             spHref,
             ctrHref,
             mediaHref,
+            dmHref,
           };
         }
 
@@ -6715,6 +6874,14 @@
           $("chatUrl").select();
           await copyText(chatHref, $("copyChat"), "複製聊天室網址");
         });
+        const copyDmBtn = $("copyDm");
+        if (copyDmBtn) {
+          copyDmBtn.addEventListener("click", async () => {
+            const { dmHref } = buildUrls();
+            if ($("dmUrl")) $("dmUrl").select();
+            await copyText(dmHref, copyDmBtn, "複製彈幕網址");
+          });
+        }
         $("copyChatTw").addEventListener("click", async () => {
           const { chatHrefTw } = buildUrls();
           $("chatUrlTw").select();

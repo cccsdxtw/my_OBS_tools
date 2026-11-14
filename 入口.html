@@ -1393,7 +1393,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v2.1.3</span>
+          <span class="brand-version" id="brandVersion">v2.1.4</span>
         </h1>
         <p>
           先填最上方的共用設定，再依序看下方分類：帳號 → 聊天 → 免帳號。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -4009,6 +4009,7 @@
             </div>
             <p class="hint" style="margin-top: 0">
               「備份設定」會下載完整 JSON（含各欄位、帳號、版面）。「還原設定」選該檔即可整包回來。
+              也可用 Google 試算表：下載／複製 CSV 貼上，或貼公開試算表網址匯入。
               若只要帳號，可用下面的 <code>帳號.txt</code>。
             </p>
             <div class="actions" style="margin-top: 10px">
@@ -4021,6 +4022,53 @@
                 hidden
               />
             </div>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" class="secondary" id="exportSheetCsvBtn">
+                下載試算表 CSV
+              </button>
+              <button type="button" class="secondary" id="copySheetTsvBtn">
+                複製到試算表
+              </button>
+              <button type="button" class="secondary" id="importSheetCsvBtn">
+                匯入試算表 CSV
+              </button>
+              <input
+                type="file"
+                id="importSheetCsvFile"
+                accept=".csv,text/csv,text/plain"
+                hidden
+              />
+            </div>
+            <div class="row" style="margin-top: 10px">
+              <div>
+                <label for="sheetImportUrl">試算表網址（公開／已發布 CSV）</label>
+                <input
+                  id="sheetImportUrl"
+                  type="url"
+                  placeholder="貼 Google 試算表連結或 …/export?format=csv"
+                />
+              </div>
+              <div style="display: flex; align-items: flex-end">
+                <button type="button" class="secondary" id="importSheetUrlBtn">
+                  從網址匯入
+                </button>
+              </div>
+            </div>
+            <div class="field" style="margin-top: 10px; align-items: flex-start">
+              <label for="sheetPasteBox">或從試算表貼上（兩欄：鍵／值）</label>
+              <textarea
+                id="sheetPasteBox"
+                class="css-box"
+                rows="4"
+                placeholder="從試算表複製兩欄後貼這裡，再按「貼上匯入」"
+              ></textarea>
+            </div>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" class="secondary" id="importSheetPasteBtn">貼上匯入</button>
+            </div>
+            <p class="hint" style="margin-top: 8px">
+              試算表建議兩欄標題 <code>key</code>、<code>value</code>。公開分享或「檔案 → 共用 → 發布到網路」後可用網址匯入。
+            </p>
             <div class="actions" style="margin-top: 10px">
               <button type="button" class="secondary" id="exportAccountTxtBtn">
                 匯出 帳號.txt
@@ -4038,7 +4086,7 @@
                 hidden
               />
             </div>
-            <p class="hint" id="backupStatus" style="margin-bottom: 0">換電腦時：這邊備份 → 新電腦還原。</p>
+            <p class="hint" id="backupStatus" style="margin-bottom: 0">換電腦時：這邊備份 → 新電腦還原；或存 Google 試算表再匯入。</p>
           </section>
         </div>
       </div>
@@ -4171,7 +4219,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v2.1.3";
+        const APP_VERSION = "v2.1.4";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4624,9 +4672,9 @@
             const key = sectionKey(band);
             if (key && map[key]) setCollapsed(band, true, { persist: false });
           });
-          // 委派：點整條標題列（任意處）即可展開／收合
-          const bandsRoot = document.querySelector(".bands");
-          if (bandsRoot && bandsRoot.dataset.bandBarBound !== "1") {
+          // 委派：每一塊 .bands（含底部備份／還原）點整條標題列即可展開／收合
+          document.querySelectorAll(".bands").forEach((bandsRoot) => {
+            if (bandsRoot.dataset.bandBarBound === "1") return;
             bandsRoot.dataset.bandBarBound = "1";
             bandsRoot.addEventListener("click", (ev) => {
               const bar = ev.target.closest(".band-bar");
@@ -4645,7 +4693,7 @@
               if (!band) return;
               setCollapsed(band, !band.classList.contains("is-collapsed"));
             });
-          }
+          });
           const credits = $("credits");
           const creditsToggle = $("creditsToggle");
           const creditsHead =
@@ -4804,7 +4852,7 @@
             .trim()
             .toLowerCase();
           const emptyEl = $("pageSearchEmpty");
-          clearSearchMarks(document.querySelector(".bands"));
+          document.querySelectorAll(".bands").forEach((root) => clearSearchMarks(root));
           clearSearchMarks($("credits"));
           let shown = 0;
           document.querySelectorAll(".bands .band").forEach((band) => {
@@ -4856,6 +4904,13 @@
         }
         setupCollapsibles();
         setupSubfolds();
+        // 備份／還原在第二個 .bands，舊版收合後可能點不開；開頁強制展開一次
+        document.querySelectorAll(".bands .band").forEach((band) => {
+          const title = band.querySelector(":scope > .band-bar .band-bar-title");
+          if (title && /備份/.test(title.textContent || "")) {
+            setCollapsed(band, false);
+          }
+        });
 
         // 觸碰／點下回饋（手機 :active 常不穩，用 pointer + is-pressed）
         function setupPressFeedback() {
@@ -5326,6 +5381,239 @@
           syncYtAfterTwUi();
           buildUrls();
           ensureYtChannelIdResolved();
+        }
+
+        function csvEscapeCell(v) {
+          const s = String(v == null ? "" : v);
+          if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+          return s;
+        }
+
+        function rowsToCsv(rows) {
+          return rows.map((r) => r.map(csvEscapeCell).join(",")).join("\r\n") + "\r\n";
+        }
+
+        function rowsToTsv(rows) {
+          return rows
+            .map((r) =>
+              r
+                .map((v) => String(v == null ? "" : v).replace(/\t/g, " ").replace(/\r?\n/g, "\\n"))
+                .join("\t")
+            )
+            .join("\n");
+        }
+
+        function parseCsv(text) {
+          const src = String(text || "").replace(/^\uFEFF/, "");
+          const rows = [];
+          let row = [];
+          let cur = "";
+          let i = 0;
+          let inQ = false;
+          while (i < src.length) {
+            const ch = src[i];
+            if (inQ) {
+              if (ch === '"') {
+                if (src[i + 1] === '"') {
+                  cur += '"';
+                  i += 2;
+                  continue;
+                }
+                inQ = false;
+                i += 1;
+                continue;
+              }
+              cur += ch;
+              i += 1;
+              continue;
+            }
+            if (ch === '"') {
+              inQ = true;
+              i += 1;
+              continue;
+            }
+            if (ch === ",") {
+              row.push(cur);
+              cur = "";
+              i += 1;
+              continue;
+            }
+            if (ch === "\n" || ch === "\r") {
+              if (ch === "\r" && src[i + 1] === "\n") i += 1;
+              row.push(cur);
+              rows.push(row);
+              row = [];
+              cur = "";
+              i += 1;
+              continue;
+            }
+            cur += ch;
+            i += 1;
+          }
+          if (cur.length || row.length) {
+            row.push(cur);
+            rows.push(row);
+          }
+          return rows.filter((r) => r.some((c) => String(c || "").trim() !== ""));
+        }
+
+        function parseTsvOrCsv(text) {
+          const raw = String(text || "").replace(/^\uFEFF/, "").trim();
+          if (!raw) return [];
+          if (raw.includes("\t")) {
+            return raw.split(/\r?\n/).map((line) =>
+              line.split("\t").map((c) => c.replace(/\\n/g, "\n"))
+            );
+          }
+          return parseCsv(raw);
+        }
+
+        function snapshotToSheetRows(snap) {
+          const rows = [["key", "value"]];
+          const push = (k, v) => {
+            if (v == null) return;
+            if (typeof v === "boolean") rows.push([k, v ? "1" : "0"]);
+            else if (typeof v === "object") rows.push([k, JSON.stringify(v)]);
+            else rows.push([k, String(v)]);
+          };
+          push("_meta.app", snap.app || "my_OBS_tools");
+          push("_meta.version", snap.version || APP_VERSION);
+          push("_meta.exportedAt", snap.exportedAt || new Date().toISOString());
+          const setup = snap.setup || {};
+          const f = setup.fields || {};
+          Object.keys(f)
+            .sort()
+            .forEach((k) => push("field." + k, f[k]));
+          const mods = setup.modules || {};
+          Object.keys(mods)
+            .sort()
+            .forEach((k) => push("module." + k, mods[k]));
+          if (Array.isArray(setup.moduleOrder)) push("moduleOrder", setup.moduleOrder.join(","));
+          if (Array.isArray(setup.vcPlatformOrder))
+            push("vcPlatformOrder", setup.vcPlatformOrder.join(","));
+          if (Array.isArray(setup.sponsorFunds)) push("sponsorFunds", setup.sponsorFunds);
+          if (Array.isArray(setup.sponsorManuals)) push("sponsorManuals", setup.sponsorManuals);
+          if (Array.isArray(setup.counterItems)) push("counterItems", setup.counterItems);
+          if (typeof snap.accountTxt === "string") push("accountTxt", snap.accountTxt);
+          const ex = snap.extras || {};
+          if (ex.ytChannelIds) push("extras.ytChannelIds", ex.ytChannelIds);
+          if (ex.gameHistory) push("extras.gameHistory", ex.gameHistory);
+          if (ex.chatStyles) push("extras.chatStyles", ex.chatStyles);
+          return rows;
+        }
+
+        function sheetRowsToSnapshot(rows) {
+          if (!rows || !rows.length) throw new Error("empty");
+          let start = 0;
+          const head = rows[0].map((c) => String(c || "").trim().toLowerCase());
+          if (head[0] === "key" && (head[1] === "value" || head[1] === "值")) start = 1;
+          const setup = {
+            fields: {},
+            modules: {},
+            moduleOrder: null,
+            vcPlatformOrder: null,
+            sponsorFunds: null,
+            sponsorManuals: null,
+            counterItems: null,
+          };
+          const snap = {
+            app: "my_OBS_tools",
+            version: APP_VERSION,
+            setup,
+            accountTxt: "",
+            extras: {},
+          };
+          const parseMaybeJson = (s) => {
+            const t = String(s || "").trim();
+            if (!t) return t;
+            if ((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"))) {
+              try {
+                return JSON.parse(t);
+              } catch (_) {
+                return s;
+              }
+            }
+            return s;
+          };
+          for (let i = start; i < rows.length; i++) {
+            const key = String(rows[i][0] || "").trim();
+            if (!key || key.startsWith("#")) continue;
+            const value = rows[i].length > 1 ? rows[i].slice(1).join(",") : "";
+            if (key === "_meta.app") snap.app = String(value || snap.app);
+            else if (key === "_meta.version") snap.version = String(value || "");
+            else if (key.startsWith("field.")) setup.fields[key.slice(6)] = value;
+            else if (key.startsWith("module.")) {
+              const on = value === true || value === "true" || value === 1 || value === "1";
+              setup.modules[key.slice(7)] = on;
+            } else if (key === "moduleOrder")
+              setup.moduleOrder = String(value)
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+            else if (key === "vcPlatformOrder")
+              setup.vcPlatformOrder = String(value)
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+            else if (key === "sponsorFunds") setup.sponsorFunds = parseMaybeJson(value);
+            else if (key === "sponsorManuals") setup.sponsorManuals = parseMaybeJson(value);
+            else if (key === "counterItems") setup.counterItems = parseMaybeJson(value);
+            else if (key === "accountTxt") snap.accountTxt = String(value || "");
+            else if (key === "extras.ytChannelIds")
+              snap.extras.ytChannelIds = parseMaybeJson(value);
+            else if (key === "extras.gameHistory")
+              snap.extras.gameHistory = parseMaybeJson(value);
+            else if (key === "extras.chatStyles") snap.extras.chatStyles = parseMaybeJson(value);
+            else if (key.startsWith("extras.")) snap.extras[key.slice(7)] = parseMaybeJson(value);
+            else setup.fields[key] = value;
+          }
+          return snap;
+        }
+
+        function downloadTextFile(text, filename, mime) {
+          const blob = new Blob([text], {
+            type: (mime || "text/plain") + ";charset=utf-8",
+          });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = filename;
+          a.rel = "noopener";
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+
+        function normalizeSheetCsvUrl(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return "";
+          if (/[?&]output=csv\b/i.test(s) || /export\?[^#]*format=csv/i.test(s)) return s;
+          const id = s.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+          if (id) {
+            const gidMatch = s.match(/[?#&]gid=([0-9]+)/);
+            const gid = gidMatch ? gidMatch[1] : "0";
+            return (
+              "https://docs.google.com/spreadsheets/d/" +
+              id[1] +
+              "/export?format=csv&gid=" +
+              gid
+            );
+          }
+          const pub = s.match(/\/spreadsheets\/d\/e\/([a-zA-Z0-9-_]+)/);
+          if (pub) {
+            return (
+              "https://docs.google.com/spreadsheets/d/e/" + pub[1] + "/pub?output=csv"
+            );
+          }
+          return s;
+        }
+
+        async function importSnapshotFromSheetText(text) {
+          const rows = parseTsvOrCsv(text);
+          const snap = sheetRowsToSnapshot(rows);
+          applySetupSnapshot(snap);
+          return snap;
         }
 
         autoUpdateCheck.addEventListener("change", () => {
@@ -8766,6 +9054,122 @@ function syncYtAfterTwUi() {
             }
             setTimeout(() => {
               restoreSetupBtn.textContent = old;
+            }, 1600);
+          });
+        }
+
+        const exportSheetCsvBtn = $("exportSheetCsvBtn");
+        const copySheetTsvBtn = $("copySheetTsvBtn");
+        const importSheetCsvBtn = $("importSheetCsvBtn");
+        const importSheetCsvFile = $("importSheetCsvFile");
+        const importSheetUrlBtn = $("importSheetUrlBtn");
+        const sheetImportUrl = $("sheetImportUrl");
+        const importSheetPasteBtn = $("importSheetPasteBtn");
+        const sheetPasteBox = $("sheetPasteBox");
+        if (exportSheetCsvBtn) {
+          exportSheetCsvBtn.addEventListener("click", () => {
+            const rows = snapshotToSheetRows(collectSetupSnapshot());
+            const stamp = new Date().toISOString().slice(0, 10);
+            downloadTextFile(
+              rowsToCsv(rows),
+              `my_OBS_tools-sheet-${stamp}.csv`,
+              "text/csv"
+            );
+            setBackupStatus(`已下載試算表 CSV ${stamp}（可上傳／貼到 Google 試算表）`);
+            const old = exportSheetCsvBtn.textContent;
+            exportSheetCsvBtn.textContent = "已下載 CSV";
+            setTimeout(() => {
+              exportSheetCsvBtn.textContent = old;
+            }, 1400);
+          });
+        }
+        if (copySheetTsvBtn) {
+          copySheetTsvBtn.addEventListener("click", async () => {
+            const rows = snapshotToSheetRows(collectSetupSnapshot());
+            const text = rowsToTsv(rows);
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+              } else {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                ta.remove();
+              }
+              setBackupStatus("已複製：到 Google 試算表選一格貼上即可");
+              const old = copySheetTsvBtn.textContent;
+              copySheetTsvBtn.textContent = "已複製";
+              setTimeout(() => {
+                copySheetTsvBtn.textContent = old;
+              }, 1400);
+            } catch (_) {
+              setBackupStatus("複製失敗：請改用「下載試算表 CSV」");
+            }
+          });
+        }
+        if (importSheetCsvBtn && importSheetCsvFile) {
+          importSheetCsvBtn.addEventListener("click", () => {
+            importSheetCsvFile.value = "";
+            importSheetCsvFile.click();
+          });
+          importSheetCsvFile.addEventListener("change", async () => {
+            const file = importSheetCsvFile.files && importSheetCsvFile.files[0];
+            if (!file) return;
+            const old = importSheetCsvBtn.textContent;
+            try {
+              await importSnapshotFromSheetText(await file.text());
+              setBackupStatus(`已從試算表 CSV 匯入：${file.name}`);
+              importSheetCsvBtn.textContent = "已匯入";
+            } catch (_) {
+              setBackupStatus("匯入失敗：CSV 格式不對（要有 key／value 兩欄）");
+              importSheetCsvBtn.textContent = "匯入失敗";
+            }
+            setTimeout(() => {
+              importSheetCsvBtn.textContent = old;
+            }, 1600);
+          });
+        }
+        if (importSheetUrlBtn) {
+          importSheetUrlBtn.addEventListener("click", async () => {
+            const url = normalizeSheetCsvUrl(sheetImportUrl && sheetImportUrl.value);
+            if (!url) {
+              setBackupStatus("請先貼試算表網址（需公開或已發布）");
+              return;
+            }
+            const old = importSheetUrlBtn.textContent;
+            importSheetUrlBtn.textContent = "匯入中…";
+            try {
+              const res = await fetch(url, { cache: "no-store" });
+              if (!res.ok) throw new Error(String(res.status));
+              await importSnapshotFromSheetText(await res.text());
+              setBackupStatus("已從試算表網址匯入");
+              importSheetUrlBtn.textContent = "已匯入";
+            } catch (_) {
+              setBackupStatus(
+                "網址匯入失敗：請設公開／發布 CSV，或改下載 CSV／貼上匯入（瀏覽器可能擋跨網域）"
+              );
+              importSheetUrlBtn.textContent = "匯入失敗";
+            }
+            setTimeout(() => {
+              importSheetUrlBtn.textContent = old;
+            }, 1800);
+          });
+        }
+        if (importSheetPasteBtn && sheetPasteBox) {
+          importSheetPasteBtn.addEventListener("click", async () => {
+            const old = importSheetPasteBtn.textContent;
+            try {
+              await importSnapshotFromSheetText(sheetPasteBox.value);
+              setBackupStatus("已從貼上內容匯入試算表資料");
+              importSheetPasteBtn.textContent = "已匯入";
+            } catch (_) {
+              setBackupStatus("貼上匯入失敗：請貼兩欄（key／value）");
+              importSheetPasteBtn.textContent = "匯入失敗";
+            }
+            setTimeout(() => {
+              importSheetPasteBtn.textContent = old;
             }, 1600);
           });
         }

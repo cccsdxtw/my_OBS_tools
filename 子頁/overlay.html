@@ -146,8 +146,11 @@
         transform: translateY(0.02em);
       }
 
-      .error {
-        color: #ff8f8f;
+      .value.soft-fail {
+        font-family: var(--font-zh);
+        font-size: 0.72em;
+        font-weight: 600;
+        letter-spacing: 0.02em;
       }
     </style>
   </head>
@@ -198,7 +201,12 @@
           `https://decapi.me/twitch/viewercount/${encodeURIComponent(login)}`;
         const DECAPI_UPTIME = (login) =>
           `https://decapi.me/twitch/uptime/${encodeURIComponent(login)}`;
-        const POLL_MS = 15000;
+        const POLL_MS_LIVE = 15000;
+        const POLL_MS_OFF = 90 * 1000;
+        const POLL_MS_FAIL = 3 * 60 * 1000;
+        const FAIL_LABEL = "無法取得";
+        let streamLive = false;
+        let streamFail = false;
 
         const params = new URLSearchParams(location.search);
 
@@ -582,36 +590,55 @@
               }
             }
 
+            streamLive = !!data.live;
+            streamFail = false;
             if (showViewers) {
-              els.viewers.classList.remove("error");
+              els.viewers.classList.remove("soft-fail");
+              els.viewers.title = "";
               els.viewers.textContent = data.live ? String(data.viewers) : "0";
             }
             if (showUptime) {
               if (data.live && data.startedAt) {
                 startedAt = data.startedAt;
-                els.uptime.classList.remove("error");
+                els.uptime.classList.remove("soft-fail");
+                els.uptime.title = "";
               } else {
                 startedAt = null;
+                els.uptime.classList.remove("soft-fail");
+                els.uptime.title = "";
                 els.uptime.textContent = "00:00:00";
               }
             }
           } catch (err) {
-            console.error(err);
+            console.warn(err);
+            streamLive = false;
+            streamFail = true;
             if (showViewers) {
-              els.viewers.classList.add("error");
-              els.viewers.textContent = "ERR";
+              els.viewers.classList.add("soft-fail");
+              els.viewers.textContent = FAIL_LABEL;
+              els.viewers.title = String((err && err.message) || "人數暫時抓不到");
             }
             if (showUptime) {
-              els.uptime.classList.add("error");
-              els.uptime.textContent = "ERR";
+              els.uptime.classList.add("soft-fail");
+              els.uptime.textContent = FAIL_LABEL;
+              els.uptime.title = String((err && err.message) || "開台時間暫時抓不到");
             }
           }
         }
 
+        function nextStreamDelay() {
+          if (streamFail) return POLL_MS_FAIL;
+          return streamLive ? POLL_MS_LIVE : POLL_MS_OFF;
+        }
+
+        async function streamLoop() {
+          await refreshStream();
+          setTimeout(streamLoop, nextStreamDelay());
+        }
+
         tickClock();
         setInterval(tickClock, 250);
-        refreshStream();
-        setInterval(refreshStream, POLL_MS);
+        streamLoop();
 
         // 未使用的 Streamlabs token：在 console 提示改用免驗證來源
         if (streamlabsToken) {

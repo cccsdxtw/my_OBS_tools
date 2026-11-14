@@ -1091,7 +1091,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.8.1</span>
+          <span class="brand-version" id="brandVersion">v1.8.2</span>
         </h1>
         <p>
           先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
@@ -1543,9 +1543,11 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              使用最上方的共用設定帳號。YouTube：有填「直播網址／影片 ID」最省（只查人數）。
-              沒填時「自動找直播」整場最多成功一次並記住，之後只輪詢人數、不再重找；下播後約 2
-              小時內也不再自動找。入口預覽也會打 API，OBS 開著可先收合預覽。
+              使用最上方的共用設定帳號。會先判斷有沒有開台：未開台顯示 0 並降頻詢問（TW
+              約 90 秒、YT 約 5 分鐘），開台後才加密輪詢人數，減少整夜空打 API 撞到
+              403。YouTube：有填「直播網址／影片 ID」最省；沒填時「自動找直播」整場最多成功一次並記住，下播後約
+              2 小時內不再自動找。抓不到時顯示同色「無法取得」（不再秀 403／ERR）。入口預覽也會打
+              API，OBS 開著可先收合預覽。
             </p>
 
             <div class="field">
@@ -3456,7 +3458,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.8.1</p>
+          <p class="apply-status" id="versionStatus">本機 v1.8.2</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3470,7 +3472,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.8.1";
+        const APP_VERSION = "v1.8.2";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

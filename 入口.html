@@ -1543,11 +1543,9 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              使用最上方的共用設定帳號。詢問間隔可自訂。YouTube：預設等 Twitch
-              開台後才查（此時無視下方 YT 更新秒數，改跟 TW 一起查）；也可關掉讓
-              YT 用自己的更新秒數。YT 抓不到顯示同色「無法取得」。有填「直播網址／影片
-              ID」最省；沒填時「自動找直播」整場最多成功一次並記住，下播後約 2
-              小時內不再自動找。入口預覽也會打 API，OBS 開著可先收合預覽。
+              使用最上方的共用設定帳號。開台／離線可設不同更新秒數（開台要快、關台可慢）。YouTube：預設等
+              Twitch 開台後才查（此時無視 YT 秒數，改跟 TW 一起查）。也可用下方手動「開台／關台」強制狀態。YT
+              抓不到顯示同色「無法取得」。入口預覽也會打 API，OBS 開著可先收合預覽。
             </p>
 
             <div class="field">
@@ -1557,26 +1555,27 @@
                 <option value="total">加總</option>
               </select>
             </div>
-            <div class="row" style="margin-top: 10px">
+            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              更新秒數
+            </p>
+            <div class="row" style="margin-top: 8px">
               <div>
-                <label for="twPollSec">TW 更新（秒）</label>
-                <input
-                  id="twPollSec"
-                  type="number"
-                  min="5"
-                  max="600"
-                  value="15"
-                />
+                <label for="twPollLiveSec">TW 開台（秒）</label>
+                <input id="twPollLiveSec" type="number" min="5" max="600" value="15" />
               </div>
               <div>
-                <label for="ytPollSec">YT 更新（秒）</label>
-                <input
-                  id="ytPollSec"
-                  type="number"
-                  min="15"
-                  max="3600"
-                  value="60"
-                />
+                <label for="twPollOffSec">TW 離線（秒）</label>
+                <input id="twPollOffSec" type="number" min="15" max="3600" value="90" />
+              </div>
+            </div>
+            <div class="row" id="ytPollRows">
+              <div>
+                <label for="ytPollLiveSec">YT 開台（秒）</label>
+                <input id="ytPollLiveSec" type="number" min="15" max="3600" value="60" />
+              </div>
+              <div>
+                <label for="ytPollOffSec">YT 離線（秒）</label>
+                <input id="ytPollOffSec" type="number" min="30" max="7200" value="300" />
               </div>
             </div>
             <label class="check" style="margin-top: 10px"
@@ -1584,8 +1583,21 @@
               開台後才查 YouTube 人數</label
             >
             <p class="hint" id="ytAfterTwHint">
-              勾選＝TW 還沒開台時 YT 顯示 0、不打 API；開台後跟 TW 同一節奏更新（下方
-              YT 更新秒數會忽略）。只填 YT、沒填 TW 時不受影響。
+              勾選＝YT 秒數忽略，跟 TW 節奏走；TW 還沒開台時 YT 顯示 0。
+            </p>
+
+            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              手動開台狀態
+            </p>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" id="streamLiveBtn">開台</button>
+              <button type="button" class="secondary" id="streamOffBtn">關台</button>
+              <button type="button" class="secondary" id="streamAutoBtn">自動</button>
+            </div>
+            <p class="hint" id="streamLiveStatus">目前：自動（依 Twitch 偵測）</p>
+            <p class="hint">
+              寫入 <code>資料/stream-live.js</code>，已開著的 OBS 人數來源會跟上。開台＝強制當開台（YT
+              可立刻查、用開台秒數）；關台＝強制當離線；自動＝交回偵測。
             </p>
 
             <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
@@ -3515,6 +3527,7 @@
           "material-icons.js",
           "panel-bg.js",
           "yt-live-sync.js",
+          "stream-live-sync.js",
           "update-files.json",
           "fonts/MaterialSymbolsOutlined.ttf",
           "子頁/overlay.html",
@@ -3741,6 +3754,7 @@
           [
             "panel-bg.js",
             "yt-live-sync.js",
+            "stream-live-sync.js",
             "子頁/counter.html",
             "子頁/media.html",
             "子頁/danmaku.html",
@@ -4568,8 +4582,10 @@
           channel: $("channel"),
           vcMode: $("vcMode"),
           ytAfterTw: $("ytAfterTw"),
-          twPollSec: $("twPollSec"),
-          ytPollSec: $("ytPollSec"),
+          twPollLiveSec: $("twPollLiveSec"),
+          twPollOffSec: $("twPollOffSec"),
+          ytPollLiveSec: $("ytPollLiveSec"),
+          ytPollOffSec: $("ytPollOffSec"),
           ytChannel: $("ytChannel"),
           ytVideo: $("ytVideo"),
           ytKey: $("ytKey"),
@@ -6250,13 +6266,20 @@
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
           // 預設開；關掉才顯式傳 0（覆蓋頁預設也是開）
           if (fields.ytAfterTw && !fields.ytAfterTw.checked) p.set("ytAfterTw", "0");
-          const twPoll = Number(fields.twPollSec && fields.twPollSec.value);
-          if (Number.isFinite(twPoll) && twPoll > 0) p.set("twPoll", String(Math.round(twPoll)));
+          const twLiveSec = Number(fields.twPollLiveSec && fields.twPollLiveSec.value);
+          const twOffSec = Number(fields.twPollOffSec && fields.twPollOffSec.value);
+          if (Number.isFinite(twLiveSec) && twLiveSec > 0)
+            p.set("twPollLive", String(Math.round(twLiveSec)));
+          if (Number.isFinite(twOffSec) && twOffSec > 0)
+            p.set("twPollOff", String(Math.round(twOffSec)));
           // 勾「TW 開台後才查 YT」時無視 YT 更新秒數，不寫進網址
           if (!(fields.ytAfterTw && fields.ytAfterTw.checked)) {
-            const ytPoll = Number(fields.ytPollSec && fields.ytPollSec.value);
-            if (Number.isFinite(ytPoll) && ytPoll > 0)
-              p.set("ytPoll", String(Math.round(ytPoll)));
+            const ytLiveSec = Number(fields.ytPollLiveSec && fields.ytPollLiveSec.value);
+            const ytOffSec = Number(fields.ytPollOffSec && fields.ytPollOffSec.value);
+            if (Number.isFinite(ytLiveSec) && ytLiveSec > 0)
+              p.set("ytPollLive", String(Math.round(ytLiveSec)));
+            if (Number.isFinite(ytOffSec) && ytOffSec > 0)
+              p.set("ytPollOff", String(Math.round(ytOffSec)));
           }
           const vcPlatformOrder = getVcPlatformOrder();
           if (vcPlatformOrder.length) p.set("vcOrder", vcPlatformOrder.join(","));
@@ -6618,18 +6641,78 @@
 
 function syncYtAfterTwUi() {
           const gated = !!(fields.ytAfterTw && fields.ytAfterTw.checked);
-          if (fields.ytPollSec) {
-            fields.ytPollSec.disabled = gated;
-            fields.ytPollSec.title = gated
-              ? "已勾「TW 開台後才查 YT」：無視此秒數，改跟 TW 更新"
+          ["ytPollLiveSec", "ytPollOffSec"].forEach((k) => {
+            const el = fields[k];
+            if (!el) return;
+            el.disabled = gated;
+            el.title = gated
+              ? "已勾「TW 開台後才查 YT」：無視 YT 秒數，改跟 TW 更新"
               : "";
-          }
+          });
           const hint = $("ytAfterTwHint");
           if (hint) {
             hint.textContent = gated
-              ? "勾選中：YT 不打獨立更新；TW 還沒開台顯示 0，開台後跟 TW 同一節奏查。只填 YT、沒填 TW 時不受影響。"
-              : "未勾選：YT 用上方「YT 更新（秒）」自己輪詢。";
+              ? "勾選中：無視 YT 開台／離線秒數；TW 還沒開台 YT 顯示 0，開台後跟 TW 節奏查。只填 YT、沒填 TW 時不受影響。"
+              : "未勾選：YT 用上方「YT 開台／離線（秒）」自己輪詢。";
           }
+        }
+
+        const STREAM_LIVE_LS_KEY = "my_obs_tools_stream_live";
+        function streamLiveLabel(mode) {
+          if (mode === "live") return "目前：手動開台";
+          if (mode === "off") return "目前：手動關台";
+          return "目前：自動（依 Twitch 偵測）";
+        }
+        function readStreamLiveMode() {
+          try {
+            const raw = JSON.parse(localStorage.getItem(STREAM_LIVE_LS_KEY) || "null");
+            if (raw && (raw.mode === "live" || raw.mode === "off" || raw.mode === "auto"))
+              return raw.mode;
+          } catch (_) {}
+          return "auto";
+        }
+        function setStreamLiveStatus(mode, note) {
+          const el = $("streamLiveStatus");
+          if (!el) return;
+          el.textContent = streamLiveLabel(mode) + (note ? " · " + note : "");
+        }
+        async function writeStreamLiveJsToDisk(payload) {
+          if (!canUseDirPicker()) return false;
+          const data = {
+            mode: (payload && payload.mode) || "auto",
+            ts: (payload && payload.ts) || Date.now(),
+          };
+          const body =
+            "// 由入口「開台／關台／自動」覆寫；OBS 人數頁會定期讀取\n" +
+            "window.__MY_OBS_STREAM_LIVE__ = " +
+            JSON.stringify(data, null, 2) +
+            ";\n";
+          try {
+            let dir = await pickInstallDir({ force: false });
+            if (!dir) return false;
+            const dataDir = await dir.getDirectoryHandle("資料", { create: true });
+            const fh = await dataDir.getFileHandle("stream-live.js", { create: true });
+            const w = await fh.createWritable();
+            await w.write(body);
+            await w.close();
+            return true;
+          } catch (err) {
+            console.warn("write stream-live.js", err);
+            return false;
+          }
+        }
+        async function setStreamLiveMode(mode) {
+          const m = mode === "live" || mode === "off" ? mode : "auto";
+          const payload = { mode: m, ts: Date.now() };
+          try {
+            localStorage.setItem(STREAM_LIVE_LS_KEY, JSON.stringify(payload));
+          } catch (_) {}
+          const wrote = await writeStreamLiveJsToDisk(payload);
+          setStreamLiveStatus(
+            m,
+            wrote ? "已寫入 資料/stream-live.js" : "已記在本機（請授權資料夾以便 OBS 跟上）"
+          );
+          buildUrls();
         }
 
         function syncChatPanels() {
@@ -7555,6 +7638,16 @@ function syncYtAfterTwUi() {
           el.addEventListener("change", buildUrls)
         );
         syncYtAfterTwUi();
+        setStreamLiveStatus(readStreamLiveMode());
+        const streamLiveBtn = $("streamLiveBtn");
+        const streamOffBtn = $("streamOffBtn");
+        const streamAutoBtn = $("streamAutoBtn");
+        if (streamLiveBtn)
+          streamLiveBtn.addEventListener("click", () => setStreamLiveMode("live"));
+        if (streamOffBtn)
+          streamOffBtn.addEventListener("click", () => setStreamLiveMode("off"));
+        if (streamAutoBtn)
+          streamAutoBtn.addEventListener("click", () => setStreamLiveMode("auto"));
 
         function parseAccountTxt(text) {
           const map = {};

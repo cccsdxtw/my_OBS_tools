@@ -1543,11 +1543,11 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              使用最上方的共用設定帳號。會先判斷有沒有開台：未開台顯示 0 並降頻詢問（TW
-              約 90 秒、YT 約 5 分鐘），開台後才加密輪詢人數，減少整夜空打 API 撞到
-              403。YouTube：有填「直播網址／影片 ID」最省；沒填時「自動找直播」整場最多成功一次並記住，下播後約
-              2 小時內不再自動找。抓不到時顯示同色「無法取得」（不再秀 403／ERR）。入口預覽也會打
-              API，OBS 開著可先收合預覽。
+              使用最上方的共用設定帳號。Twitch 照舊輪詢。YouTube：預設等 Twitch
+              偵測到開台後才開始查（兩邊一起開時可少撞配額／403）；也可關掉改成 YT
+              自己查。YT 未開台會降頻；抓不到顯示同色「無法取得」。有填「直播網址／影片
+              ID」最省；沒填時「自動找直播」整場最多成功一次並記住，下播後約 2
+              小時內不再自動找。入口預覽也會打 API，OBS 開著可先收合預覽。
             </p>
 
             <div class="field">
@@ -1557,6 +1557,14 @@
                 <option value="total">加總</option>
               </select>
             </div>
+            <label class="check" style="margin-top: 10px"
+              ><input type="checkbox" id="ytAfterTw" checked /> Twitch
+              開台後才查 YouTube 人數</label
+            >
+            <p class="hint">
+              勾選＝TW 還沒開台時 YT 顯示 0、不打 API；TW 開台後才啟動 YT。只填
+              YT、沒填 TW 時不受影響。
+            </p>
 
             <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
               平台左右順序
@@ -4536,6 +4544,7 @@
         const fields = {
           channel: $("channel"),
           vcMode: $("vcMode"),
+          ytAfterTw: $("ytAfterTw"),
           ytChannel: $("ytChannel"),
           ytVideo: $("ytVideo"),
           ytKey: $("ytKey"),
@@ -6214,6 +6223,8 @@
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
+          // 預設開；關掉才顯式傳 0（覆蓋頁預設也是開）
+          if (fields.ytAfterTw && !fields.ytAfterTw.checked) p.set("ytAfterTw", "0");
           const vcPlatformOrder = getVcPlatformOrder();
           if (vcPlatformOrder.length) p.set("vcOrder", vcPlatformOrder.join(","));
           // 空白＝平台預設 SVG；勾掉＝不顯示（傳 0）

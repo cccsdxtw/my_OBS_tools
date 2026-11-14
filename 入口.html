@@ -1037,6 +1037,70 @@
         filter: brightness(0.92);
       }
 
+      .bug-report {
+        margin-top: 12px;
+        padding: 14px 14px 12px;
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        background: var(--steps-bg);
+      }
+
+      .bug-report h3 {
+        margin: 0 0 4px;
+        font-size: 0.95rem;
+      }
+
+      .bug-report > p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
+      .bug-report-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .bug-report-list li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 10px;
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      .bug-report-list .tag {
+        flex: 0 0 auto;
+        min-width: 4.5em;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 0.82rem;
+      }
+
+      .bug-report-list a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .bug-report-list a:hover {
+        color: var(--accent-2);
+        text-decoration: underline;
+      }
+
+      .bug-report-list .mail {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88rem;
+        font-weight: 500;
+        word-break: break-all;
+      }
+
       .apply-dock {
         position: fixed;
         left: 0;
@@ -1182,7 +1246,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v2.0.0</span>
+          <span class="brand-version" id="brandVersion">v2.0.1</span>
         </h1>
         <p>
           先填最上方的共用設定，再依序：帳號相關 → 聊天相關 → 免帳號。各橫列可分開放 OBS 來源。
@@ -1194,7 +1258,7 @@
         <input
           id="pageSearch"
           type="search"
-          placeholder="例如：聊天、倒計時、帳號、贊助…"
+          placeholder="例如：聊天、倒計時、帳號、贊助、BUG…"
           autocomplete="off"
         />
         <div class="page-tools-actions">
@@ -3515,7 +3579,7 @@
         </div>
       </div>
 
-      <section class="credits" id="credits" aria-label="製作名單與贊助">
+      <section class="credits" id="credits" aria-label="製作名單、贊助與 BUG 回報">
         <div class="credits-head">
           <div>
             <h2>製作名單 / 感恩專區</h2>
@@ -3573,6 +3637,40 @@
               >Ko-fi · 贊助</a
             >
           </div>
+          <div class="bug-report" id="bugReport">
+            <h3>BUG 回報</h3>
+            <p>用起來怪怪的、壞掉、或有想法，歡迎從下面管道找我們。</p>
+            <ul class="bug-report-list">
+              <li>
+                <span class="tag">Lit.Link</span>
+                <a href="https://lit.link/en/lajidan" target="_blank" rel="noopener">lajidan</a>
+              </li>
+              <li>
+                <span class="tag">FB 粉絲團</span>
+                <a href="https://www.facebook.com/garbageegg/" target="_blank" rel="noopener"
+                  >拉基蛋的拉基桶</a
+                >
+              </li>
+              <li>
+                <span class="tag">GitHub</span>
+                <a href="https://github.com/cccsdxtw" target="_blank" rel="noopener">董浩</a>
+              </li>
+              <li>
+                <span class="tag">Discord</span>
+                <a href="https://discord.com/invite/pegSKKWh8w" target="_blank" rel="noopener"
+                  >拉基蛋的拉基桶</a
+                >
+              </li>
+              <li>
+                <span class="tag">Email</span>
+                <a class="mail" href="mailto:hi0729@hotmail.com">hi0729@hotmail.com</a>
+              </li>
+              <li>
+                <span class="tag">Email</span>
+                <a class="mail" href="mailto:cccsdxtw@gmail.com">cccsdxtw@gmail.com</a>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -3595,7 +3693,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v2.0.0</p>
+          <p class="apply-status" id="versionStatus">本機 v2.0.1</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3609,7 +3707,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v2.0.0";
+        const APP_VERSION = "v2.0.1";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

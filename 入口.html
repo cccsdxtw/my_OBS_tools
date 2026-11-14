@@ -1094,7 +1094,7 @@
           <span class="brand-version" id="brandVersion">v1.8.3</span>
         </h1>
         <p>
-          先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
+          先填最上方的共用設定，再依序：帳號相關 → 聊天相關 → 免帳號。各橫列可分開放 OBS 來源。
         </p>
       </header>
 
@@ -1281,6 +1281,197 @@
               <p class="hint">按上面按鈕會開新分頁。金鑰申請一次就能一直用。</p>
             </div>
           </section>
+        </div>
+
+                <!-- A · 需要帳號／API：②①⑨⑩ -->
+<!-- ② 觀眾人數 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>② 觀眾人數（TW + YT）</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              使用最上方的共用設定帳號。開台／離線可設不同更新秒數（開台要快、關台可慢）。YouTube：預設等
+              Twitch 開台後才查（此時無視 YT 秒數，改跟 TW 一起查）。也可用下方手動「開台／關台」強制狀態。YT
+              抓不到顯示同色「無法取得」。入口預覽也會打 API，OBS 開著可先收合預覽。
+            </p>
+
+            <div class="field">
+              <label for="vcMode">顯示方式</label>
+              <select id="vcMode">
+                <option value="split" selected>分開：圖示＋人數</option>
+                <option value="total">加總</option>
+              </select>
+            </div>
+            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              更新秒數
+            </p>
+            <div class="row" style="margin-top: 8px">
+              <div>
+                <label for="twPollLiveSec">TW 開台（秒）</label>
+                <input id="twPollLiveSec" type="number" min="5" max="600" value="15" />
+              </div>
+              <div>
+                <label for="twPollOffSec">TW 離線（秒）</label>
+                <input id="twPollOffSec" type="number" min="15" max="3600" value="90" />
+              </div>
+            </div>
+            <div class="row" id="ytPollRows">
+              <div>
+                <label for="ytPollLiveSec">YT 開台（秒）</label>
+                <input id="ytPollLiveSec" type="number" min="15" max="3600" value="60" />
+              </div>
+              <div>
+                <label for="ytPollOffSec">YT 離線（秒）</label>
+                <input id="ytPollOffSec" type="number" min="30" max="7200" value="300" />
+              </div>
+            </div>
+            <label class="check" style="margin-top: 10px"
+              ><input type="checkbox" id="ytAfterTw" checked /> Twitch
+              開台後才查 YouTube 人數</label
+            >
+            <p class="hint" id="ytAfterTwHint">
+              勾選＝YT 秒數忽略，跟 TW 節奏走；TW 還沒開台時 YT 顯示 0。
+            </p>
+
+            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              手動開台狀態
+            </p>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" id="streamLiveBtn">開台</button>
+              <button type="button" class="secondary" id="streamOffBtn">關台</button>
+              <button type="button" class="secondary" id="streamAutoBtn">自動</button>
+            </div>
+            <p class="hint" id="streamLiveStatus">目前：自動（依 Twitch 偵測）</p>
+            <p class="hint">
+              寫入 <code>資料/stream-live.js</code>，已開著的 OBS 人數來源會跟上。開台＝強制當開台（YT
+              可立刻查、用開台秒數）；關台＝強制當離線；自動＝交回偵測。
+            </p>
+
+            <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              平台左右順序
+            </p>
+            <div class="checks" id="vcPlatforms">
+              <div class="mod-row" data-key="tw">
+                <label>Twitch</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="twShowIcon" checked /> 顯示圖示</label
+                >
+                <input
+                  id="twIcon"
+                  type="text"
+                  placeholder="空白＝預設 Twitch 圖示；可貼圖片網址"
+                  style="grid-column: 1 / -1"
+                />
+              </div>
+              <div class="mod-row" data-key="yt">
+                <label>YouTube</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="ytShowIcon" checked /> 顯示圖示</label
+                >
+                <input
+                  id="ytIcon"
+                  type="text"
+                  placeholder="空白＝預設 YouTube 圖示；可貼圖片網址"
+                  style="grid-column: 1 / -1"
+                />
+              </div>
+            </div>
+            <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。勾選才顯示圖示；空白用平台預設，也可貼 PNG／SVG／WebP。</p>
+            <div class="row">
+              <div>
+                <label for="viewersFontSize">字級</label>
+                <input id="viewersFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="viewersColor">文字色</label>
+                <input id="viewersColor" type="text" placeholder="用預設" />
+              </div>
+            </div>
+            <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>② 觀眾人數網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="vcUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
+            <div class="actions">
+              <button type="button" id="copyVc">複製人數網址</button>
+              <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewVc" title="viewers preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="viewers-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+<div class="row">
+              <div>
+                <label><input type="checkbox" id="viewersShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="viewersBg">底色</label>
+                <input id="viewersBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="viewersShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="viewersPanelFit">底圖顯示</label>
+                <select id="viewersPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="viewersPanelImgRow">
+              <div>
+                <label for="viewersPanelImg">底圖網址</label>
+                <input
+                  id="viewersPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="viewersPanelInset">外推（px）</label>
+                <input
+                  id="viewersPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
+              </div>
+            </div>
+
+          </aside>
         </div>
 
         <!-- ① 資訊條 -->
@@ -1535,139 +1726,187 @@
           </aside>
         </div>
 
-        <!-- ② 觀眾人數 -->
+        <!-- ⑨ 贊助條 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>② 觀眾人數（TW + YT）</h2>
-              <span class="side-title">獨立來源</span>
+              <h2>⑨ 贊助條</h2>
+              <span class="side-title">TW 小奇點 · YT 超留</span>
             </div>
             <p class="hint">
-              使用最上方的共用設定帳號。開台／離線可設不同更新秒數（開台要快、關台可慢）。YouTube：預設等
-              Twitch 開台後才查（此時無視 YT 秒數，改跟 TW 一起查）。也可用下方手動「開台／關台」強制狀態。YT
-              抓不到顯示同色「無法取得」。入口預覽也會打 API，OBS 開著可先收合預覽。
+              自動抓 <strong>Twitch Cheer／小奇點</strong>（聊天 IRC，免 OAuth）與
+              <strong>YouTube 超級留言</strong>（用最上方帳號＋API Key）。不支援 Ko-fi。
+              只計算你指定的時段內事件；時段外不計入。YT 直播與留言／人數共用記住的本場 ID（自動找最多一次）。
             </p>
-
-            <div class="field">
-              <label for="vcMode">顯示方式</label>
-              <select id="vcMode">
-                <option value="split" selected>分開：圖示＋人數</option>
-                <option value="total">加總</option>
-              </select>
-            </div>
-            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
-              更新秒數
-            </p>
-            <div class="row" style="margin-top: 8px">
-              <div>
-                <label for="twPollLiveSec">TW 開台（秒）</label>
-                <input id="twPollLiveSec" type="number" min="5" max="600" value="15" />
-              </div>
-              <div>
-                <label for="twPollOffSec">TW 離線（秒）</label>
-                <input id="twPollOffSec" type="number" min="15" max="3600" value="90" />
-              </div>
-            </div>
-            <div class="row" id="ytPollRows">
-              <div>
-                <label for="ytPollLiveSec">YT 開台（秒）</label>
-                <input id="ytPollLiveSec" type="number" min="15" max="3600" value="60" />
-              </div>
-              <div>
-                <label for="ytPollOffSec">YT 離線（秒）</label>
-                <input id="ytPollOffSec" type="number" min="30" max="7200" value="300" />
-              </div>
-            </div>
-            <label class="check" style="margin-top: 10px"
-              ><input type="checkbox" id="ytAfterTw" checked /> Twitch
-              開台後才查 YouTube 人數</label
-            >
-            <p class="hint" id="ytAfterTwHint">
-              勾選＝YT 秒數忽略，跟 TW 節奏走；TW 還沒開台時 YT 顯示 0。
-            </p>
-
-            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
-              手動開台狀態
-            </p>
-            <div class="actions" style="margin-top: 8px">
-              <button type="button" id="streamLiveBtn">開台</button>
-              <button type="button" class="secondary" id="streamOffBtn">關台</button>
-              <button type="button" class="secondary" id="streamAutoBtn">自動</button>
-            </div>
-            <p class="hint" id="streamLiveStatus">目前：自動（依 Twitch 偵測）</p>
-            <p class="hint">
-              寫入 <code>資料/stream-live.js</code>，已開著的 OBS 人數來源會跟上。開台＝強制當開台（YT
-              可立刻查、用開台秒數）；關台＝強制當離線；自動＝交回偵測。
-            </p>
-
-            <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
-              平台左右順序
-            </p>
-            <div class="checks" id="vcPlatforms">
-              <div class="mod-row" data-key="tw">
-                <label>Twitch</label>
-                <div class="mod-move">
-                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
-                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
-                </div>
-                <label style="grid-column: 1 / -1; margin-top: 4px"
-                  ><input type="checkbox" id="twShowIcon" checked /> 顯示圖示</label
-                >
-                <input
-                  id="twIcon"
-                  type="text"
-                  placeholder="空白＝預設 Twitch 圖示；可貼圖片網址"
-                  style="grid-column: 1 / -1"
-                />
-              </div>
-              <div class="mod-row" data-key="yt">
-                <label>YouTube</label>
-                <div class="mod-move">
-                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
-                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
-                </div>
-                <label style="grid-column: 1 / -1; margin-top: 4px"
-                  ><input type="checkbox" id="ytShowIcon" checked /> 顯示圖示</label
-                >
-                <input
-                  id="ytIcon"
-                  type="text"
-                  placeholder="空白＝預設 YouTube 圖示；可貼圖片網址"
-                  style="grid-column: 1 / -1"
-                />
-              </div>
-            </div>
-            <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。勾選才顯示圖示；空白用平台預設，也可貼 PNG／SVG／WebP。</p>
             <div class="row">
               <div>
-                <label for="viewersFontSize">字級</label>
-                <input id="viewersFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                <label for="spStart">開始時間（年→分）</label>
+                <input id="spStart" type="datetime-local" step="60" />
               </div>
               <div>
-                <label for="viewersColor">文字色</label>
-                <input id="viewersColor" type="text" placeholder="用預設" />
+                <label for="spEndMode">結束方式</label>
+                <select id="spEndMode">
+                  <option value="end" selected>指定結束時間</option>
+                  <option value="duration">從開始起算時長</option>
+                </select>
               </div>
             </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
-          </section>
+            <div class="row" id="spEndRow">
+              <div>
+                <label for="spEnd">結束時間（年→分）</label>
+                <input id="spEnd" type="datetime-local" step="60" />
+              </div>
+              <div></div>
+            </div>
+            <div class="row" id="spDurationRow" hidden>
+              <div>
+                <label for="spDuration">時長（分鐘）</label>
+                <input id="spDuration" type="number" min="1" step="1" placeholder="例如 180＝3 小時" />
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              精度：年／月／日／時／分。空白開始＝網頁一開就開始算；空白結束＝不設截止（本地時區）。
+              Twitch 後台看得到的歷史 Cheer，<strong>公開 API／就算有授權也拿不到逐筆明細</strong>（EventSub
+              只推即時）。關掉覆蓋期間漏算的，請用下方「手動補登」。已自動計入的會本機記住（重整不丟）。
+            </p>
+            <div class="card-head" style="margin-top: 4px">
+              <h2 style="font-size: 0.95rem; margin: 0">手動補登（一筆一筆加）</h2>
+              <span class="side-title">漏算／後台補</span>
+            </div>
+            <div class="row">
+              <div>
+                <label for="spManualPlatform">平台</label>
+                <select id="spManualPlatform">
+                  <option value="tw" selected>TW bits</option>
+                  <option value="yt">YT 金額</option>
+                </select>
+              </div>
+              <div>
+                <label for="spManualAmount">數量</label>
+                <input id="spManualAmount" type="number" min="0" step="1" placeholder="例如 100" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="spManualYtCurrency">YT 幣別</label>
+                <select id="spManualYtCurrency">
+                  <option value="TWD" selected>TWD</option>
+                  <option value="USD">USD</option>
+                  <option value="JPY">JPY</option>
+                </select>
+              </div>
+              <div>
+                <label for="spManualFund">進哪個基金</label>
+                <select id="spManualFund"></select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="spManualNote">備註</label>
+              <input id="spManualNote" type="text" placeholder="例如：後台補登／開場前" />
+            </div>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" id="spManualAdd">確認加入補登</button>
+            </div>
+            <div id="spManualList" class="checks" style="margin-top: 8px"></div>
+            <p class="hint">
+              填好按「確認加入」才會進清單並寫進網址；可加很多筆、可刪。改完請<strong>重新複製贊助條網址</strong>到
+              OBS（或覆蓋來源後重新整理）。直播中也可在 OBS「互動」用條上的「＋手動」。
+            </p>
+            <!-- 舊版單一補登欄位相容 -->
+            <input id="spManualBits" type="hidden" value="" />
+            <input id="spManualYt" type="hidden" value="" />
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="spCombine" /> 小奇點＋超留一起算進同一目標</label
+                >
+              </div>
+              <div>
+                <label for="spBitsRate">小奇點換算（每 100 bits）</label>
+                <input
+                  id="spBitsRate"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value="0"
+                  placeholder="合併時才用"
+                />
+              </div>
+            </div>
+            <p class="hint">
+              勾選合併才把 bits 換算進各基金進度。例：填 1 → 每 100 bits＝目標幣 1 元。
+            </p>
+            <div class="row">
+              <div>
+                <label for="spGoalCurrency">目標幣別</label>
+                <select id="spGoalCurrency">
+                  <option value="TWD" selected>TWD</option>
+                  <option value="USD">USD</option>
+                  <option value="JPY">JPY</option>
+                </select>
+              </div>
+              <div></div>
+            </div>
+            <div class="card-head" style="margin-top: 8px">
+              <h2 style="font-size: 0.95rem; margin: 0">基金／目標（可多個）</h2>
+              <span class="side-title">例：唱歌基金 · 女裝基金</span>
+            </div>
+            <div id="spFundsList" class="checks" style="margin-top: 8px"></div>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" class="secondary" id="spAddFund">新增基金</button>
+            </div>
+            <p class="hint">
+              每筆基金各自累計。關鍵字可填<strong>多個</strong>（逗號／頓號／換行都行，例如
+              <code>唱歌,唱歌基金,sing</code>）；空白＝用基金名稱。
+              <strong>同一筆只會進一個基金</strong>（同時符合時：關鍵字較長者優先）。只有一個基金且關鍵字空白＝全部進它。
+            </p>
+            <!-- 舊版單目標欄位：還原設定相容，畫面隱藏 -->
+            <input id="spGoal" type="hidden" value="" />
+            <input id="spGoalLabel" type="hidden" value="" />
+            <input id="spKeywords" type="hidden" value="" />
+            <input id="spKeywordMode" type="hidden" value="any" />
+            <div class="row">
+              <div>
+                <label for="spMax">最近幾筆</label>
+                <input id="spMax" type="number" min="3" max="20" value="8" />
+              </div>
+              <div>
+                <label for="spFontSize">字級</label>
+                <input id="spFontSize" type="number" min="12" max="48" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="spColor">文字色</label>
+                <input id="spColor" type="text" placeholder="用預設" />
+              </div>
+              <div>
+                <label><input type="checkbox" id="spHideStatus" checked /> 隱藏連線狀態</label>
+              </div>
+            </div>
+                                  </section>
 
           <div class="band-divider" aria-hidden="true"></div>
 
           <aside class="card">
             <div class="card-head">
-              <h2>② 觀眾人數網址</h2>
+              <h2>⑨ 贊助條網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
-            <textarea id="vcUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
+            <textarea id="spUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 700–1100；基金愈多高度愈高（約 70 + 每條 36）。預覽含示範。</p>
             <div class="actions">
-              <button type="button" id="copyVc">複製人數網址</button>
-              <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
+              <button type="button" id="copySp">複製贊助條網址</button>
+              <a class="btn secondary" id="openSp" href="#" target="_blank" rel="noopener">預覽</a>
             </div>
-            <div class="preview-wrap">
-              <iframe id="previewVc" title="viewers preview"></iframe>
+            <p class="hint">
+              框內展示會跳動（示範）。「複製」「預覽」兩個按鈕都是<strong>正式網址</strong>（不會自己跳），可安心複製到 OBS。
+            </p>
+            <div class="preview-wrap" style="min-height: 100px">
+              <iframe id="previewSp" title="sponsor preview" style="height: 100px"></iframe>
             </div>
-            <div class="subfold is-collapsed" data-subfold="viewers-bg">
+            <div class="subfold is-collapsed" data-subfold="sp-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -1675,23 +1914,23 @@
               <div class="subfold-body">
 <div class="row">
               <div>
-                <label><input type="checkbox" id="viewersShowBg" checked /> 顯示底色</label>
+                <label><input type="checkbox" id="spShowBg" checked /> 顯示底色</label>
               </div>
-              <div class="field" style="margin-top: 0">
-                <label for="viewersBg">底色</label>
-                <input id="viewersBg" type="text" value="rgba(0,0,0,0.45)" />
+              <div>
+                <label for="spBg">底色</label>
+                <input id="spBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
             </div>
 
             <div class="row">
               <div>
                 <label
-                  ><input type="checkbox" id="viewersShowPanelImg" /> 顯示底圖</label
+                  ><input type="checkbox" id="spShowPanelImg" /> 顯示底圖</label
                 >
               </div>
               <div>
-                <label for="viewersPanelFit">底圖顯示</label>
-                <select id="viewersPanelFit">
+                <label for="spPanelFit">底圖顯示</label>
+                <select id="spPanelFit">
                   <option value="">用預設</option>
                   <option value="stretch">拉伸填滿</option>
                   <option value="contain">完整顯示</option>
@@ -1699,19 +1938,19 @@
                 </select>
               </div>
             </div>
-            <div class="row" id="viewersPanelImgRow">
+            <div class="row" id="spPanelImgRow">
               <div>
-                <label for="viewersPanelImg">底圖網址</label>
+                <label for="spPanelImg">底圖網址</label>
                 <input
-                  id="viewersPanelImg"
+                  id="spPanelImg"
                   type="text"
                   placeholder="空白＝用上方預設底圖"
                 />
               </div>
               <div>
-                <label for="viewersPanelInset">外推（px）</label>
+                <label for="spPanelInset">外推（px）</label>
                 <input
-                  id="viewersPanelInset"
+                  id="spPanelInset"
                   type="text"
                   inputmode="numeric"
                   placeholder="用預設"
@@ -1725,7 +1964,873 @@
           </aside>
         </div>
 
-        <!-- ③ 倒計時 -->
+        <!-- ⑩ 計數器 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑩ 計數器</h2>
+              <span class="side-title">可多組 · !指令</span>
+            </div>
+            <p class="hint">
+              可同時開多組（每組一個 OBS 網址）。有「指令名」時：<code>!死</code>＝預設
+              <code>+1</code>；也可 <code>!死+2</code>／<code>!死-1</code>／<code>!死=3</code>。沒填指令名則用
+              <code>!+1</code>。帳號用最上方共用設定。
+            </p>
+            <div class="field" style="align-items: flex-start">
+              <label>誰可以改</label>
+              <div class="checks" style="margin: 0; flex: 1">
+                <label><input type="checkbox" id="ctrRoleOwner" checked /> 台主</label>
+                <label title="MOD／房管"
+                  ><input type="checkbox" id="ctrRoleHammer" checked /> 槌子</label
+                >
+                <label title="Twitch MOD 劍徽章"
+                  ><input type="checkbox" id="ctrRoleSword" checked /> 劍</label
+                >
+                <label><input type="checkbox" id="ctrRoleVip" /> VIP</label>
+                <label title="Twitch 訂閱／YouTube 會員"
+                  ><input type="checkbox" id="ctrRoleSub" /> 粉絲</label
+                >
+              </div>
+            </div>
+            <p class="hint" style="margin-top: 6px">
+              槌子、劍都算 MOD。VIP、粉絲預設不勾。升級若用「覆蓋並重開」請再按一次（已補齊缺檔）。
+            </p>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" id="ctrAddBtn">新增計數器</button>
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div id="ctrList" class="checks" style="margin-top: 8px"></div>
+            <div
+              id="ctrSyncFrames"
+              hidden
+              aria-hidden="true"
+              style="position: absolute; width: 0; height: 0; overflow: hidden"
+            ></div>
+            <p class="hint" style="margin-top: 8px">
+              「標籤／指令／起始／目前／最小」各有說明。「目前」跟著計數器頁顯示（主頁不重算聊天）。
+              右側是 DEMO。「重設」改回起始（含 0）。預設 <code>!死</code>＝+1。
+            </p>
+            <div class="field">
+              <label
+                ><input type="checkbox" id="ctrPersist" checked />
+                記住數字（關掉＝每次重開都從起始值開始，可從 0）</label
+              >
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="ctrShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
+              <label for="ctrIcon">計數器圖示</label>
+              <input
+                id="ctrIcon"
+                type="text"
+                list="materialIconSuggest"
+                placeholder="空白＝預設 plus_one；或圖片網址"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="ctrIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="ctrIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="ctrIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div>
+                <label><input type="checkbox" id="ctrHideStatus" /> 隱藏連線狀態</label>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="ctrFontSize">字級</label>
+                <input id="ctrFontSize" type="number" min="12" max="96" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="ctrColor">文字色</label>
+                <div class="color-pair">
+                  <input id="ctrColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="ctrColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑩ 計數器網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <label for="ctrPreviewPick">預覽哪一組</label>
+            <select id="ctrPreviewPick" style="margin-bottom: 8px"></select>
+            <textarea id="ctrUrl" class="url-box" readonly></textarea>
+            <p class="hint">
+              建議寬度 200–360、高度 50–80。框內展示會跳；「複製」「預覽」都是正式網址（不帶
+              demo），可安心給 OBS。
+            </p>
+            <div class="actions">
+              <button type="button" id="copyCtr">複製此組網址</button>
+              <a class="btn secondary" id="openCtr" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewCtr" title="counter preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="ctr-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label><input type="checkbox" id="ctrShowBg" checked /> 顯示底色</label>
+                  </div>
+                  <div class="field" style="margin-top: 0">
+                    <label for="ctrBg">底色</label>
+                    <input id="ctrBg" type="text" value="rgba(0,0,0,0.45)" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label
+                      ><input type="checkbox" id="ctrShowPanelImg" /> 顯示底圖</label
+                    >
+                  </div>
+                  <div>
+                    <label for="ctrPanelFit">底圖顯示</label>
+                    <select id="ctrPanelFit">
+                      <option value="">用預設</option>
+                      <option value="stretch">拉伸填滿</option>
+                      <option value="contain">完整顯示</option>
+                      <option value="cover">裁切填滿</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row" id="ctrPanelImgRow">
+                  <div>
+                    <label for="ctrPanelImg">底圖網址</label>
+                    <input
+                      id="ctrPanelImg"
+                      type="text"
+                      placeholder="空白＝用上方預設底圖"
+                    />
+                  </div>
+                  <div>
+                    <label for="ctrPanelInset">外推（px）</label>
+                    <input
+                      id="ctrPanelInset"
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="用預設"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+                <!-- B · 聊天室相關：⑦⑧⑫⑬⑮ -->
+<!-- ⑦ 聊天室 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑦ 聊天室（TW + YT）</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              預設用最上方「本人」帳號。下面可再加<strong>連動／其他台</strong>的 Twitch、YouTube（逗號或換行分隔）。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。YouTube
+              建議填直播網址；沒填時自動找直播整場只找一次並與人數／贊助共用記住。
+            </p>
+            <div class="field" style="align-items: flex-start">
+              <label for="chatExtraTw">額外 Twitch（非本人）</label>
+              <textarea
+                id="chatExtraTw"
+                class="css-box"
+                style="min-height: 64px"
+                placeholder="例如&#10;friend_a&#10;friend_b&#10;（逗號或換行；不要填自己）"
+              ></textarea>
+            </div>
+            <div class="field" style="align-items: flex-start">
+              <label for="chatExtraYt">額外 YouTube（非本人）</label>
+              <textarea
+                id="chatExtraYt"
+                class="css-box"
+                style="min-height: 64px"
+                placeholder="例如&#10;@other_channel&#10;UCxxxxxxxx&#10;（逗號或換行；用最上方 API Key）"
+              ></textarea>
+            </div>
+            <div class="field">
+              <label for="chatExtraYtVideo">額外 YT 直播影片 ID（選填）</label>
+              <input
+                id="chatExtraYtVideo"
+                type="text"
+                placeholder="多個用逗號；可留空改自動找 live"
+              />
+            </div>
+            <p class="hint">額外台只影響聊天室；人數／開台仍只用最上方本人帳號。</p>
+            <div class="row">
+              <div>
+                <label for="chatLayout">1. 版面</label>
+                <select id="chatLayout">
+                  <option value="merge" selected>合併成一個（一頁）</option>
+                  <option value="split">分開成兩個（兩頁／兩個來源）</option>
+                </select>
+              </div>
+              <div id="chatSourceWrap">
+                <label for="chatSource">合併時來源</label>
+                <select id="chatSource">
+                  <option value="auto" selected>auto（有填就連）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只用 Twitch</option>
+                  <option value="youtube">只用 YouTube</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="chatStack">3. 方向</label>
+                <select id="chatStack">
+                  <option value="bottom" selected>從下到上（新在底部）</option>
+                  <option value="top">從上到下（新在頂部）</option>
+                </select>
+              </div>
+              <div>
+                <label for="chatTtl">2. 過幾秒最舊消失</label>
+                <input id="chatTtl" type="number" min="0" max="600" value="15" placeholder="0＝不限" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="chatMax">最多保留則數</label>
+                <input id="chatMax" type="number" min="5" max="100" value="30" />
+              </div>
+              <div>
+                <label
+                  ><input type="checkbox" id="chatShowSource" checked /> 6. 顯示留言來源（圖示）</label
+                >
+              </div>
+            </div>
+            <div class="row" id="chatSourceIconsRow">
+              <div>
+                <label for="chatTwIcon">TW 來源圖示</label>
+                <input
+                  id="chatTwIcon"
+                  type="text"
+                  placeholder="空白＝人數預設 Twitch 圖；可貼網址"
+                />
+              </div>
+              <div>
+                <label for="chatYtIcon">YT 來源圖示</label>
+                <input
+                  id="chatYtIcon"
+                  type="text"
+                  placeholder="空白＝人數預設 YouTube 圖；可貼網址"
+                />
+              </div>
+            </div>
+            <div class="row" id="chatSourceColorsRow">
+              <div>
+                <label for="chatTwIconColor">TW 圖示色</label>
+                <div class="color-pair">
+                  <input id="chatTwIconColor" type="text" value="#bf94ff" />
+                  <input
+                    type="color"
+                    data-sync="chatTwIconColor"
+                    value="#bf94ff"
+                    title="快速選色"
+                  />
+                </div>
+              </div>
+              <div>
+                <label for="chatYtIconColor">YT 圖示色</label>
+                <div class="color-pair">
+                  <input id="chatYtIconColor" type="text" value="#ff6b6b" />
+                  <input
+                    type="color"
+                    data-sync="chatYtIconColor"
+                    value="#ff6b6b"
+                    title="快速選色"
+                  />
+                </div>
+              </div>
+            </div>
+            <p class="hint">
+              2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。來源改顯示平台圖示（預設與②人數相同，可自己換）。圖示色預設為現在的紫／紅；只對內建 SVG 生效（自訂圖檔本身帶色）。
+            </p>
+            <div class="row">
+              <div>
+                <label for="chatFontSize">字級</label>
+                <input id="chatFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="chatColor">文字色</label>
+                <input id="chatColor" type="text" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">字級／文字色空白＝用最上方預設。</p>
+            
+            <div class="field" style="align-items: flex-start">
+              <label for="chatCss">5. 自訂 CSS</label>
+              <textarea
+                id="chatCss"
+                class="css-box"
+                placeholder=".msg { font-size: 20px; }&#10;.plat.tw { color: #a970ff; }"
+              ></textarea>
+            </div>
+            <p class="hint">
+              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
+              每頁建議寬 360–480、高 500–720。
+            </p>
+
+            <div class="row">
+              <div>
+                <label for="chatStyleName">樣式預設名稱</label>
+                <input
+                  id="chatStyleName"
+                  type="text"
+                  placeholder="例如：粉框完整顯示"
+                  maxlength="40"
+                />
+              </div>
+              <div style="display: flex; align-items: flex-end">
+                <button type="button" id="saveChatStyleBtn" class="secondary">
+                  儲存目前樣式
+                </button>
+              </div>
+            </div>
+            <div class="chip-row" id="chatStyleList" aria-label="聊天室樣式預設"></div>
+            <p class="hint">
+              樣式含底圖／單則底／外推／顯示方式／圖示與顏色／字級／底色／CSS
+              等外觀；不含頻道帳號。點一下套用，右鍵刪除。會一併進頁面最下方備份。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑦ 聊天室網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+
+            <div id="chatMergePanel">
+              <textarea id="chatUrl" class="url-box" readonly></textarea>
+              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
+              <div class="actions">
+                <button type="button" id="copyChat">複製聊天室網址</button>
+                <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 220px">
+                <iframe id="previewChat" title="chat preview" style="height: 220px"></iframe>
+              </div>
+            </div>
+
+            <div id="chatSplitPanel" hidden>
+              <p class="hint" style="margin-top: 0">分開：請在 OBS <strong>各加一個</strong>瀏覽器來源。</p>
+              <h3 style="margin: 12px 0 8px; font-size: 0.95rem">Twitch 聊天室</h3>
+              <textarea id="chatUrlTw" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatTw">複製 TW 網址</button>
+                <a class="btn secondary" id="openChatTw" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatTw" title="twitch chat preview" style="height: 160px"></iframe>
+              </div>
+
+              <h3 style="margin: 18px 0 8px; font-size: 0.95rem">YouTube 聊天室</h3>
+              <textarea id="chatUrlYt" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatYt">複製 YT 網址</button>
+                <a class="btn secondary" id="openChatYt" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="chat-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="chatShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="chatBg">底色</label>
+                <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="chatShowPanelImg" /> 留言區底圖</label
+                >
+              </div>
+              <div>
+                <label for="chatPanelInset">底圖外推（px）</label>
+                <input
+                  id="chatPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                  title="內容往內縮，避開底圖周圍裝飾"
+                />
+              </div>
+            </div>
+            <div class="row" id="chatPanelImgRow">
+              <div>
+                <label for="chatPanelImg">留言區底圖網址</label>
+                <input
+                  id="chatPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="chatPanelFit">底圖顯示</label>
+                <select id="chatPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="chatShowMsgBg" /> 每一則留言底</label
+                >
+              </div>
+              <div>
+                <label for="chatMsgInset">單則外推（px）</label>
+                <input
+                  id="chatMsgInset"
+                  type="text"
+                  inputmode="numeric"
+                  value="8"
+                  placeholder="8 或 6 10"
+                  title="單則文字往內縮，避開單則底圖周圍裝飾"
+                />
+              </div>
+            </div>
+            <div class="row" id="chatMsgBgRow">
+              <div>
+                <label for="chatMsgImg">單則底圖</label>
+                <input
+                  id="chatMsgImg"
+                  type="text"
+                  placeholder="可貼圖檔網址；空白＝只用底色"
+                />
+              </div>
+              <div>
+                <label for="chatMsgFit">單則底圖顯示</label>
+                <select id="chatMsgFit">
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="chatMsgBgColorRow">
+              <div>
+                <label for="chatMsgBgColor">單則底色</label>
+                <input
+                  id="chatMsgBgColor"
+                  type="text"
+                  value="rgba(0,0,0,0.35)"
+                  placeholder="rgba(0,0,0,0.35)"
+                />
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              底圖／單則底：勾選後才套用。留言區底圖網址／顯示／外推空白＝用最上方預設。單則完整顯示會依圖比例長高。
+            </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑧ 回覆（主播用） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑧ 聊天回覆</h2>
+              <span class="side-title">主播用 · 非 OBS</span>
+            </div>
+            <p class="hint">
+              <strong>建議用 Restream Chat</strong>：TW／YT 等平台授權存在 Restream，平常回覆不用自己換 token，也可一次回兩邊。
+              OBS 上的⑦聊天室覆蓋仍只負責「顯示」、免發話授權。
+            </p>
+            <p class="hint">
+              沒有 Restream 才用下方本機回覆頁（要自己貼 TW／YT 發話 token，那些<strong>會過期</strong>）。
+              回覆相關網址都<strong>不要</strong>加進 OBS 瀏覽器來源。
+            </p>
+            <div class="field">
+              <label for="restreamChatUrl">Restream Chat 網址（選填）</label>
+              <input
+                id="restreamChatUrl"
+                type="text"
+                placeholder="空白＝官方 chat.restream.io；可改貼你的 embed 網址"
+              />
+            </div>
+            <p class="hint">
+              預設開
+              <a href="https://chat.restream.io/" target="_blank" rel="noopener">chat.restream.io</a>
+              （用你的 Restream 帳號登入即可）。若你有「Embed in stream」專用網址也可貼上。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑧ 開啟回覆</h2>
+              <span class="side-title">用瀏覽器開啟</span>
+            </div>
+            <div class="actions" style="margin-top: 0">
+              <a class="btn" id="openRestreamChat" href="https://chat.restream.io/" target="_blank" rel="noopener"
+                >開啟 Restream Chat（建議）</a
+              >
+            </div>
+            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑦覆蓋、一邊回覆。</p>
+
+            <h3 style="margin: 18px 0 8px; font-size: 0.95rem">備選：本機回覆頁</h3>
+            <textarea id="chatReplyUrl" class="url-box" readonly></textarea>
+            <p class="hint">自備 token 才需要。可 TW＋YT 一起送，但 token 過期要重貼。</p>
+            <div class="actions">
+              <button type="button" id="copyChatReply">複製本機回覆網址</button>
+              <a class="btn secondary" id="openChatReply" href="#" target="_blank" rel="noopener">開啟本機回覆頁</a>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑫ 彈幕（獨立；可與⑦聊天室同時用） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑫ 彈幕（飛過畫面）</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              跟⑦聊天室<strong>分開</strong>：可同時加兩個 OBS 瀏覽器來源（一個清單聊天、一個彈幕）。
+              帳號預設用最上方本人；可勾選沿用⑦的額外台。
+            </p>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="dmUseChatExtra" checked />
+                沿用⑦聊天室的額外 TW／YT 台</label
+              >
+            </div>
+            <div class="row">
+              <div>
+                <label for="dmSource">來源</label>
+                <select id="dmSource">
+                  <option value="auto" selected>自動（有填就接）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只 Twitch</option>
+                  <option value="youtube">只 YouTube</option>
+                </select>
+              </div>
+              <div>
+                <label for="dmDir">方向</label>
+                <select id="dmDir">
+                  <option value="left" selected>從右往左</option>
+                  <option value="right">從左往右</option>
+                  <option value="up">從下往上</option>
+                  <option value="down">從上往下</option>
+                </select>
+              </div>
+              <div>
+                <label for="dmSpeed">速度</label>
+                <select id="dmSpeed">
+                  <option value="slow">慢</option>
+                  <option value="normal" selected>中</option>
+                  <option value="fast">快</option>
+                </select>
+              </div>
+              <div>
+                <label for="dmDuration">飛過秒數</label>
+                <input id="dmDuration" type="number" min="4" max="40" value="12" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="dmTracks">軌道數</label>
+                <input id="dmTracks" type="number" min="3" max="24" value="10" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="dmFontSize">字級</label>
+                <input id="dmFontSize" type="number" min="14" max="72" value="28" />
+              </div>
+              <div>
+                <label for="dmColor">文字色</label>
+                <input id="dmColor" type="text" value="#ffffff" />
+              </div>
+              <div>
+                <label for="dmOpacity">透明度（0.2–1）</label>
+                <input
+                  id="dmOpacity"
+                  type="number"
+                  min="0.2"
+                  max="1"
+                  step="0.05"
+                  value="0.95"
+                />
+              </div>
+            </div>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="dmShowUser" checked /> 顯示暱稱</label
+              >
+              <label
+                ><input type="checkbox" id="dmShowSource" checked /> 顯示來源圖示</label
+              >
+              <label
+                ><input type="checkbox" id="dmHideStatus" checked /> 隱藏連線狀態</label
+              >
+            </div>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑫ 彈幕網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="dmUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議全螢幕透明覆蓋（寬×高跟畫布一樣）。可與⑦同時使用。</p>
+            <div class="actions">
+              <button type="button" id="copyDm">複製彈幕網址</button>
+              <a class="btn secondary" id="openDm" href="#" target="_blank" rel="noopener"
+                >預覽</a
+              >
+            </div>
+            <div class="preview-wrap" style="min-height: 220px">
+              <iframe id="previewDm" title="danmaku preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑬ 頭像對話框（獨立） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑬ 頭像對話框</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              下方跳出頭像，上方對話框顯示留言。跟⑦聊天室、⑫彈幕<strong>分開</strong>，可同時使用。
+            </p>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="popUseChatExtra" checked />
+                沿用⑦聊天室的額外 TW／YT 台</label
+              >
+            </div>
+            <div class="row">
+              <div>
+                <label for="popSource">來源</label>
+                <select id="popSource">
+                  <option value="auto" selected>自動（有填就接）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只 Twitch</option>
+                  <option value="youtube">只 YouTube</option>
+                </select>
+              </div>
+              <div>
+                <label for="popPos">位置</label>
+                <select id="popPos">
+                  <option value="random" selected>橫排隨機跳</option>
+                  <option value="left">左下（直疊）</option>
+                  <option value="center">中下（直疊）</option>
+                  <option value="right">右下（直疊）</option>
+                </select>
+              </div>
+              <div>
+                <label for="popHold">停留秒數</label>
+                <input id="popHold" type="number" min="2" max="30" value="6" />
+              </div>
+              <div>
+                <label for="popMax">同時幾個</label>
+                <input id="popMax" type="number" min="1" max="8" value="4" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="popFontSize">字級</label>
+                <input id="popFontSize" type="number" min="14" max="48" value="22" />
+              </div>
+              <div>
+                <label for="popAvatarSize">頭像大小</label>
+                <input id="popAvatarSize" type="number" min="40" max="160" value="72" />
+              </div>
+              <div>
+                <label for="popBubbleBg">對話框底色</label>
+                <input id="popBubbleBg" type="text" value="#ffffff" />
+              </div>
+              <div>
+                <label for="popColor">文字色</label>
+                <input id="popColor" type="text" value="#1a1a1a" />
+              </div>
+            </div>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="popShowUser" checked /> 顯示暱稱</label
+              >
+              <label
+                ><input type="checkbox" id="popShowSource" checked /> 顯示來源圖示</label
+              >
+              <label
+                ><input type="checkbox" id="popHideStatus" checked /> 隱藏連線狀態</label
+              >
+            </div>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑬ 頭像對話框網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="popUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議全螢幕透明覆蓋。可與⑦／⑫同時加來源。</p>
+            <div class="actions">
+              <button type="button" id="copyPop">複製頭像對話框網址</button>
+              <a class="btn secondary" id="openPop" href="#" target="_blank" rel="noopener"
+                >預覽</a
+              >
+            </div>
+            <div class="preview-wrap" style="min-height: 260px">
+              <iframe id="previewPop" title="avatar bubble preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑮ 走動頭像（獨立） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑮ 走動頭像</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              頭像在畫面下方走來走去；有留言就冒對話框。跟⑦／⑫／⑬<strong>分開</strong>，可同時用。
+            </p>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="walkUseChatExtra" checked />
+                沿用⑦聊天室的額外 TW／YT 台</label
+              >
+            </div>
+            <div class="row">
+              <div>
+                <label for="walkSource">來源</label>
+                <select id="walkSource">
+                  <option value="auto" selected>自動（有填就接）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只 Twitch</option>
+                  <option value="youtube">只 YouTube</option>
+                </select>
+              </div>
+              <div>
+                <label for="walkSpeed">走路速度</label>
+                <select id="walkSpeed">
+                  <option value="slow">慢</option>
+                  <option value="normal" selected>中</option>
+                  <option value="fast">快</option>
+                </select>
+              </div>
+              <div>
+                <label for="walkHold">對話框秒數</label>
+                <input id="walkHold" type="number" min="2" max="30" value="5" />
+              </div>
+              <div>
+                <label for="walkIdle">說完再留秒數</label>
+                <input id="walkIdle" type="number" min="0" max="60" value="8" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="walkMax">同時幾個</label>
+                <input id="walkMax" type="number" min="1" max="8" value="4" />
+              </div>
+              <div>
+                <label for="walkFontSize">字級</label>
+                <input id="walkFontSize" type="number" min="14" max="48" value="20" />
+              </div>
+              <div>
+                <label for="walkAvatarSize">頭像大小</label>
+                <input id="walkAvatarSize" type="number" min="40" max="160" value="64" />
+              </div>
+              <div>
+                <label for="walkBubbleBg">對話框底色</label>
+                <input id="walkBubbleBg" type="text" value="#ffffff" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="walkColor">文字色</label>
+                <input id="walkColor" type="text" value="#1a1a1a" />
+              </div>
+              <label
+                ><input type="checkbox" id="walkShowUser" checked /> 顯示暱稱</label
+              >
+              <label
+                ><input type="checkbox" id="walkShowSource" checked /> 顯示來源圖示</label
+              >
+              <label
+                ><input type="checkbox" id="walkHideStatus" checked /> 隱藏連線狀態</label
+              >
+            </div>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑮ 走動頭像網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="walkUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議全螢幕透明覆蓋。可與⑦／⑫／⑬同時加來源。</p>
+            <div class="actions">
+              <button type="button" id="copyWalk">複製走動頭像網址</button>
+              <a class="btn secondary" id="openWalk" href="#" target="_blank" rel="noopener"
+                >預覽</a
+              >
+            </div>
+            <div class="preview-wrap" style="min-height: 260px">
+              <iframe id="previewWalk" title="walking avatar preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+                <!-- C · 不需要帳號：③⑤⑥⑪ -->
+<!-- ③ 倒計時 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -2180,803 +3285,6 @@
           </aside>
         </div>
 
-        <!-- ⑦ 聊天室 -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑦ 聊天室（TW + YT）</h2>
-              <span class="side-title">獨立來源</span>
-            </div>
-            <p class="hint">
-              預設用最上方「本人」帳號。下面可再加<strong>連動／其他台</strong>的 Twitch、YouTube（逗號或換行分隔）。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。YouTube
-              建議填直播網址；沒填時自動找直播整場只找一次並與人數／贊助共用記住。
-            </p>
-            <div class="field" style="align-items: flex-start">
-              <label for="chatExtraTw">額外 Twitch（非本人）</label>
-              <textarea
-                id="chatExtraTw"
-                class="css-box"
-                style="min-height: 64px"
-                placeholder="例如&#10;friend_a&#10;friend_b&#10;（逗號或換行；不要填自己）"
-              ></textarea>
-            </div>
-            <div class="field" style="align-items: flex-start">
-              <label for="chatExtraYt">額外 YouTube（非本人）</label>
-              <textarea
-                id="chatExtraYt"
-                class="css-box"
-                style="min-height: 64px"
-                placeholder="例如&#10;@other_channel&#10;UCxxxxxxxx&#10;（逗號或換行；用最上方 API Key）"
-              ></textarea>
-            </div>
-            <div class="field">
-              <label for="chatExtraYtVideo">額外 YT 直播影片 ID（選填）</label>
-              <input
-                id="chatExtraYtVideo"
-                type="text"
-                placeholder="多個用逗號；可留空改自動找 live"
-              />
-            </div>
-            <p class="hint">額外台只影響聊天室；人數／開台仍只用最上方本人帳號。</p>
-            <div class="row">
-              <div>
-                <label for="chatLayout">1. 版面</label>
-                <select id="chatLayout">
-                  <option value="merge" selected>合併成一個（一頁）</option>
-                  <option value="split">分開成兩個（兩頁／兩個來源）</option>
-                </select>
-              </div>
-              <div id="chatSourceWrap">
-                <label for="chatSource">合併時來源</label>
-                <select id="chatSource">
-                  <option value="auto" selected>auto（有填就連）</option>
-                  <option value="both">TW + YT</option>
-                  <option value="twitch">只用 Twitch</option>
-                  <option value="youtube">只用 YouTube</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="chatStack">3. 方向</label>
-                <select id="chatStack">
-                  <option value="bottom" selected>從下到上（新在底部）</option>
-                  <option value="top">從上到下（新在頂部）</option>
-                </select>
-              </div>
-              <div>
-                <label for="chatTtl">2. 過幾秒最舊消失</label>
-                <input id="chatTtl" type="number" min="0" max="600" value="15" placeholder="0＝不限" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="chatMax">最多保留則數</label>
-                <input id="chatMax" type="number" min="5" max="100" value="30" />
-              </div>
-              <div>
-                <label
-                  ><input type="checkbox" id="chatShowSource" checked /> 6. 顯示留言來源（圖示）</label
-                >
-              </div>
-            </div>
-            <div class="row" id="chatSourceIconsRow">
-              <div>
-                <label for="chatTwIcon">TW 來源圖示</label>
-                <input
-                  id="chatTwIcon"
-                  type="text"
-                  placeholder="空白＝人數預設 Twitch 圖；可貼網址"
-                />
-              </div>
-              <div>
-                <label for="chatYtIcon">YT 來源圖示</label>
-                <input
-                  id="chatYtIcon"
-                  type="text"
-                  placeholder="空白＝人數預設 YouTube 圖；可貼網址"
-                />
-              </div>
-            </div>
-            <div class="row" id="chatSourceColorsRow">
-              <div>
-                <label for="chatTwIconColor">TW 圖示色</label>
-                <div class="color-pair">
-                  <input id="chatTwIconColor" type="text" value="#bf94ff" />
-                  <input
-                    type="color"
-                    data-sync="chatTwIconColor"
-                    value="#bf94ff"
-                    title="快速選色"
-                  />
-                </div>
-              </div>
-              <div>
-                <label for="chatYtIconColor">YT 圖示色</label>
-                <div class="color-pair">
-                  <input id="chatYtIconColor" type="text" value="#ff6b6b" />
-                  <input
-                    type="color"
-                    data-sync="chatYtIconColor"
-                    value="#ff6b6b"
-                    title="快速選色"
-                  />
-                </div>
-              </div>
-            </div>
-            <p class="hint">
-              2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。來源改顯示平台圖示（預設與②人數相同，可自己換）。圖示色預設為現在的紫／紅；只對內建 SVG 生效（自訂圖檔本身帶色）。
-            </p>
-            <div class="row">
-              <div>
-                <label for="chatFontSize">字級</label>
-                <input id="chatFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="chatColor">文字色</label>
-                <input id="chatColor" type="text" placeholder="用預設" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
-              </div>
-              <div></div>
-            </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。</p>
-            
-            <div class="field" style="align-items: flex-start">
-              <label for="chatCss">5. 自訂 CSS</label>
-              <textarea
-                id="chatCss"
-                class="css-box"
-                placeholder=".msg { font-size: 20px; }&#10;.plat.tw { color: #a970ff; }"
-              ></textarea>
-            </div>
-            <p class="hint">
-              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
-              每頁建議寬 360–480、高 500–720。
-            </p>
-
-            <div class="row">
-              <div>
-                <label for="chatStyleName">樣式預設名稱</label>
-                <input
-                  id="chatStyleName"
-                  type="text"
-                  placeholder="例如：粉框完整顯示"
-                  maxlength="40"
-                />
-              </div>
-              <div style="display: flex; align-items: flex-end">
-                <button type="button" id="saveChatStyleBtn" class="secondary">
-                  儲存目前樣式
-                </button>
-              </div>
-            </div>
-            <div class="chip-row" id="chatStyleList" aria-label="聊天室樣式預設"></div>
-            <p class="hint">
-              樣式含底圖／單則底／外推／顯示方式／圖示與顏色／字級／底色／CSS
-              等外觀；不含頻道帳號。點一下套用，右鍵刪除。會一併進頁面最下方備份。
-            </p>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑦ 聊天室網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-
-            <div id="chatMergePanel">
-              <textarea id="chatUrl" class="url-box" readonly></textarea>
-              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
-              <div class="actions">
-                <button type="button" id="copyChat">複製聊天室網址</button>
-                <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 220px">
-                <iframe id="previewChat" title="chat preview" style="height: 220px"></iframe>
-              </div>
-            </div>
-
-            <div id="chatSplitPanel" hidden>
-              <p class="hint" style="margin-top: 0">分開：請在 OBS <strong>各加一個</strong>瀏覽器來源。</p>
-              <h3 style="margin: 12px 0 8px; font-size: 0.95rem">Twitch 聊天室</h3>
-              <textarea id="chatUrlTw" class="url-box" readonly></textarea>
-              <div class="actions">
-                <button type="button" id="copyChatTw">複製 TW 網址</button>
-                <a class="btn secondary" id="openChatTw" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 160px">
-                <iframe id="previewChatTw" title="twitch chat preview" style="height: 160px"></iframe>
-              </div>
-
-              <h3 style="margin: 18px 0 8px; font-size: 0.95rem">YouTube 聊天室</h3>
-              <textarea id="chatUrlYt" class="url-box" readonly></textarea>
-              <div class="actions">
-                <button type="button" id="copyChatYt">複製 YT 網址</button>
-                <a class="btn secondary" id="openChatYt" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 160px">
-                <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
-              </div>
-            </div>
-<div class="subfold is-collapsed" data-subfold="chat-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-            <div class="row">
-              <div>
-                <label><input type="checkbox" id="chatShowBg" checked /> 顯示底色</label>
-              </div>
-              <div class="field" style="margin-top: 0">
-                <label for="chatBg">底色</label>
-                <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="chatShowPanelImg" /> 留言區底圖</label
-                >
-              </div>
-              <div>
-                <label for="chatPanelInset">底圖外推（px）</label>
-                <input
-                  id="chatPanelInset"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="用預設"
-                  title="內容往內縮，避開底圖周圍裝飾"
-                />
-              </div>
-            </div>
-            <div class="row" id="chatPanelImgRow">
-              <div>
-                <label for="chatPanelImg">留言區底圖網址</label>
-                <input
-                  id="chatPanelImg"
-                  type="text"
-                  placeholder="空白＝用上方預設底圖"
-                />
-              </div>
-              <div>
-                <label for="chatPanelFit">底圖顯示</label>
-                <select id="chatPanelFit">
-                  <option value="">用預設</option>
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="chatShowMsgBg" /> 每一則留言底</label
-                >
-              </div>
-              <div>
-                <label for="chatMsgInset">單則外推（px）</label>
-                <input
-                  id="chatMsgInset"
-                  type="text"
-                  inputmode="numeric"
-                  value="8"
-                  placeholder="8 或 6 10"
-                  title="單則文字往內縮，避開單則底圖周圍裝飾"
-                />
-              </div>
-            </div>
-            <div class="row" id="chatMsgBgRow">
-              <div>
-                <label for="chatMsgImg">單則底圖</label>
-                <input
-                  id="chatMsgImg"
-                  type="text"
-                  placeholder="可貼圖檔網址；空白＝只用底色"
-                />
-              </div>
-              <div>
-                <label for="chatMsgFit">單則底圖顯示</label>
-                <select id="chatMsgFit">
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="chatMsgBgColorRow">
-              <div>
-                <label for="chatMsgBgColor">單則底色</label>
-                <input
-                  id="chatMsgBgColor"
-                  type="text"
-                  value="rgba(0,0,0,0.35)"
-                  placeholder="rgba(0,0,0,0.35)"
-                />
-              </div>
-              <div></div>
-            </div>
-            <p class="hint">
-              底圖／單則底：勾選後才套用。留言區底圖網址／顯示／外推空白＝用最上方預設。單則完整顯示會依圖比例長高。
-            </p>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <!-- ⑧ 回覆（主播用） -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑧ 聊天回覆</h2>
-              <span class="side-title">主播用 · 非 OBS</span>
-            </div>
-            <p class="hint">
-              <strong>建議用 Restream Chat</strong>：TW／YT 等平台授權存在 Restream，平常回覆不用自己換 token，也可一次回兩邊。
-              OBS 上的⑦聊天室覆蓋仍只負責「顯示」、免發話授權。
-            </p>
-            <p class="hint">
-              沒有 Restream 才用下方本機回覆頁（要自己貼 TW／YT 發話 token，那些<strong>會過期</strong>）。
-              回覆相關網址都<strong>不要</strong>加進 OBS 瀏覽器來源。
-            </p>
-            <div class="field">
-              <label for="restreamChatUrl">Restream Chat 網址（選填）</label>
-              <input
-                id="restreamChatUrl"
-                type="text"
-                placeholder="空白＝官方 chat.restream.io；可改貼你的 embed 網址"
-              />
-            </div>
-            <p class="hint">
-              預設開
-              <a href="https://chat.restream.io/" target="_blank" rel="noopener">chat.restream.io</a>
-              （用你的 Restream 帳號登入即可）。若你有「Embed in stream」專用網址也可貼上。
-            </p>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑧ 開啟回覆</h2>
-              <span class="side-title">用瀏覽器開啟</span>
-            </div>
-            <div class="actions" style="margin-top: 0">
-              <a class="btn" id="openRestreamChat" href="https://chat.restream.io/" target="_blank" rel="noopener"
-                >開啟 Restream Chat（建議）</a
-              >
-            </div>
-            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑦覆蓋、一邊回覆。</p>
-
-            <h3 style="margin: 18px 0 8px; font-size: 0.95rem">備選：本機回覆頁</h3>
-            <textarea id="chatReplyUrl" class="url-box" readonly></textarea>
-            <p class="hint">自備 token 才需要。可 TW＋YT 一起送，但 token 過期要重貼。</p>
-            <div class="actions">
-              <button type="button" id="copyChatReply">複製本機回覆網址</button>
-              <a class="btn secondary" id="openChatReply" href="#" target="_blank" rel="noopener">開啟本機回覆頁</a>
-            </div>
-          </aside>
-        </div>
-
-        <!-- ⑨ 贊助條 -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑨ 贊助條</h2>
-              <span class="side-title">TW 小奇點 · YT 超留</span>
-            </div>
-            <p class="hint">
-              自動抓 <strong>Twitch Cheer／小奇點</strong>（聊天 IRC，免 OAuth）與
-              <strong>YouTube 超級留言</strong>（用最上方帳號＋API Key）。不支援 Ko-fi。
-              只計算你指定的時段內事件；時段外不計入。YT 直播與留言／人數共用記住的本場 ID（自動找最多一次）。
-            </p>
-            <div class="row">
-              <div>
-                <label for="spStart">開始時間（年→分）</label>
-                <input id="spStart" type="datetime-local" step="60" />
-              </div>
-              <div>
-                <label for="spEndMode">結束方式</label>
-                <select id="spEndMode">
-                  <option value="end" selected>指定結束時間</option>
-                  <option value="duration">從開始起算時長</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="spEndRow">
-              <div>
-                <label for="spEnd">結束時間（年→分）</label>
-                <input id="spEnd" type="datetime-local" step="60" />
-              </div>
-              <div></div>
-            </div>
-            <div class="row" id="spDurationRow" hidden>
-              <div>
-                <label for="spDuration">時長（分鐘）</label>
-                <input id="spDuration" type="number" min="1" step="1" placeholder="例如 180＝3 小時" />
-              </div>
-              <div></div>
-            </div>
-            <p class="hint">
-              精度：年／月／日／時／分。空白開始＝網頁一開就開始算；空白結束＝不設截止（本地時區）。
-              Twitch 後台看得到的歷史 Cheer，<strong>公開 API／就算有授權也拿不到逐筆明細</strong>（EventSub
-              只推即時）。關掉覆蓋期間漏算的，請用下方「手動補登」。已自動計入的會本機記住（重整不丟）。
-            </p>
-            <div class="card-head" style="margin-top: 4px">
-              <h2 style="font-size: 0.95rem; margin: 0">手動補登（一筆一筆加）</h2>
-              <span class="side-title">漏算／後台補</span>
-            </div>
-            <div class="row">
-              <div>
-                <label for="spManualPlatform">平台</label>
-                <select id="spManualPlatform">
-                  <option value="tw" selected>TW bits</option>
-                  <option value="yt">YT 金額</option>
-                </select>
-              </div>
-              <div>
-                <label for="spManualAmount">數量</label>
-                <input id="spManualAmount" type="number" min="0" step="1" placeholder="例如 100" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="spManualYtCurrency">YT 幣別</label>
-                <select id="spManualYtCurrency">
-                  <option value="TWD" selected>TWD</option>
-                  <option value="USD">USD</option>
-                  <option value="JPY">JPY</option>
-                </select>
-              </div>
-              <div>
-                <label for="spManualFund">進哪個基金</label>
-                <select id="spManualFund"></select>
-              </div>
-            </div>
-            <div class="field">
-              <label for="spManualNote">備註</label>
-              <input id="spManualNote" type="text" placeholder="例如：後台補登／開場前" />
-            </div>
-            <div class="actions" style="margin-top: 8px">
-              <button type="button" id="spManualAdd">確認加入補登</button>
-            </div>
-            <div id="spManualList" class="checks" style="margin-top: 8px"></div>
-            <p class="hint">
-              填好按「確認加入」才會進清單並寫進網址；可加很多筆、可刪。改完請<strong>重新複製贊助條網址</strong>到
-              OBS（或覆蓋來源後重新整理）。直播中也可在 OBS「互動」用條上的「＋手動」。
-            </p>
-            <!-- 舊版單一補登欄位相容 -->
-            <input id="spManualBits" type="hidden" value="" />
-            <input id="spManualYt" type="hidden" value="" />
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="spCombine" /> 小奇點＋超留一起算進同一目標</label
-                >
-              </div>
-              <div>
-                <label for="spBitsRate">小奇點換算（每 100 bits）</label>
-                <input
-                  id="spBitsRate"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value="0"
-                  placeholder="合併時才用"
-                />
-              </div>
-            </div>
-            <p class="hint">
-              勾選合併才把 bits 換算進各基金進度。例：填 1 → 每 100 bits＝目標幣 1 元。
-            </p>
-            <div class="row">
-              <div>
-                <label for="spGoalCurrency">目標幣別</label>
-                <select id="spGoalCurrency">
-                  <option value="TWD" selected>TWD</option>
-                  <option value="USD">USD</option>
-                  <option value="JPY">JPY</option>
-                </select>
-              </div>
-              <div></div>
-            </div>
-            <div class="card-head" style="margin-top: 8px">
-              <h2 style="font-size: 0.95rem; margin: 0">基金／目標（可多個）</h2>
-              <span class="side-title">例：唱歌基金 · 女裝基金</span>
-            </div>
-            <div id="spFundsList" class="checks" style="margin-top: 8px"></div>
-            <div class="actions" style="margin-top: 8px">
-              <button type="button" class="secondary" id="spAddFund">新增基金</button>
-            </div>
-            <p class="hint">
-              每筆基金各自累計。關鍵字可填<strong>多個</strong>（逗號／頓號／換行都行，例如
-              <code>唱歌,唱歌基金,sing</code>）；空白＝用基金名稱。
-              <strong>同一筆只會進一個基金</strong>（同時符合時：關鍵字較長者優先）。只有一個基金且關鍵字空白＝全部進它。
-            </p>
-            <!-- 舊版單目標欄位：還原設定相容，畫面隱藏 -->
-            <input id="spGoal" type="hidden" value="" />
-            <input id="spGoalLabel" type="hidden" value="" />
-            <input id="spKeywords" type="hidden" value="" />
-            <input id="spKeywordMode" type="hidden" value="any" />
-            <div class="row">
-              <div>
-                <label for="spMax">最近幾筆</label>
-                <input id="spMax" type="number" min="3" max="20" value="8" />
-              </div>
-              <div>
-                <label for="spFontSize">字級</label>
-                <input id="spFontSize" type="number" min="12" max="48" placeholder="用預設" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="spColor">文字色</label>
-                <input id="spColor" type="text" placeholder="用預設" />
-              </div>
-              <div>
-                <label><input type="checkbox" id="spHideStatus" checked /> 隱藏連線狀態</label>
-              </div>
-            </div>
-                                  </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑨ 贊助條網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="spUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 700–1100；基金愈多高度愈高（約 70 + 每條 36）。預覽含示範。</p>
-            <div class="actions">
-              <button type="button" id="copySp">複製贊助條網址</button>
-              <a class="btn secondary" id="openSp" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <p class="hint">
-              框內展示會跳動（示範）。「複製」「預覽」兩個按鈕都是<strong>正式網址</strong>（不會自己跳），可安心複製到 OBS。
-            </p>
-            <div class="preview-wrap" style="min-height: 100px">
-              <iframe id="previewSp" title="sponsor preview" style="height: 100px"></iframe>
-            </div>
-            <div class="subfold is-collapsed" data-subfold="sp-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-<div class="row">
-              <div>
-                <label><input type="checkbox" id="spShowBg" checked /> 顯示底色</label>
-              </div>
-              <div>
-                <label for="spBg">底色</label>
-                <input id="spBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="spShowPanelImg" /> 顯示底圖</label
-                >
-              </div>
-              <div>
-                <label for="spPanelFit">底圖顯示</label>
-                <select id="spPanelFit">
-                  <option value="">用預設</option>
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="spPanelImgRow">
-              <div>
-                <label for="spPanelImg">底圖網址</label>
-                <input
-                  id="spPanelImg"
-                  type="text"
-                  placeholder="空白＝用上方預設底圖"
-                />
-              </div>
-              <div>
-                <label for="spPanelInset">外推（px）</label>
-                <input
-                  id="spPanelInset"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="用預設"
-                />
-              </div>
-            </div>
-
-              </div>
-            </div>
-
-          </aside>
-        </div>
-
-        <!-- ⑩ 計數器 -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑩ 計數器</h2>
-              <span class="side-title">可多組 · !指令</span>
-            </div>
-            <p class="hint">
-              可同時開多組（每組一個 OBS 網址）。有「指令名」時：<code>!死</code>＝預設
-              <code>+1</code>；也可 <code>!死+2</code>／<code>!死-1</code>／<code>!死=3</code>。沒填指令名則用
-              <code>!+1</code>。帳號用最上方共用設定。
-            </p>
-            <div class="field" style="align-items: flex-start">
-              <label>誰可以改</label>
-              <div class="checks" style="margin: 0; flex: 1">
-                <label><input type="checkbox" id="ctrRoleOwner" checked /> 台主</label>
-                <label title="MOD／房管"
-                  ><input type="checkbox" id="ctrRoleHammer" checked /> 槌子</label
-                >
-                <label title="Twitch MOD 劍徽章"
-                  ><input type="checkbox" id="ctrRoleSword" checked /> 劍</label
-                >
-                <label><input type="checkbox" id="ctrRoleVip" /> VIP</label>
-                <label title="Twitch 訂閱／YouTube 會員"
-                  ><input type="checkbox" id="ctrRoleSub" /> 粉絲</label
-                >
-              </div>
-            </div>
-            <p class="hint" style="margin-top: 6px">
-              槌子、劍都算 MOD。VIP、粉絲預設不勾。升級若用「覆蓋並重開」請再按一次（已補齊缺檔）。
-            </p>
-            <div class="actions" style="margin-top: 10px">
-              <button type="button" id="ctrAddBtn">新增計數器</button>
-              <a
-                class="btn secondary"
-                href="https://fonts.google.com/icons"
-                target="_blank"
-                rel="noopener"
-                >開啟 Google Icons 圖示庫</a
-              >
-            </div>
-            <div id="ctrList" class="checks" style="margin-top: 8px"></div>
-            <div
-              id="ctrSyncFrames"
-              hidden
-              aria-hidden="true"
-              style="position: absolute; width: 0; height: 0; overflow: hidden"
-            ></div>
-            <p class="hint" style="margin-top: 8px">
-              「標籤／指令／起始／目前／最小」各有說明。「目前」跟著計數器頁顯示（主頁不重算聊天）。
-              右側是 DEMO。「重設」改回起始（含 0）。預設 <code>!死</code>＝+1。
-            </p>
-            <div class="field">
-              <label
-                ><input type="checkbox" id="ctrPersist" checked />
-                記住數字（關掉＝每次重開都從起始值開始，可從 0）</label
-              >
-            </div>
-            <div class="field">
-              <label><input type="checkbox" id="ctrShowIcon" checked /> 顯示圖示</label>
-            </div>
-            <div class="field">
-              <label for="ctrIcon">計數器圖示</label>
-              <input
-                id="ctrIcon"
-                type="text"
-                list="materialIconSuggest"
-                placeholder="空白＝預設 plus_one；或圖片網址"
-              />
-            </div>
-            <div class="row">
-              <div>
-                <label for="ctrIconColor">圖示色</label>
-                <div class="color-pair">
-                  <input id="ctrIconColor" type="text" placeholder="用預設／文字色" />
-                  <input type="color" data-sync="ctrIconColor" value="#ffffff" title="快速選色" />
-                </div>
-              </div>
-              <div>
-                <label><input type="checkbox" id="ctrHideStatus" /> 隱藏連線狀態</label>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="ctrFontSize">字級</label>
-                <input id="ctrFontSize" type="number" min="12" max="96" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="ctrColor">文字色</label>
-                <div class="color-pair">
-                  <input id="ctrColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="ctrColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑩ 計數器網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <label for="ctrPreviewPick">預覽哪一組</label>
-            <select id="ctrPreviewPick" style="margin-bottom: 8px"></select>
-            <textarea id="ctrUrl" class="url-box" readonly></textarea>
-            <p class="hint">
-              建議寬度 200–360、高度 50–80。框內展示會跳；「複製」「預覽」都是正式網址（不帶
-              demo），可安心給 OBS。
-            </p>
-            <div class="actions">
-              <button type="button" id="copyCtr">複製此組網址</button>
-              <a class="btn secondary" id="openCtr" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewCtr" title="counter preview"></iframe>
-            </div>
-            <div class="subfold is-collapsed" data-subfold="ctr-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-                <div class="row">
-                  <div>
-                    <label><input type="checkbox" id="ctrShowBg" checked /> 顯示底色</label>
-                  </div>
-                  <div class="field" style="margin-top: 0">
-                    <label for="ctrBg">底色</label>
-                    <input id="ctrBg" type="text" value="rgba(0,0,0,0.45)" />
-                  </div>
-                </div>
-                <div class="row">
-                  <div>
-                    <label
-                      ><input type="checkbox" id="ctrShowPanelImg" /> 顯示底圖</label
-                    >
-                  </div>
-                  <div>
-                    <label for="ctrPanelFit">底圖顯示</label>
-                    <select id="ctrPanelFit">
-                      <option value="">用預設</option>
-                      <option value="stretch">拉伸填滿</option>
-                      <option value="contain">完整顯示</option>
-                      <option value="cover">裁切填滿</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row" id="ctrPanelImgRow">
-                  <div>
-                    <label for="ctrPanelImg">底圖網址</label>
-                    <input
-                      id="ctrPanelImg"
-                      type="text"
-                      placeholder="空白＝用上方預設底圖"
-                    />
-                  </div>
-                  <div>
-                    <label for="ctrPanelInset">外推（px）</label>
-                    <input
-                      id="ctrPanelInset"
-                      type="text"
-                      inputmode="numeric"
-                      placeholder="用預設"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
-
         <!-- ⑪ 媒體播放 -->
         <div class="band">
           <section class="card">
@@ -3063,317 +3371,13 @@
           </aside>
         </div>
 
-        <!-- ⑫ 彈幕（獨立；可與⑦聊天室同時用） -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑫ 彈幕（飛過畫面）</h2>
-              <span class="side-title">獨立來源</span>
-            </div>
-            <p class="hint">
-              跟⑦聊天室<strong>分開</strong>：可同時加兩個 OBS 瀏覽器來源（一個清單聊天、一個彈幕）。
-              帳號預設用最上方本人；可勾選沿用⑦的額外台。
-            </p>
-            <div class="row">
-              <label
-                ><input type="checkbox" id="dmUseChatExtra" checked />
-                沿用⑦聊天室的額外 TW／YT 台</label
-              >
-            </div>
-            <div class="row">
-              <div>
-                <label for="dmSource">來源</label>
-                <select id="dmSource">
-                  <option value="auto" selected>自動（有填就接）</option>
-                  <option value="both">TW + YT</option>
-                  <option value="twitch">只 Twitch</option>
-                  <option value="youtube">只 YouTube</option>
-                </select>
-              </div>
-              <div>
-                <label for="dmDir">方向</label>
-                <select id="dmDir">
-                  <option value="left" selected>從右往左</option>
-                  <option value="right">從左往右</option>
-                  <option value="up">從下往上</option>
-                  <option value="down">從上往下</option>
-                </select>
-              </div>
-              <div>
-                <label for="dmSpeed">速度</label>
-                <select id="dmSpeed">
-                  <option value="slow">慢</option>
-                  <option value="normal" selected>中</option>
-                  <option value="fast">快</option>
-                </select>
-              </div>
-              <div>
-                <label for="dmDuration">飛過秒數</label>
-                <input id="dmDuration" type="number" min="4" max="40" value="12" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="dmTracks">軌道數</label>
-                <input id="dmTracks" type="number" min="3" max="24" value="10" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="dmFontSize">字級</label>
-                <input id="dmFontSize" type="number" min="14" max="72" value="28" />
-              </div>
-              <div>
-                <label for="dmColor">文字色</label>
-                <input id="dmColor" type="text" value="#ffffff" />
-              </div>
-              <div>
-                <label for="dmOpacity">透明度（0.2–1）</label>
-                <input
-                  id="dmOpacity"
-                  type="number"
-                  min="0.2"
-                  max="1"
-                  step="0.05"
-                  value="0.95"
-                />
-              </div>
-            </div>
-            <div class="row">
-              <label
-                ><input type="checkbox" id="dmShowUser" checked /> 顯示暱稱</label
-              >
-              <label
-                ><input type="checkbox" id="dmShowSource" checked /> 顯示來源圖示</label
-              >
-              <label
-                ><input type="checkbox" id="dmHideStatus" checked /> 隱藏連線狀態</label
-              >
-            </div>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑫ 彈幕網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="dmUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋（寬×高跟畫布一樣）。可與⑦同時使用。</p>
-            <div class="actions">
-              <button type="button" id="copyDm">複製彈幕網址</button>
-              <a class="btn secondary" id="openDm" href="#" target="_blank" rel="noopener"
-                >預覽</a
-              >
-            </div>
-            <div class="preview-wrap" style="min-height: 220px">
-              <iframe id="previewDm" title="danmaku preview"></iframe>
-            </div>
-          </aside>
-        </div>
-
-        <!-- ⑬ 頭像對話框（獨立） -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑬ 頭像對話框</h2>
-              <span class="side-title">獨立來源</span>
-            </div>
-            <p class="hint">
-              下方跳出頭像，上方對話框顯示留言。跟⑦聊天室、⑫彈幕<strong>分開</strong>，可同時使用。
-            </p>
-            <div class="row">
-              <label
-                ><input type="checkbox" id="popUseChatExtra" checked />
-                沿用⑦聊天室的額外 TW／YT 台</label
-              >
-            </div>
-            <div class="row">
-              <div>
-                <label for="popSource">來源</label>
-                <select id="popSource">
-                  <option value="auto" selected>自動（有填就接）</option>
-                  <option value="both">TW + YT</option>
-                  <option value="twitch">只 Twitch</option>
-                  <option value="youtube">只 YouTube</option>
-                </select>
-              </div>
-              <div>
-                <label for="popPos">位置</label>
-                <select id="popPos">
-                  <option value="random" selected>橫排隨機跳</option>
-                  <option value="left">左下（直疊）</option>
-                  <option value="center">中下（直疊）</option>
-                  <option value="right">右下（直疊）</option>
-                </select>
-              </div>
-              <div>
-                <label for="popHold">停留秒數</label>
-                <input id="popHold" type="number" min="2" max="30" value="6" />
-              </div>
-              <div>
-                <label for="popMax">同時幾個</label>
-                <input id="popMax" type="number" min="1" max="8" value="4" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="popFontSize">字級</label>
-                <input id="popFontSize" type="number" min="14" max="48" value="22" />
-              </div>
-              <div>
-                <label for="popAvatarSize">頭像大小</label>
-                <input id="popAvatarSize" type="number" min="40" max="160" value="72" />
-              </div>
-              <div>
-                <label for="popBubbleBg">對話框底色</label>
-                <input id="popBubbleBg" type="text" value="#ffffff" />
-              </div>
-              <div>
-                <label for="popColor">文字色</label>
-                <input id="popColor" type="text" value="#1a1a1a" />
-              </div>
-            </div>
-            <div class="row">
-              <label
-                ><input type="checkbox" id="popShowUser" checked /> 顯示暱稱</label
-              >
-              <label
-                ><input type="checkbox" id="popShowSource" checked /> 顯示來源圖示</label
-              >
-              <label
-                ><input type="checkbox" id="popHideStatus" checked /> 隱藏連線狀態</label
-              >
-            </div>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑬ 頭像對話框網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="popUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋。可與⑦／⑫同時加來源。</p>
-            <div class="actions">
-              <button type="button" id="copyPop">複製頭像對話框網址</button>
-              <a class="btn secondary" id="openPop" href="#" target="_blank" rel="noopener"
-                >預覽</a
-              >
-            </div>
-            <div class="preview-wrap" style="min-height: 260px">
-              <iframe id="previewPop" title="avatar bubble preview"></iframe>
-            </div>
-          </aside>
-        </div>
-
-        <!-- ⑮ 走動頭像（獨立） -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑮ 走動頭像</h2>
-              <span class="side-title">獨立來源</span>
-            </div>
-            <p class="hint">
-              頭像在畫面下方走來走去；有留言就冒對話框。跟⑦／⑫／⑬<strong>分開</strong>，可同時用。
-            </p>
-            <div class="row">
-              <label
-                ><input type="checkbox" id="walkUseChatExtra" checked />
-                沿用⑦聊天室的額外 TW／YT 台</label
-              >
-            </div>
-            <div class="row">
-              <div>
-                <label for="walkSource">來源</label>
-                <select id="walkSource">
-                  <option value="auto" selected>自動（有填就接）</option>
-                  <option value="both">TW + YT</option>
-                  <option value="twitch">只 Twitch</option>
-                  <option value="youtube">只 YouTube</option>
-                </select>
-              </div>
-              <div>
-                <label for="walkSpeed">走路速度</label>
-                <select id="walkSpeed">
-                  <option value="slow">慢</option>
-                  <option value="normal" selected>中</option>
-                  <option value="fast">快</option>
-                </select>
-              </div>
-              <div>
-                <label for="walkHold">對話框秒數</label>
-                <input id="walkHold" type="number" min="2" max="30" value="5" />
-              </div>
-              <div>
-                <label for="walkIdle">說完再留秒數</label>
-                <input id="walkIdle" type="number" min="0" max="60" value="8" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="walkMax">同時幾個</label>
-                <input id="walkMax" type="number" min="1" max="8" value="4" />
-              </div>
-              <div>
-                <label for="walkFontSize">字級</label>
-                <input id="walkFontSize" type="number" min="14" max="48" value="20" />
-              </div>
-              <div>
-                <label for="walkAvatarSize">頭像大小</label>
-                <input id="walkAvatarSize" type="number" min="40" max="160" value="64" />
-              </div>
-              <div>
-                <label for="walkBubbleBg">對話框底色</label>
-                <input id="walkBubbleBg" type="text" value="#ffffff" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="walkColor">文字色</label>
-                <input id="walkColor" type="text" value="#1a1a1a" />
-              </div>
-              <label
-                ><input type="checkbox" id="walkShowUser" checked /> 顯示暱稱</label
-              >
-              <label
-                ><input type="checkbox" id="walkShowSource" checked /> 顯示來源圖示</label
-              >
-              <label
-                ><input type="checkbox" id="walkHideStatus" checked /> 隱藏連線狀態</label
-              >
-            </div>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑮ 走動頭像網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="walkUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋。可與⑦／⑫／⑬同時加來源。</p>
-            <div class="actions">
-              <button type="button" id="copyWalk">複製走動頭像網址</button>
-              <a class="btn secondary" id="openWalk" href="#" target="_blank" rel="noopener"
-                >預覽</a
-              >
-            </div>
-            <div class="preview-wrap" style="min-height: 260px">
-              <iframe id="previewWalk" title="walking avatar preview"></iframe>
-            </div>
-          </aside>
-        </div>
-
-        <div class="note">
+        
+<div class="note">
           <strong>為什麼不用一直驗證？</strong><br />
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          ①②③⑤⑥⑦⑨⑩⑪⑫⑬⑮ 右邊網址各自加 OBS 瀏覽器來源即可（⑧ 回覆除外；編號跳過含 4 的數字，如 ④⑭）。
+          排列：帳號相關（②①⑨⑩）→ 聊天相關（⑦⑧⑫⑬⑮）→ 免帳號（③⑤⑥⑪）。①②③⑤⑥⑦⑨⑩⑪⑫⑬⑮ 右邊網址各自加 OBS 瀏覽器來源即可（⑧ 回覆除外；編號跳過含 4 的數字，如 ④⑭）。
         </div>
       </div>
 

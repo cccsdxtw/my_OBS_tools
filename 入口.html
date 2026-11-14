@@ -572,6 +572,7 @@
       input[type="text"],
       input[type="number"],
       input[type="search"],
+      input[type="url"],
       input[type="date"],
       input[type="datetime-local"],
       select {
@@ -1393,7 +1394,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v2.1.4</span>
+          <span class="brand-version" id="brandVersion">v2.1.5</span>
         </h1>
         <p>
           先填最上方的共用設定，再依序看下方分類：帳號 → 聊天 → 免帳號。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -4041,18 +4042,29 @@
             </div>
             <div class="row" style="margin-top: 10px">
               <div>
-                <label for="sheetImportUrl">試算表網址（公開／已發布 CSV）</label>
+                <label for="sheetSyncUrl">試算表同步網址</label>
                 <input
-                  id="sheetImportUrl"
+                  id="sheetSyncUrl"
                   type="url"
-                  placeholder="貼 Google 試算表連結或 …/export?format=csv"
+                  placeholder="匯入用試算表連結；存檔用 Apps Script …/exec"
                 />
               </div>
-              <div style="display: flex; align-items: flex-end">
+              <div style="display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap">
                 <button type="button" class="secondary" id="importSheetUrlBtn">
                   從網址匯入
                 </button>
+                <button type="button" id="saveSheetUrlBtn">存到網址</button>
               </div>
+            </div>
+            <p class="hint" style="margin-top: 6px">
+              <strong>匯入</strong>：貼一般試算表連結（需公開或「發布到網路」）。
+              <strong>存到網址</strong>：一般試算表不能直接寫入，請在該表「擴充功能 → Apps Script」貼上下方腳本，部署成網頁應用程式後，把
+              <code>…/exec</code> 網址貼上來按「存到網址」。
+            </p>
+            <div class="actions" style="margin-top: 6px">
+              <button type="button" class="secondary" id="copySheetScriptBtn">
+                複製 Apps Script 範本
+              </button>
             </div>
             <div class="field" style="margin-top: 10px; align-items: flex-start">
               <label for="sheetPasteBox">或從試算表貼上（兩欄：鍵／值）</label>
@@ -4067,7 +4079,7 @@
               <button type="button" class="secondary" id="importSheetPasteBtn">貼上匯入</button>
             </div>
             <p class="hint" style="margin-top: 8px">
-              試算表建議兩欄標題 <code>key</code>、<code>value</code>。公開分享或「檔案 → 共用 → 發布到網路」後可用網址匯入。
+              試算表建議兩欄標題 <code>key</code>、<code>value</code>。網址會記在本機，換機可用備份帶走。
             </p>
             <div class="actions" style="margin-top: 10px">
               <button type="button" class="secondary" id="exportAccountTxtBtn">
@@ -4219,7 +4231,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v2.1.4";
+        const APP_VERSION = "v2.1.5";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -5269,6 +5281,7 @@
                 }
               })(),
               chatStyles: loadChatStyles(),
+              sheetSyncUrl: readSheetSyncUrl(),
             },
           };
         }
@@ -5371,6 +5384,11 @@
           renderCounterItems();
           if (typeof data.accountTxt === "string" && data.accountTxt.trim()) {
             applyAccountMap(parseAccountTxt(data.accountTxt), { force: true });
+          }
+          if (typeof data.extras?.sheetSyncUrl === "string") {
+            writeSheetSyncUrl(data.extras.sheetSyncUrl);
+            const urlEl = $("sheetSyncUrl") || $("sheetImportUrl");
+            if (urlEl) urlEl.value = data.extras.sheetSyncUrl;
           }
           syncAllBgFields();
           syncStylePlaceholders();
@@ -5499,6 +5517,8 @@
           if (ex.ytChannelIds) push("extras.ytChannelIds", ex.ytChannelIds);
           if (ex.gameHistory) push("extras.gameHistory", ex.gameHistory);
           if (ex.chatStyles) push("extras.chatStyles", ex.chatStyles);
+          if (ex.sheetSyncUrl) push("extras.sheetSyncUrl", ex.sheetSyncUrl);
+          else if (readSheetSyncUrl()) push("extras.sheetSyncUrl", readSheetSyncUrl());
           return rows;
         }
 
@@ -5564,6 +5584,8 @@
             else if (key === "extras.gameHistory")
               snap.extras.gameHistory = parseMaybeJson(value);
             else if (key === "extras.chatStyles") snap.extras.chatStyles = parseMaybeJson(value);
+            else if (key === "extras.sheetSyncUrl")
+              snap.extras.sheetSyncUrl = String(value || "");
             else if (key.startsWith("extras.")) snap.extras[key.slice(7)] = parseMaybeJson(value);
             else setup.fields[key] = value;
           }
@@ -5585,9 +5607,43 @@
           setTimeout(() => URL.revokeObjectURL(a.href), 1000);
         }
 
+        const SHEET_URL_KEY = "my_obs_tools_sheet_sync_url";
+        const SHEET_APPS_SCRIPT = [
+          "function doPost(e) {",
+          "  try {",
+          "    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();",
+          "    var body = e && e.postData && e.postData.contents ? e.postData.contents : '';",
+          "    var rows = [];",
+          "    try {",
+          "      var j = JSON.parse(body);",
+          "      if (j && j.csv) rows = Utilities.parseCsv(j.csv);",
+          "      else if (j && j.rows) rows = j.rows;",
+          "    } catch (err1) {",
+          "      rows = Utilities.parseCsv(body);",
+          "    }",
+          "    if (!rows || !rows.length) {",
+          "      return ContentService.createTextOutput(JSON.stringify({ok:false,error:'empty'}))",
+          "        .setMimeType(ContentService.MimeType.JSON);",
+          "    }",
+          "    sheet.clearContents();",
+          "    sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);",
+          "    return ContentService.createTextOutput(JSON.stringify({ok:true,rows:rows.length}))",
+          "      .setMimeType(ContentService.MimeType.JSON);",
+          "  } catch (err) {",
+          "    return ContentService.createTextOutput(JSON.stringify({ok:false,error:String(err)}))",
+          "      .setMimeType(ContentService.MimeType.JSON);",
+          "  }",
+          "}",
+          "function doGet() {",
+          "  return ContentService.createTextOutput('my_OBS_tools sheet bridge OK');",
+          "}",
+          "",
+        ].join("\n");
+
         function normalizeSheetCsvUrl(raw) {
           const s = String(raw || "").trim();
           if (!s) return "";
+          if (/script\.google\.com\/macros/i.test(s)) return s;
           if (/[?&]output=csv\b/i.test(s) || /export\?[^#]*format=csv/i.test(s)) return s;
           const id = s.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
           if (id) {
@@ -5609,11 +5665,68 @@
           return s;
         }
 
+        function isAppsScriptUrl(raw) {
+          return /script\.google\.com\/macros/i.test(String(raw || ""));
+        }
+
+        function readSheetSyncUrl() {
+          try {
+            return localStorage.getItem(SHEET_URL_KEY) || "";
+          } catch (_) {
+            return "";
+          }
+        }
+
+        function writeSheetSyncUrl(url) {
+          try {
+            const v = String(url || "").trim();
+            if (v) localStorage.setItem(SHEET_URL_KEY, v);
+            else localStorage.removeItem(SHEET_URL_KEY);
+          } catch (_) {}
+        }
+
         async function importSnapshotFromSheetText(text) {
           const rows = parseTsvOrCsv(text);
           const snap = sheetRowsToSnapshot(rows);
           applySetupSnapshot(snap);
           return snap;
+        }
+
+        async function saveSnapshotToSheetUrl(rawUrl) {
+          const url = String(rawUrl || "").trim();
+          if (!url) throw new Error("empty-url");
+          if (!isAppsScriptUrl(url)) throw new Error("need-apps-script");
+          const rows = snapshotToSheetRows(collectSetupSnapshot());
+          const payload = JSON.stringify({
+            app: "my_OBS_tools",
+            version: APP_VERSION,
+            csv: rowsToCsv(rows),
+            rows,
+          });
+          try {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: payload,
+              redirect: "follow",
+            });
+            if (res.ok) {
+              try {
+                const j = await res.json();
+                if (j && j.ok === false) throw new Error(j.error || "sheet");
+              } catch (err) {
+                if (err && String(err.message || "").includes("sheet")) throw err;
+              }
+              return { ok: true };
+            }
+          } catch (_) {}
+          await fetch(url, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: payload,
+          });
+          return { ok: true, opaque: true };
         }
 
         autoUpdateCheck.addEventListener("change", () => {
@@ -9063,9 +9176,16 @@ function syncYtAfterTwUi() {
         const importSheetCsvBtn = $("importSheetCsvBtn");
         const importSheetCsvFile = $("importSheetCsvFile");
         const importSheetUrlBtn = $("importSheetUrlBtn");
-        const sheetImportUrl = $("sheetImportUrl");
+        const saveSheetUrlBtn = $("saveSheetUrlBtn");
+        const copySheetScriptBtn = $("copySheetScriptBtn");
+        const sheetSyncUrl = $("sheetSyncUrl") || $("sheetImportUrl");
         const importSheetPasteBtn = $("importSheetPasteBtn");
         const sheetPasteBox = $("sheetPasteBox");
+        if (sheetSyncUrl) {
+          sheetSyncUrl.value = readSheetSyncUrl();
+          sheetSyncUrl.addEventListener("change", () => writeSheetSyncUrl(sheetSyncUrl.value));
+          sheetSyncUrl.addEventListener("blur", () => writeSheetSyncUrl(sheetSyncUrl.value));
+        }
         if (exportSheetCsvBtn) {
           exportSheetCsvBtn.addEventListener("click", () => {
             const rows = snapshotToSheetRows(collectSetupSnapshot());
@@ -9133,7 +9253,13 @@ function syncYtAfterTwUi() {
         }
         if (importSheetUrlBtn) {
           importSheetUrlBtn.addEventListener("click", async () => {
-            const url = normalizeSheetCsvUrl(sheetImportUrl && sheetImportUrl.value);
+            const raw = sheetSyncUrl && sheetSyncUrl.value;
+            writeSheetSyncUrl(raw);
+            if (isAppsScriptUrl(raw)) {
+              setBackupStatus("這是 Apps Script 網址，請改用「存到網址」；匯入請貼一般試算表連結");
+              return;
+            }
+            const url = normalizeSheetCsvUrl(raw);
             if (!url) {
               setBackupStatus("請先貼試算表網址（需公開或已發布）");
               return;
@@ -9155,6 +9281,71 @@ function syncYtAfterTwUi() {
             setTimeout(() => {
               importSheetUrlBtn.textContent = old;
             }, 1800);
+          });
+        }
+        if (saveSheetUrlBtn) {
+          saveSheetUrlBtn.addEventListener("click", async () => {
+            const raw = (sheetSyncUrl && sheetSyncUrl.value) || "";
+            writeSheetSyncUrl(raw);
+            const old = saveSheetUrlBtn.textContent;
+            if (!String(raw).trim()) {
+              setBackupStatus("請先貼 Apps Script 部署網址（…/exec）");
+              return;
+            }
+            if (!isAppsScriptUrl(raw)) {
+              setBackupStatus(
+                "一般試算表連結不能直接寫入。請先「複製 Apps Script 範本」部署後，改貼 …/exec 網址"
+              );
+              return;
+            }
+            saveSheetUrlBtn.textContent = "儲存中…";
+            try {
+              const result = await saveSnapshotToSheetUrl(raw);
+              setBackupStatus(
+                result.opaque
+                  ? "已送出到試算表（若沒出現資料，請確認 Apps Script 部署為「任何人」可存取）"
+                  : "已存到試算表網址"
+              );
+              saveSheetUrlBtn.textContent = "已儲存";
+            } catch (err) {
+              const msg = String((err && err.message) || "");
+              setBackupStatus(
+                msg === "need-apps-script"
+                  ? "請貼 Apps Script …/exec 網址（不是一般試算表連結）"
+                  : "存到網址失敗：請檢查腳本部署權限"
+              );
+              saveSheetUrlBtn.textContent = "儲存失敗";
+            }
+            setTimeout(() => {
+              saveSheetUrlBtn.textContent = old;
+            }, 1800);
+          });
+        }
+        if (copySheetScriptBtn) {
+          copySheetScriptBtn.addEventListener("click", async () => {
+            const old = copySheetScriptBtn.textContent;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(SHEET_APPS_SCRIPT);
+              } else {
+                const ta = document.createElement("textarea");
+                ta.value = SHEET_APPS_SCRIPT;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                ta.remove();
+              }
+              setBackupStatus(
+                "已複製腳本：試算表 → 擴充功能 → Apps Script → 貼上 → 部署 → 網頁應用程式（執行身分：我／存取：任何人）→ 貼回 …/exec"
+              );
+              copySheetScriptBtn.textContent = "已複製腳本";
+            } catch (_) {
+              setBackupStatus("複製失敗，請手動建立 Apps Script");
+              copySheetScriptBtn.textContent = "複製失敗";
+            }
+            setTimeout(() => {
+              copySheetScriptBtn.textContent = old;
+            }, 1600);
           });
         }
         if (importSheetPasteBtn && sheetPasteBox) {

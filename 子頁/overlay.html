@@ -12,6 +12,7 @@
     />
     <script src="../material-icons.js"></script>
     <script src="../panel-bg.js"></script>
+    <script src="../font-style.js"></script>
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -329,6 +330,7 @@
         };
 
         cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
         cssVar("--fg", params.get("color"));
         cssVar("--icon", params.get("iconColor") || params.get("iconColour"));
         const bgParam = (params.get("bg") || "").trim();

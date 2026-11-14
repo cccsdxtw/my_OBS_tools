@@ -1246,7 +1246,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v2.0.1</span>
+          <span class="brand-version" id="brandVersion">v2.1.0</span>
         </h1>
         <p>
           先填最上方的共用設定，再依序：帳號相關 → 聊天相關 → 免帳號。各橫列可分開放 OBS 來源。
@@ -1313,6 +1313,15 @@
               來源約數十秒內會跟上（第一次可能要請你選工具資料夾以允許寫入）。金鑰需啟用 YouTube Data API v3。
             </p>
 
+            <datalist id="fontFamilySuggest">
+              <option value="IBM Plex Sans TC"></option>
+              <option value="Noto Sans TC"></option>
+              <option value="Microsoft JhengHei"></option>
+              <option value="PingFang TC"></option>
+              <option value="Source Han Sans TC"></option>
+              <option value="Inter"></option>
+              <option value="Roboto"></option>
+            </datalist>
             <div class="row">
               <div>
                 <label for="defaultFontSize">預設字級</label>
@@ -1328,6 +1337,33 @@
             </div>
             <div class="row">
               <div>
+                <label for="defaultFontFamily">預設字形</label>
+                <input
+                  id="defaultFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="空白＝內建 IBM Plex 等"
+                />
+              </div>
+              <div>
+                <label for="defaultFontUploadBtn">上傳字形</label>
+                <div class="actions" style="margin-top: 0">
+                  <button type="button" class="secondary" id="defaultFontUploadBtn">選擇字型檔</button>
+                  <input
+                    type="file"
+                    id="defaultFontUploadFile"
+                    accept=".ttf,.otf,.woff,.woff2,.ttc,font/ttf,font/otf,font/woff,font/woff2"
+                    hidden
+                  />
+                </div>
+              </div>
+            </div>
+            <p class="hint" id="defaultFontHint" style="margin-top: 6px">
+              字形可填字型名稱（如 <code>Noto Sans TC</code>），或 <code>fonts/我的字.ttf</code>。上傳會寫入工具夾
+              <code>fonts/</code> 並自動填路徑（需授權資料夾）。各窗空白＝用這裡。
+            </p>
+            <div class="row">
+              <div>
                 <label for="defaultIconColor">預設圖示色</label>
                 <div class="color-pair">
                   <input id="defaultIconColor" type="text" placeholder="空白＝跟文字色" />
@@ -1337,7 +1373,7 @@
               <div></div>
             </div>
             <p class="hint">
-              這裡是各窗共用的預設樣式：字級／文字色／圖示色／底色／底圖。各橫列沒填（或底圖選「用預設」）就沿用這裡。圖示色空白＝跟文字色。
+              這裡是各窗共用的預設樣式：字級／字形／文字色／圖示色／底色／底圖。各橫列沒填（或底圖選「用預設」）就沿用這裡。圖示色空白＝跟文字色。
             </p>
 
                         <div class="subfold is-collapsed" data-subfold="default-bg">
@@ -1552,7 +1588,20 @@
                 <input id="viewersColor" type="text" placeholder="用預設" />
               </div>
             </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
+            <div class="row">
+              <div>
+                <label for="viewersFontFamily">字形</label>
+                <input
+                  id="viewersFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <p class="hint">字級／字形／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -1804,7 +1853,20 @@
                 </div>
               </div>
             </div>
-            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。底圖空白＝用最上方預設底圖。</p>
+            <div class="row">
+              <div>
+                <label for="overlayFontFamily">字形</label>
+                <input
+                  id="overlayFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <p class="hint">字級／字形／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。底圖空白＝用最上方預設底圖。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -2033,6 +2095,19 @@
             </div>
             <div class="row">
               <div>
+                <label for="spFontFamily">字形</label>
+                <input
+                  id="spFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
+              <div>
                 <label for="spColor">文字色</label>
                 <input id="spColor" type="text" placeholder="用預設" />
               </div>
@@ -2252,6 +2327,19 @@
                     <input id="ctrBg" type="text" value="rgba(0,0,0,0.45)" />
                   </div>
                 </div>
+            <div class="row">
+              <div>
+                <label for="ctrFontFamily">字形</label>
+                <input
+                  id="ctrFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
                 <div class="row">
                   <div>
                     <label
@@ -2432,11 +2520,24 @@
             </div>
             <div class="row">
               <div>
+                <label for="chatFontFamily">字形</label>
+                <input
+                  id="chatFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
+              <div>
                 <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
               </div>
               <div></div>
             </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。</p>
+            <p class="hint">字級／字形／文字色空白＝用最上方預設。</p>
             
             <div class="field" style="align-items: flex-start">
               <label for="chatCss">5. 自訂 CSS</label>
@@ -2756,6 +2857,19 @@
               </div>
             </div>
             <div class="row">
+              <div>
+                <label for="dmFontFamily">字形</label>
+                <input
+                  id="dmFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
               <label
                 ><input type="checkbox" id="dmShowUser" checked /> 顯示暱稱</label
               >
@@ -2852,6 +2966,19 @@
               </div>
             </div>
             <div class="row">
+              <div>
+                <label for="popFontFamily">字形</label>
+                <input
+                  id="popFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
               <label
                 ><input type="checkbox" id="popShowUser" checked /> 顯示暱稱</label
               >
@@ -2946,6 +3073,19 @@
                 <input id="walkBubbleBg" type="text" value="#ffffff" />
               </div>
             </div>
+            <div class="row">
+              <div>
+                <label for="walkFontFamily">字形</label>
+                <input
+                  id="walkFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
             <div class="row">
               <div>
                 <label for="walkColor">文字色</label>
@@ -3052,7 +3192,20 @@
                 </div>
               </div>
             </div>
-            <p class="hint">目標時間與「從現在起」擇一。字級／文字色空白＝用最上方預設。</p>
+            <div class="row">
+              <div>
+                <label for="countdownFontFamily">字形</label>
+                <input
+                  id="countdownFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <p class="hint">目標時間與「從現在起」擇一。字級／字形／文字色空白＝用最上方預設。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -3231,6 +3384,19 @@
 
             <div class="row">
               <div>
+                <label for="daysFontFamily">字形</label>
+                <input
+                  id="daysFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
+              <div>
                 <label
                   ><input type="checkbox" id="daysShowPanelImg" /> 顯示底圖</label
                 >
@@ -3363,7 +3529,20 @@
                 </div>
               </div>
             </div>
-            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。</p>
+            <div class="row">
+              <div>
+                <label for="gameFontFamily">字形</label>
+                <input
+                  id="gameFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <p class="hint">字級／字形／文字色／圖示色空白＝用最上方預設。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -3693,7 +3872,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v2.0.1</p>
+          <p class="apply-status" id="versionStatus">本機 v2.1.0</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3707,7 +3886,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v2.0.1";
+        const APP_VERSION = "v2.1.0";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3719,6 +3898,7 @@
           "入口.html",
           "material-icons.js",
           "panel-bg.js",
+          "font-style.js",
           "yt-live-sync.js",
           "stream-live-sync.js",
           "update-files.json",
@@ -3946,6 +4126,7 @@
           // 舊入口升級時清單可能沒有這些；強制補上避免空白覆蓋頁
           [
             "panel-bg.js",
+            "font-style.js",
             "yt-live-sync.js",
             "stream-live-sync.js",
             "子頁/counter.html",
@@ -4843,6 +5024,7 @@
           cdMins: $("cdMins"),
           cdLabel: $("cdLabel"),
           defaultFontSize: $("defaultFontSize"),
+          defaultFontFamily: $("defaultFontFamily"),
           defaultColor: $("defaultColor"),
           defaultIconColor: $("defaultIconColor"),
           defaultShowBg: $("defaultShowBg"),
@@ -4852,6 +5034,7 @@
           defaultPanelFit: $("defaultPanelFit"),
           defaultPanelInset: $("defaultPanelInset"),
           overlayFontSize: $("overlayFontSize"),
+          overlayFontFamily: $("overlayFontFamily"),
           overlayColor: $("overlayColor"),
           overlayIconColor: $("overlayIconColor"),
           overlayShowBg: $("overlayShowBg"),
@@ -4861,6 +5044,7 @@
           overlayPanelFit: $("overlayPanelFit"),
           overlayPanelInset: $("overlayPanelInset"),
           viewersFontSize: $("viewersFontSize"),
+          viewersFontFamily: $("viewersFontFamily"),
           viewersColor: $("viewersColor"),
           viewersShowBg: $("viewersShowBg"),
           viewersBg: $("viewersBg"),
@@ -4869,6 +5053,7 @@
           viewersPanelFit: $("viewersPanelFit"),
           viewersPanelInset: $("viewersPanelInset"),
           countdownFontSize: $("countdownFontSize"),
+          countdownFontFamily: $("countdownFontFamily"),
           countdownColor: $("countdownColor"),
           countdownIconColor: $("countdownIconColor"),
           countdownShowBg: $("countdownShowBg"),
@@ -4884,6 +5069,7 @@
           daysIcon: $("daysIcon"),
           daysIconColor: $("daysIconColor"),
           daysFontSize: $("daysFontSize"),
+          daysFontFamily: $("daysFontFamily"),
           daysColor: $("daysColor"),
           daysShowBg: $("daysShowBg"),
           daysBg: $("daysBg"),
@@ -4898,6 +5084,7 @@
           gameIcon: $("gameIcon"),
           gameIconColor: $("gameIconColor"),
           gameFontSize: $("gameFontSize"),
+          gameFontFamily: $("gameFontFamily"),
           gameColor: $("gameColor"),
           gameShowBg: $("gameShowBg"),
           gameBg: $("gameBg"),
@@ -4920,6 +5107,7 @@
           chatYtIconColor: $("chatYtIconColor"),
           chatHideStatus: $("chatHideStatus"),
           chatFontSize: $("chatFontSize"),
+          chatFontFamily: $("chatFontFamily"),
           chatColor: $("chatColor"),
           chatShowBg: $("chatShowBg"),
           chatBg: $("chatBg"),
@@ -4954,6 +5142,7 @@
           spBitsRate: $("spBitsRate"),
           spMax: $("spMax"),
           spFontSize: $("spFontSize"),
+          spFontFamily: $("spFontFamily"),
           spColor: $("spColor"),
           spHideStatus: $("spHideStatus"),
           spShowBg: $("spShowBg"),
@@ -4974,6 +5163,7 @@
           ctrIconColor: $("ctrIconColor"),
           ctrHideStatus: $("ctrHideStatus"),
           ctrFontSize: $("ctrFontSize"),
+          ctrFontFamily: $("ctrFontFamily"),
           ctrColor: $("ctrColor"),
           ctrShowBg: $("ctrShowBg"),
           ctrBg: $("ctrBg"),
@@ -4995,6 +5185,7 @@
           dmDuration: $("dmDuration"),
           dmTracks: $("dmTracks"),
           dmFontSize: $("dmFontSize"),
+          dmFontFamily: $("dmFontFamily"),
           dmColor: $("dmColor"),
           dmOpacity: $("dmOpacity"),
           dmShowUser: $("dmShowUser"),
@@ -5006,6 +5197,7 @@
           popHold: $("popHold"),
           popMax: $("popMax"),
           popFontSize: $("popFontSize"),
+          popFontFamily: $("popFontFamily"),
           popAvatarSize: $("popAvatarSize"),
           popBubbleBg: $("popBubbleBg"),
           popColor: $("popColor"),
@@ -5019,6 +5211,7 @@
           walkIdle: $("walkIdle"),
           walkMax: $("walkMax"),
           walkFontSize: $("walkFontSize"),
+          walkFontFamily: $("walkFontFamily"),
           walkAvatarSize: $("walkAvatarSize"),
           walkBubbleBg: $("walkBubbleBg"),
           walkColor: $("walkColor"),
@@ -5583,11 +5776,43 @@
           return (defaultEl.value || "").trim();
         }
 
-        function styleParams(p, showBgEl, bgEl, fontEl, colorEl, iconColorEl) {
+        function resolveDefaultFontFamily() {
+          return (fields.defaultFontFamily && fields.defaultFontFamily.value
+            ? fields.defaultFontFamily.value
+            : ""
+          ).trim();
+        }
+
+        function applyFontFamilyParam(p, fontFamilyEl) {
+          const raw = resolveStyle(
+            fontFamilyEl || { value: "" },
+            fields.defaultFontFamily || { value: "" }
+          ).trim();
+          if (!raw) return;
+          const looksFile =
+            /\.(ttf|otf|woff2?|ttc)(\?|#|$)/i.test(raw) ||
+            raw.startsWith("fonts/") ||
+            raw.startsWith("./fonts/") ||
+            raw.startsWith("../fonts/");
+          if (looksFile) {
+            const path = raw.replace(/^\.\//, "");
+            p.set("fontUrl", resolveAssetUrl(path));
+            const base = path
+              .split("/")
+              .pop()
+              .replace(/\.(ttf|otf|woff2?|ttc).*$/i, "");
+            p.set("fontFamily", base || "ObsCustomFont");
+          } else {
+            p.set("fontFamily", raw);
+          }
+        }
+
+        function styleParams(p, showBgEl, bgEl, fontEl, colorEl, iconColorEl, fontFamilyEl) {
           const fontSize = resolveStyle(fontEl, fields.defaultFontSize);
           const color = resolveStyle(colorEl, fields.defaultColor);
           if (fontSize) p.set("fontSize", fontSize);
           if (color) p.set("color", color);
+          applyFontFamilyParam(p, fontFamilyEl);
           if (iconColorEl) {
             const iconColor =
               (iconColorEl.value || "").trim() ||
@@ -5700,6 +5925,7 @@
 
         function syncStylePlaceholders() {
           const fs = fields.defaultFontSize.value || "22";
+          const ff = resolveDefaultFontFamily() || "內建";
           const col = fields.defaultColor.value.trim() || "rgba(255,255,255,0.85)";
           const iconCol =
             fields.defaultIconColor.value.trim() || col || "跟文字色";
@@ -5715,6 +5941,22 @@
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = `預設 ${fs}`;
+          });
+          [
+            fields.overlayFontFamily,
+            fields.viewersFontFamily,
+            fields.countdownFontFamily,
+            fields.daysFontFamily,
+            fields.gameFontFamily,
+            fields.chatFontFamily,
+            fields.spFontFamily,
+            fields.ctrFontFamily,
+            fields.dmFontFamily,
+            fields.popFontFamily,
+            fields.walkFontFamily,
+          ].forEach((el) => {
+            if (!el) return;
+            el.placeholder = `預設 ${ff}`;
           });
           [
             fields.overlayColor,
@@ -6358,7 +6600,16 @@
           if (s.startsWith("../圖片/")) {
             return new URL(s.slice(3), location.href).href;
           }
+          if (s.startsWith("fonts/") || s.startsWith("./fonts/")) {
+            return new URL(s.replace(/^\.\//, ""), location.href).href;
+          }
+          if (s.startsWith("../fonts/")) {
+            return new URL(s.slice(3), location.href).href;
+          }
           if (/\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s)) {
+            return new URL(s.replace(/^\.\//, ""), location.href).href;
+          }
+          if (/\.(ttf|otf|woff2?|ttc)(\?|#|$)/i.test(s)) {
             return new URL(s.replace(/^\.\//, ""), location.href).href;
           }
           return s;
@@ -6404,7 +6655,8 @@
             fields.overlayBg,
             fields.overlayFontSize,
             fields.overlayColor,
-            fields.overlayIconColor
+            fields.overlayIconColor,
+            fields.overlayFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6436,7 +6688,8 @@
             fields.countdownBg,
             fields.countdownFontSize,
             fields.countdownColor,
-            fields.countdownIconColor
+            fields.countdownIconColor,
+            fields.countdownFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6471,7 +6724,8 @@
             fields.daysBg,
             fields.daysFontSize,
             fields.daysColor,
-            fields.daysIconColor
+            fields.daysIconColor,
+            fields.daysFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6527,7 +6781,9 @@
             fields.viewersShowBg,
             fields.viewersBg,
             fields.viewersFontSize,
-            fields.viewersColor
+            fields.viewersColor,
+            null,
+            fields.viewersFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6556,7 +6812,8 @@
             fields.gameBg,
             fields.gameFontSize,
             fields.gameColor,
-            fields.gameIconColor
+            fields.gameIconColor,
+            fields.gameFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6662,7 +6919,9 @@
             fields.chatShowBg,
             fields.chatBg,
             fields.chatFontSize,
-            fields.chatColor
+            fields.chatColor,
+            null,
+            fields.chatFontFamily
           );
           return url.toString();
         }
@@ -6728,6 +6987,7 @@
           if (ytKey) p.set("ytKey", ytKey);
           // 回覆視窗一次看兩邊較方便
           p.set("chatSource", "both");
+          applyFontFamilyParam(p, null);
           return url.toString();
         }
 
@@ -6766,6 +7026,7 @@
           if (fields.dmDuration.value) p.set("duration", fields.dmDuration.value);
           if (fields.dmTracks.value) p.set("tracks", fields.dmTracks.value);
           if (fields.dmFontSize.value) p.set("fontSize", fields.dmFontSize.value);
+          applyFontFamilyParam(p, fields.dmFontFamily);
           if (fields.dmColor.value.trim()) p.set("color", fields.dmColor.value.trim());
           if (fields.dmOpacity.value) p.set("opacity", fields.dmOpacity.value);
           p.set("showUser", fields.dmShowUser.checked ? "1" : "0");
@@ -6809,6 +7070,7 @@
           if (fields.popHold.value) p.set("hold", fields.popHold.value);
           if (fields.popMax.value) p.set("max", fields.popMax.value);
           if (fields.popFontSize.value) p.set("fontSize", fields.popFontSize.value);
+          applyFontFamilyParam(p, fields.popFontFamily);
           if (fields.popAvatarSize.value)
             p.set("avatarSize", fields.popAvatarSize.value);
           if (fields.popBubbleBg.value.trim())
@@ -6858,6 +7120,7 @@
           if (fields.walkIdle.value) p.set("idle", fields.walkIdle.value);
           if (fields.walkMax.value) p.set("max", fields.walkMax.value);
           if (fields.walkFontSize.value) p.set("fontSize", fields.walkFontSize.value);
+          applyFontFamilyParam(p, fields.walkFontFamily);
           if (fields.walkAvatarSize.value)
             p.set("avatarSize", fields.walkAvatarSize.value);
           if (fields.walkBubbleBg.value.trim())
@@ -7032,7 +7295,15 @@ function syncYtAfterTwUi() {
             p.set("demo", "1");
             p.set("preview", "1");
           }
-          styleParams(p, fields.spShowBg, fields.spBg, fields.spFontSize, fields.spColor);
+          styleParams(
+            p,
+            fields.spShowBg,
+            fields.spBg,
+            fields.spFontSize,
+            fields.spColor,
+            null,
+            fields.spFontFamily
+          );
           applyPanelImageParams(
             p,
             fields.spShowPanelImg,
@@ -7098,7 +7369,8 @@ function syncYtAfterTwUi() {
             fields.ctrBg,
             fields.ctrFontSize,
             fields.ctrColor,
-            fields.ctrIconColor
+            fields.ctrIconColor,
+            fields.ctrFontFamily
           );
           applyPanelImageParams(
             p,
@@ -7880,6 +8152,50 @@ function syncYtAfterTwUi() {
           streamOffBtn.addEventListener("click", () => setStreamLiveMode("off"));
         if (streamAutoBtn)
           streamAutoBtn.addEventListener("click", () => setStreamLiveMode("auto"));
+
+        async function writeFontFileToDisk(file) {
+          if (!file || !canUseDirPicker()) return null;
+          const safe = String(file.name || "custom-font.ttf")
+            .replace(/[\\/:*?"<>|]+/g, "_")
+            .trim() || "custom-font.ttf";
+          try {
+            let dir = await pickInstallDir({ force: false });
+            if (!dir) return null;
+            const fontsDir = await dir.getDirectoryHandle("fonts", { create: true });
+            const fh = await fontsDir.getFileHandle(safe, { create: true });
+            const w = await fh.createWritable();
+            await w.write(await file.arrayBuffer());
+            await w.close();
+            return "fonts/" + safe;
+          } catch (err) {
+            console.warn("write font", err);
+            return null;
+          }
+        }
+
+        const defaultFontUploadBtn = $("defaultFontUploadBtn");
+        const defaultFontUploadFile = $("defaultFontUploadFile");
+        if (defaultFontUploadBtn && defaultFontUploadFile) {
+          defaultFontUploadBtn.addEventListener("click", () => defaultFontUploadFile.click());
+          defaultFontUploadFile.addEventListener("change", async () => {
+            const file = defaultFontUploadFile.files && defaultFontUploadFile.files[0];
+            defaultFontUploadFile.value = "";
+            if (!file) return;
+            const path = await writeFontFileToDisk(file);
+            const hint = $("defaultFontHint");
+            if (path && fields.defaultFontFamily) {
+              fields.defaultFontFamily.value = path;
+              syncStylePlaceholders();
+              buildUrls();
+              if (hint)
+                hint.textContent =
+                  "已上傳並填入 " + path + "。請重新複製各覆蓋網址；OBS 來源需能讀到 fonts/。";
+            } else if (hint) {
+              hint.textContent =
+                "上傳失敗：請先按「確定」授權工具資料夾，或手動把字型放到 fonts/ 再填路徑。";
+            }
+          });
+        }
 
         function parseAccountTxt(text) {
           const map = {};

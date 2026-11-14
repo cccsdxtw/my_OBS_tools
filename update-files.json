@@ -4,6 +4,7 @@
     "入口.html",
     "material-icons.js",
     "panel-bg.js",
+    "font-style.js",
     "yt-live-sync.js",
     "stream-live-sync.js",
     "update-files.json",

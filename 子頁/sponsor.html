@@ -11,6 +11,7 @@
       rel="stylesheet"
     />
     <script src="../panel-bg.js"></script>
+    <script src="../font-style.js"></script>
     <script src="../yt-live-sync.js"></script>
     <style>
       :root {
@@ -286,6 +287,7 @@
         }
 
         cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
         cssVar("--fg", params.get("color"));
         const bgParam = (params.get("bg") || "").trim();
         if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {

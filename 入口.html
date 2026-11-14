@@ -1393,7 +1393,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v2.1.1</span>
+          <span class="brand-version" id="brandVersion">v2.1.2</span>
         </h1>
         <p>
           先填最上方的共用設定，再依序看下方分類：帳號 → 聊天 → 免帳號。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -1484,7 +1484,13 @@
               <option value="Inter"></option>
               <option value="Roboto"></option>
             </datalist>
-            <div class="row">
+            <div class="subfold is-collapsed" data-subfold="default-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">預設字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+<div class="row">
               <div>
                 <label for="defaultFontSize">預設字級</label>
                 <input id="defaultFontSize" type="number" min="12" max="64" value="22" />
@@ -1537,8 +1543,9 @@
             <p class="hint">
               這裡是各窗共用的預設樣式：字級／字形／文字色／圖示色／底色／底圖。各橫列沒填（或底圖選「用預設」）就沿用這裡。圖示色空白＝跟文字色。
             </p>
-
-                        <div class="subfold is-collapsed" data-subfold="default-bg">
+              </div>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="default-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">預設底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -1747,30 +1754,6 @@
               </div>
             </div>
             <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。勾選才顯示圖示；空白用平台預設，也可貼 PNG／SVG／WebP。</p>
-            <div class="row">
-              <div>
-                <label for="viewersFontSize">字級</label>
-                <input id="viewersFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="viewersColor">文字色</label>
-                <input id="viewersColor" type="text" placeholder="用預設" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="viewersFontFamily">字形</label>
-                <input
-                  id="viewersFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
-            </div>
-
-            <p class="hint">字級／字形／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -1789,7 +1772,38 @@
             <div class="preview-wrap">
               <iframe id="previewVc" title="viewers preview"></iframe>
             </div>
-            <div class="subfold is-collapsed" data-subfold="viewers-bg">
+                        <div class="subfold is-collapsed" data-subfold="viewers-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="viewersFontSize">字級</label>
+                    <input id="viewersFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="viewersColor">文字色</label>
+                    <input id="viewersColor" type="text" placeholder="用預設" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="viewersFontFamily">字形</label>
+                    <input
+                      id="viewersFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。</p>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="viewers-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -2009,33 +2023,6 @@
             </div>
             <p class="hint">token：YYYY YY MM DD HH mm ss　ddd＝週一　dddd＝星期一</p>
 
-            <div class="row">
-              <div>
-                <label for="overlayFontSize">字級</label>
-                <input id="overlayFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="overlayColor">文字色</label>
-                <div class="color-pair">
-                  <input id="overlayColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="overlayColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="overlayFontFamily">字形</label>
-                <input
-                  id="overlayFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
-            </div>
-
-            <p class="hint">字級／字形／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。底圖空白＝用最上方預設底圖。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -2054,7 +2041,41 @@
             <div class="preview-wrap">
               <iframe id="preview" title="overlay preview"></iframe>
             </div>
-            <div class="subfold is-collapsed" data-subfold="overlay-bg">
+                        <div class="subfold is-collapsed" data-subfold="overlay-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="overlayFontSize">字級</label>
+                    <input id="overlayFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="overlayColor">文字色</label>
+                    <div class="color-pair">
+                      <input id="overlayColor" type="text" placeholder="用預設" />
+                      <input type="color" data-sync="overlayColor" value="#d9d9d9" title="快速選色" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="overlayFontFamily">字形</label>
+                    <input
+                      id="overlayFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。圖示色空白＝跟文字色／預設。</p>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="overlay-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -2258,29 +2279,6 @@
                 <input id="spMax" type="number" min="3" max="20" value="8" />
               </div>
               <div>
-                <label for="spFontSize">字級</label>
-                <input id="spFontSize" type="number" min="12" max="48" placeholder="用預設" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="spFontFamily">字形</label>
-                <input
-                  id="spFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label for="spColor">文字色</label>
-                <input id="spColor" type="text" placeholder="用預設" />
-              </div>
-              <div>
                 <label><input type="checkbox" id="spHideStatus" checked /> 隱藏連線狀態</label>
               </div>
             </div>
@@ -2305,7 +2303,38 @@
             <div class="preview-wrap" style="min-height: 100px">
               <iframe id="previewSp" title="sponsor preview" style="height: 100px"></iframe>
             </div>
-            <div class="subfold is-collapsed" data-subfold="sp-bg">
+                        <div class="subfold is-collapsed" data-subfold="sp-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="spFontSize">字級</label>
+                    <input id="spFontSize" type="number" min="12" max="48" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="spColor">文字色</label>
+                    <input id="spColor" type="text" placeholder="用預設" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="spFontFamily">字形</label>
+                    <input
+                      id="spFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。</p>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="sp-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -2445,19 +2474,6 @@
                 <label><input type="checkbox" id="ctrHideStatus" /> 隱藏連線狀態</label>
               </div>
             </div>
-            <div class="row">
-              <div>
-                <label for="ctrFontSize">字級</label>
-                <input id="ctrFontSize" type="number" min="12" max="96" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="ctrColor">文字色</label>
-                <div class="color-pair">
-                  <input id="ctrColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="ctrColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -2481,7 +2497,41 @@
             <div class="preview-wrap">
               <iframe id="previewCtr" title="counter preview"></iframe>
             </div>
-            <div class="subfold is-collapsed" data-subfold="ctr-bg">
+                        <div class="subfold is-collapsed" data-subfold="ctr-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="ctrFontSize">字級</label>
+                    <input id="ctrFontSize" type="number" min="12" max="96" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="ctrColor">文字色</label>
+                    <div class="color-pair">
+                      <input id="ctrColor" type="text" placeholder="用預設" />
+                      <input type="color" data-sync="ctrColor" value="#d9d9d9" title="快速選色" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="ctrFontFamily">字形</label>
+                    <input
+                      id="ctrFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。</p>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="ctr-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -2496,19 +2546,6 @@
                     <input id="ctrBg" type="text" value="rgba(0,0,0,0.45)" />
                   </div>
                 </div>
-            <div class="row">
-              <div>
-                <label for="ctrFontFamily">字形</label>
-                <input
-                  id="ctrFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
-            </div>
-
                 <div class="row">
                   <div>
                     <label
@@ -2686,35 +2723,10 @@
             </p>
             <div class="row">
               <div>
-                <label for="chatFontSize">字級</label>
-                <input id="chatFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="chatColor">文字色</label>
-                <input id="chatColor" type="text" placeholder="用預設" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="chatFontFamily">字形</label>
-                <input
-                  id="chatFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
-            </div>
-
-            <div class="row">
-              <div>
                 <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
               </div>
               <div></div>
             </div>
-            <p class="hint">字級／字形／文字色空白＝用最上方預設。</p>
-            
             <div class="field" style="align-items: flex-start">
               <label for="chatCss">5. 自訂 CSS</label>
               <textarea
@@ -2791,6 +2803,37 @@
               </div>
               <div class="preview-wrap" style="min-height: 160px">
                 <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
+              </div>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="chat-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="chatFontSize">字級</label>
+                    <input id="chatFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="chatColor">文字色</label>
+                    <input id="chatColor" type="text" placeholder="用預設" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="chatFontFamily">字形</label>
+                    <input
+                      id="chatFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。</p>
               </div>
             </div>
 <div class="subfold is-collapsed" data-subfold="chat-bg">
@@ -3013,14 +3056,6 @@
             </div>
             <div class="row">
               <div>
-                <label for="dmFontSize">字級</label>
-                <input id="dmFontSize" type="number" min="14" max="72" value="28" />
-              </div>
-              <div>
-                <label for="dmColor">文字色</label>
-                <input id="dmColor" type="text" value="#ffffff" />
-              </div>
-              <div>
                 <label for="dmOpacity">透明度（0.2–1）</label>
                 <input
                   id="dmOpacity"
@@ -3029,17 +3064,6 @@
                   max="1"
                   step="0.05"
                   value="0.95"
-                />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="dmFontFamily">字形</label>
-                <input
-                  id="dmFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
                 />
               </div>
               <div></div>
@@ -3076,6 +3100,38 @@
             <div class="preview-wrap" style="min-height: 220px">
               <iframe id="previewDm" title="danmaku preview"></iframe>
             </div>
+            <div class="subfold is-collapsed" data-subfold="dm-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="dmFontSize">字級</label>
+                    <input id="dmFontSize" type="number" min="14" max="72" value="28" />
+                  </div>
+                  <div>
+                    <label for="dmColor">文字色</label>
+                    <input id="dmColor" type="text" value="#ffffff" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="dmFontFamily">字形</label>
+                    <input
+                      id="dmFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">字形空白＝用最上方預設。</p>
+              </div>
+            </div>
+
           </aside>
         </div>
 
@@ -3125,10 +3181,6 @@
             </div>
             <div class="row">
               <div>
-                <label for="popFontSize">字級</label>
-                <input id="popFontSize" type="number" min="14" max="48" value="22" />
-              </div>
-              <div>
                 <label for="popAvatarSize">頭像大小</label>
                 <input id="popAvatarSize" type="number" min="40" max="160" value="72" />
               </div>
@@ -3136,22 +3188,6 @@
                 <label for="popBubbleBg">對話框底色</label>
                 <input id="popBubbleBg" type="text" value="#ffffff" />
               </div>
-              <div>
-                <label for="popColor">文字色</label>
-                <input id="popColor" type="text" value="#1a1a1a" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="popFontFamily">字形</label>
-                <input
-                  id="popFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
             </div>
 
             <div class="row">
@@ -3185,6 +3221,38 @@
             <div class="preview-wrap" style="min-height: 260px">
               <iframe id="previewPop" title="avatar bubble preview"></iframe>
             </div>
+            <div class="subfold is-collapsed" data-subfold="pop-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="popFontSize">字級</label>
+                    <input id="popFontSize" type="number" min="14" max="48" value="22" />
+                  </div>
+                  <div>
+                    <label for="popColor">文字色</label>
+                    <input id="popColor" type="text" value="#1a1a1a" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="popFontFamily">字形</label>
+                    <input
+                      id="popFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">字形空白＝用最上方預設。</p>
+              </div>
+            </div>
+
           </aside>
         </div>
 
@@ -3237,10 +3305,6 @@
                 <input id="walkMax" type="number" min="1" max="8" value="4" />
               </div>
               <div>
-                <label for="walkFontSize">字級</label>
-                <input id="walkFontSize" type="number" min="14" max="48" value="20" />
-              </div>
-              <div>
                 <label for="walkAvatarSize">頭像大小</label>
                 <input id="walkAvatarSize" type="number" min="40" max="160" value="64" />
               </div>
@@ -3248,25 +3312,9 @@
                 <label for="walkBubbleBg">對話框底色</label>
                 <input id="walkBubbleBg" type="text" value="#ffffff" />
               </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="walkFontFamily">字形</label>
-                <input
-                  id="walkFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
               <div></div>
             </div>
-
             <div class="row">
-              <div>
-                <label for="walkColor">文字色</label>
-                <input id="walkColor" type="text" value="#1a1a1a" />
-              </div>
               <label
                 ><input type="checkbox" id="walkShowUser" checked /> 顯示暱稱</label
               >
@@ -3296,6 +3344,37 @@
             </div>
             <div class="preview-wrap" style="min-height: 260px">
               <iframe id="previewWalk" title="walking avatar preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="walk-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="walkFontSize">字級</label>
+                    <input id="walkFontSize" type="number" min="14" max="48" value="20" />
+                  </div>
+                  <div>
+                    <label for="walkColor">文字色</label>
+                    <input id="walkColor" type="text" value="#1a1a1a" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="walkFontFamily">字形</label>
+                    <input
+                      id="walkFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">字形空白＝用最上方預設。</p>
+              </div>
             </div>
           </aside>
         </div>
@@ -3362,33 +3441,7 @@
               <div></div>
             </div>
             <p class="hint">勾選才顯示圖示；勾了沒填＝預設沙漏。貼圖片網址則不套用圖示色。</p>
-            <div class="row">
-              <div>
-                <label for="countdownFontSize">字級</label>
-                <input id="countdownFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="countdownColor">文字色</label>
-                <div class="color-pair">
-                  <input id="countdownColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="countdownColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="countdownFontFamily">字形</label>
-                <input
-                  id="countdownFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
-            </div>
-
-            <p class="hint">目標時間與「從現在起」擇一。字級／字形／文字色空白＝用最上方預設。</p>
+            <p class="hint">目標時間與「從現在起」擇一。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -3407,7 +3460,41 @@
             <div class="preview-wrap">
               <iframe id="previewCd" title="countdown preview"></iframe>
             </div>
-            <div class="subfold is-collapsed" data-subfold="countdown-bg">
+                        <div class="subfold is-collapsed" data-subfold="countdown-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="countdownFontSize">字級</label>
+                    <input id="countdownFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="countdownColor">文字色</label>
+                    <div class="color-pair">
+                      <input id="countdownColor" type="text" placeholder="用預設" />
+                      <input type="color" data-sync="countdownColor" value="#d9d9d9" title="快速選色" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="countdownFontFamily">字形</label>
+                    <input
+                      id="countdownFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。</p>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="countdown-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -3518,19 +3605,6 @@
               </div>
               <div></div>
             </div>
-            <div class="row">
-              <div>
-                <label for="daysFontSize">字級</label>
-                <input id="daysFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="daysColor">文字色</label>
-                <div class="color-pair">
-                  <input id="daysColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="daysColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
                                   </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -3549,7 +3623,41 @@
             <div class="preview-wrap">
               <iframe id="previewDays" title="days preview"></iframe>
             </div>
-            <div class="subfold is-collapsed" data-subfold="days-bg">
+                        <div class="subfold is-collapsed" data-subfold="days-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="daysFontSize">字級</label>
+                    <input id="daysFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="daysColor">文字色</label>
+                    <div class="color-pair">
+                      <input id="daysColor" type="text" placeholder="用預設" />
+                      <input type="color" data-sync="daysColor" value="#d9d9d9" title="快速選色" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="daysFontFamily">字形</label>
+                    <input
+                      id="daysFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。</p>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="days-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -3563,19 +3671,6 @@
                 <label for="daysBg">底色</label>
                 <input id="daysBg" type="text" value="rgba(0,0,0,0.45)" />
               </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label for="daysFontFamily">字形</label>
-                <input
-                  id="daysFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
             </div>
 
             <div class="row">
@@ -3699,33 +3794,6 @@
               </div>
               <div></div>
             </div>
-            <div class="row">
-              <div>
-                <label for="gameFontSize">字級</label>
-                <input id="gameFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="gameColor">文字色</label>
-                <div class="color-pair">
-                  <input id="gameColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="gameColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="gameFontFamily">字形</label>
-                <input
-                  id="gameFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="用預設"
-                />
-              </div>
-              <div></div>
-            </div>
-
-            <p class="hint">字級／字形／文字色／圖示色空白＝用最上方預設。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
@@ -3744,7 +3812,41 @@
             <div class="preview-wrap">
               <iframe id="previewGame" title="game title preview"></iframe>
             </div>
-            <div class="subfold is-collapsed" data-subfold="game-bg">
+                        <div class="subfold is-collapsed" data-subfold="game-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="gameFontSize">字級</label>
+                    <input id="gameFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="gameColor">文字色</label>
+                    <div class="color-pair">
+                      <input id="gameColor" type="text" placeholder="用預設" />
+                      <input type="color" data-sync="gameColor" value="#d9d9d9" title="快速選色" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="gameFontFamily">字形</label>
+                    <input
+                      id="gameFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。圖示色空白＝跟文字色／預設。</p>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="game-bg">
               <button type="button" class="subfold-toggle" aria-expanded="false">
                 <span class="subfold-title">底色／底圖</span>
                 <span class="subfold-state">展開</span>
@@ -4069,7 +4171,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v2.1.1";
+        const APP_VERSION = "v2.1.2";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

@@ -246,6 +246,12 @@
         border-color: var(--accent);
       }
 
+      .card-toggle:active,
+      .card-toggle.is-pressed {
+        transform: translateY(1px) scale(0.96);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+      }
+
       .band.is-collapsed > .band-body {
         display: none;
       }
@@ -277,6 +283,12 @@
 
       .subfold-toggle:hover {
         background: color-mix(in srgb, var(--steps-bg) 70%, transparent);
+      }
+
+      .subfold-toggle:active,
+      .subfold-toggle.is-pressed {
+        transform: translateY(1px) scale(0.99);
+        background: color-mix(in srgb, var(--accent) 12%, var(--steps-bg));
       }
 
       .subfold-title {
@@ -640,10 +652,31 @@
         border: 1px solid var(--line);
       }
 
+      .chip-row button:hover:not(:disabled) {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+      }
+
+      .chip-row button:active:not(:disabled),
+      .chip-row button.is-pressed:not(:disabled) {
+        transform: translateY(1px) scale(0.96);
+        background: color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+
       .chip-row button.is-active {
         background: var(--accent);
         color: #fff;
         border-color: transparent;
+      }
+
+      .chip-row button.is-active:hover:not(:disabled) {
+        filter: brightness(1.06);
+        background: var(--accent);
+      }
+
+      .chip-row button.is-active:active:not(:disabled),
+      .chip-row button.is-active.is-pressed:not(:disabled) {
+        filter: brightness(0.92);
       }
 
       .chip-row button.history {
@@ -677,6 +710,31 @@
         font: inherit;
         font-weight: 600;
         text-decoration: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        user-select: none;
+        transition:
+          filter 0.12s ease,
+          box-shadow 0.12s ease,
+          background 0.12s ease,
+          border-color 0.12s ease,
+          color 0.12s ease;
+        /* transform 不動畫：按下立刻縮小，手感比較清楚 */
+      }
+
+      button:hover:not(:disabled),
+      .btn:hover {
+        filter: brightness(1.07);
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+      }
+
+      button:active:not(:disabled),
+      .btn:active,
+      button.is-pressed:not(:disabled),
+      .btn.is-pressed {
+        transform: translateY(1px) scale(0.96);
+        filter: brightness(0.9);
+        box-shadow: none;
       }
 
       button.secondary,
@@ -684,6 +742,33 @@
         background: transparent;
         color: var(--ink);
         border: 1px solid var(--line);
+      }
+
+      button.secondary:hover:not(:disabled),
+      .btn.secondary:hover {
+        filter: none;
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        border-color: var(--accent);
+        color: var(--ink);
+        box-shadow: none;
+      }
+
+      button.secondary:active:not(:disabled),
+      .btn.secondary:active,
+      button.secondary.is-pressed:not(:disabled),
+      .btn.secondary.is-pressed {
+        filter: none;
+        background: color-mix(in srgb, var(--accent) 22%, transparent);
+        transform: translateY(1px) scale(0.96);
+      }
+
+      button:disabled,
+      .btn[aria-disabled="true"] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none !important;
+        filter: none !important;
+        box-shadow: none !important;
       }
 
       .steps {
@@ -946,6 +1031,12 @@
         filter: brightness(1.05);
       }
 
+      .sponsor .kofi-btn:active,
+      .sponsor .kofi-btn.is-pressed {
+        transform: translateY(1px) scale(0.96);
+        filter: brightness(0.92);
+      }
+
       .apply-dock {
         position: fixed;
         left: 0;
@@ -1091,7 +1182,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.8.5</span>
+          <span class="brand-version" id="brandVersion">v2.0.0</span>
         </h1>
         <p>
           先填最上方的共用設定，再依序：帳號相關 → 聊天相關 → 免帳號。各橫列可分開放 OBS 來源。
@@ -3504,7 +3595,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.8.5</p>
+          <p class="apply-status" id="versionStatus">本機 v2.0.0</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3518,7 +3609,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.8.5";
+        const APP_VERSION = "v2.0.0";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4114,6 +4205,45 @@
         }
         setupCollapsibles();
         setupSubfolds();
+
+        // 觸碰／點下回饋（手機 :active 常不穩，用 pointer + is-pressed）
+        function setupPressFeedback() {
+          const SEL = "button, a.btn, .sponsor .kofi-btn";
+          function pressable(t) {
+            const el = t && t.closest ? t.closest(SEL) : null;
+            if (!el || el.disabled || el.getAttribute("aria-disabled") === "true")
+              return null;
+            return el;
+          }
+          function clearAll() {
+            document.querySelectorAll(".is-pressed").forEach((el) => {
+              el.classList.remove("is-pressed");
+            });
+          }
+          document.addEventListener(
+            "pointerdown",
+            (e) => {
+              if (e.button != null && e.button !== 0) return;
+              const el = pressable(e.target);
+              if (!el) return;
+              el.classList.add("is-pressed");
+            },
+            { passive: true }
+          );
+          document.addEventListener("pointerup", clearAll, { passive: true });
+          document.addEventListener("pointercancel", clearAll, { passive: true });
+          document.addEventListener(
+            "pointerleave",
+            (e) => {
+              const el = pressable(e.target);
+              if (el) el.classList.remove("is-pressed");
+            },
+            true
+          );
+          window.addEventListener("blur", clearAll);
+        }
+        setupPressFeedback();
+
         const pageSearch = $("pageSearch");
         if (pageSearch) {
           pageSearch.addEventListener("input", () => applyPageSearch(pageSearch.value));

@@ -68,6 +68,10 @@
         box-sizing: border-box;
       }
 
+      html {
+        scroll-behavior: smooth;
+      }
+
       body {
         margin: 0;
         min-height: 100vh;
@@ -211,6 +215,22 @@
         padding: 12px 22px;
         border-bottom: 1px solid var(--line);
         background: var(--steps-bg);
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .band-bar:hover {
+        background: color-mix(in srgb, var(--accent) 8%, var(--steps-bg));
+      }
+
+      .band-bar:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+
+      .band.is-collapsed > .band-bar {
+        border-bottom: 0;
       }
 
       .band-bar-title {
@@ -237,19 +257,20 @@
         color: var(--muted);
         font: inherit;
         font-size: 0.85rem;
-        cursor: pointer;
+        cursor: inherit;
         white-space: nowrap;
+        pointer-events: none;
       }
 
-      .card-toggle:hover {
+      .band-bar:hover .card-toggle,
+      .credits-head:hover .card-toggle {
         color: var(--ink);
         border-color: var(--accent);
       }
 
-      .card-toggle:active,
-      .card-toggle.is-pressed {
-        transform: translateY(1px) scale(0.96);
-        background: color-mix(in srgb, var(--accent) 14%, transparent);
+      .band-bar:active,
+      .band-bar.is-pressed {
+        background: color-mix(in srgb, var(--accent) 10%, var(--steps-bg));
       }
 
       .band.is-collapsed > .band-body {
@@ -331,8 +352,134 @@
       }
 
       .band.is-filtered-out,
+      .band-group.is-filtered-out,
       .credits.is-filtered-out {
         display: none !important;
+      }
+
+      .band-group {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin: 8px 0 2px;
+        padding: 14px 18px;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--accent);
+        border-radius: 12px;
+        background: var(--steps-bg);
+        scroll-margin-top: 18px;
+      }
+
+      .band-group[data-group="chat"] {
+        border-left-color: var(--accent-2);
+      }
+
+      .band-group[data-group="local"] {
+        border-left-color: color-mix(in srgb, var(--muted) 55%, var(--accent));
+      }
+
+      .band-group-mark {
+        flex: 0 0 auto;
+        min-width: 2rem;
+        height: 2rem;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--accent) 18%, transparent);
+        color: var(--accent);
+        font-family: "IBM Plex Mono", monospace;
+        font-weight: 700;
+        font-size: 1.05rem;
+        line-height: 1;
+      }
+
+      .band-group[data-group="chat"] .band-group-mark {
+        background: color-mix(in srgb, var(--accent-2) 18%, transparent);
+        color: var(--accent-2);
+      }
+
+      .band-group[data-group="local"] .band-group-mark {
+        background: color-mix(in srgb, var(--muted) 22%, transparent);
+        color: var(--muted);
+      }
+
+      .band-group-text {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      .band-group-title {
+        margin: 0 0 4px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      .band-group-desc {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
+      .group-jump {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 14px;
+      }
+
+      .group-jump a {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 8px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+        color: var(--ink);
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        box-shadow: var(--shadow);
+        max-width: 100%;
+      }
+
+      .group-jump .jump-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35em;
+      }
+
+      .group-jump .jump-items {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+
+      .group-jump a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .group-jump a:active,
+      .group-jump a.is-pressed {
+        transform: translateY(1px) scale(0.97);
+      }
+
+      .group-jump .jump-mark {
+        font-family: "IBM Plex Mono", monospace;
+        color: var(--accent);
+      }
+
+      .group-jump a[href="#group-chat"] .jump-mark {
+        color: var(--accent-2);
+      }
+
+      .group-jump a[href="#group-local"] .jump-mark {
+        color: var(--muted);
       }
 
       mark.search-hit {
@@ -1246,12 +1393,27 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v2.1.0</span>
+          <span class="brand-version" id="brandVersion">v2.1.1</span>
         </h1>
         <p>
-          先填最上方的共用設定，再依序：帳號相關 → 聊天相關 → 免帳號。各橫列可分開放 OBS 來源。
+          先填最上方的共用設定，再依序看下方分類：帳號 → 聊天 → 免帳號。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
         </p>
       </header>
+
+      <nav class="group-jump" aria-label="工具分類捷徑">
+        <a href="#group-account">
+          <span class="jump-label"><span class="jump-mark">A</span> 帳號</span>
+          <span class="jump-items">①人數 ②資訊條 ③贊助 ⑤計數器</span>
+        </a>
+        <a href="#group-chat">
+          <span class="jump-label"><span class="jump-mark">B</span> 聊天</span>
+          <span class="jump-items">⑥聊天室 ⑦回覆 ⑧彈幕 ⑨頭像對話框 ⑩走動頭像</span>
+        </a>
+        <a href="#group-local">
+          <span class="jump-label"><span class="jump-mark">C</span> 免帳號</span>
+          <span class="jump-items">⑪倒計時 ⑫倒數天數 ⑬遊戲名稱 ⑮媒體</span>
+        </a>
+      </nav>
 
       <div class="page-tools" role="search">
         <label for="pageSearch">搜尋</label>
@@ -1474,8 +1636,15 @@
           </section>
         </div>
 
-                <!-- A · 需要帳號／API：①②③⑤ -->
-<!-- ① 觀眾人數 -->
+        <div class="band-group" id="group-account" data-group="account">
+          <div class="band-group-mark" aria-hidden="true">A</div>
+          <div class="band-group-text">
+            <h2 class="band-group-title">帳號</h2>
+            <p class="band-group-desc">①人數 ②資訊條 ③贊助 ⑤計數器</p>
+          </div>
+        </div>
+
+        <!-- ① 觀看人數 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -2380,8 +2549,15 @@
           </aside>
         </div>
 
-                <!-- B · 聊天室相關：⑥⑦⑧⑨⑩ -->
-<!-- ⑥ 聊天室 -->
+        <div class="band-group" id="group-chat" data-group="chat">
+          <div class="band-group-mark" aria-hidden="true">B</div>
+          <div class="band-group-text">
+            <h2 class="band-group-title">聊天</h2>
+            <p class="band-group-desc">⑥聊天室 ⑦回覆 ⑧彈幕 ⑨頭像對話框 ⑩走動頭像</p>
+          </div>
+        </div>
+
+        <!-- ⑥ 聊天室 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3124,8 +3300,15 @@
           </aside>
         </div>
 
-                <!-- C · 不需要帳號：⑪⑫⑬⑮ -->
-<!-- ⑪ 倒計時 -->
+        <div class="band-group" id="group-local" data-group="local">
+          <div class="band-group-mark" aria-hidden="true">C</div>
+          <div class="band-group-text">
+            <h2 class="band-group-title">免帳號</h2>
+            <p class="band-group-desc">⑪倒計時 ⑫倒數天數 ⑬遊戲名稱 ⑮媒體</p>
+          </div>
+        </div>
+
+        <!-- ⑪ 倒計時 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3711,7 +3894,7 @@
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          排列：帳號相關（①②③⑤）→ 聊天相關（⑥⑦⑧⑨⑩）→ 免帳號（⑪⑫⑬⑮）。各編號右邊網址加 OBS 瀏覽器來源即可（⑦ 回覆除外；編號跳過含 4，如 ④⑭）。
+          上方可見 A／B／C 分類標頭與捷徑；各編號右邊網址加 OBS 瀏覽器來源即可（⑦ 回覆除外；編號跳過含 4，如 ④⑭）。
         </div>
       </div>
 
@@ -3886,7 +4069,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v2.1.0";
+        const APP_VERSION = "v2.1.1";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4242,14 +4425,18 @@
         }
         function setCollapsed(el, collapsed, { persist = true } = {}) {
           el.classList.toggle("is-collapsed", collapsed);
+          const bar =
+            el.querySelector(":scope > .band-bar") ||
+            el.querySelector(":scope > .credits-head");
           const btn =
-            el.querySelector(":scope > .band-bar .card-toggle") ||
-            el.querySelector(":scope > .credits-head .card-toggle") ||
+            (bar && bar.querySelector(".card-toggle")) ||
             el.querySelector(".card-toggle");
+          const expanded = collapsed ? "false" : "true";
           if (btn) {
             btn.textContent = collapsed ? "展開" : "收合";
-            btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+            btn.setAttribute("aria-expanded", expanded);
           }
+          if (bar) bar.setAttribute("aria-expanded", expanded);
           if (!persist) return;
           const key = sectionKey(el);
           if (!key) return;
@@ -4288,36 +4475,82 @@
               sub.textContent = side.textContent.trim();
               title.appendChild(sub);
             }
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "card-toggle";
-            btn.textContent = "收合";
-            btn.setAttribute("aria-expanded", "true");
-            bar.append(title, btn);
+            const state = document.createElement("span");
+            state.className = "card-toggle";
+            state.textContent = "收合";
+            state.setAttribute("aria-hidden", "true");
+            bar.append(title, state);
             band.insertBefore(bar, body);
+          } else {
+            // 舊版若仍是 <button>，改成 span，避免巢狀按鈕吃掉點擊
+            const oldBtn = bar.querySelector(".card-toggle");
+            if (oldBtn && oldBtn.tagName === "BUTTON") {
+              const state = document.createElement("span");
+              state.className = "card-toggle";
+              state.textContent = oldBtn.textContent || "收合";
+              state.setAttribute("aria-hidden", "true");
+              oldBtn.replaceWith(state);
+            }
           }
-          return bar.querySelector(".card-toggle");
+          bar.setAttribute("role", "button");
+          bar.setAttribute("tabindex", "0");
+          bar.setAttribute("aria-expanded", "true");
+          return bar;
         }
         function setupCollapsibles() {
           const map = loadCollapsedMap();
           document.querySelectorAll(".bands .band").forEach((band) => {
-            const btn = ensureBandStructure(band);
-            if (!btn || btn.dataset.bound === "1") return;
-            btn.dataset.bound = "1";
-            btn.addEventListener("click", () => {
-              setCollapsed(band, !band.classList.contains("is-collapsed"));
-            });
+            ensureBandStructure(band);
             const key = sectionKey(band);
             if (key && map[key]) setCollapsed(band, true, { persist: false });
           });
+          // 委派：點整條標題列（任意處）即可展開／收合
+          const bandsRoot = document.querySelector(".bands");
+          if (bandsRoot && bandsRoot.dataset.bandBarBound !== "1") {
+            bandsRoot.dataset.bandBarBound = "1";
+            bandsRoot.addEventListener("click", (ev) => {
+              const bar = ev.target.closest(".band-bar");
+              if (!bar || !bandsRoot.contains(bar)) return;
+              if (ev.target.closest("a, input, select, textarea, label")) return;
+              const band = bar.closest(".band");
+              if (!band) return;
+              setCollapsed(band, !band.classList.contains("is-collapsed"));
+            });
+            bandsRoot.addEventListener("keydown", (ev) => {
+              if (ev.key !== "Enter" && ev.key !== " ") return;
+              const bar = ev.target.closest(".band-bar");
+              if (!bar || ev.target !== bar) return;
+              ev.preventDefault();
+              const band = bar.closest(".band");
+              if (!band) return;
+              setCollapsed(band, !band.classList.contains("is-collapsed"));
+            });
+          }
           const credits = $("credits");
           const creditsToggle = $("creditsToggle");
+          const creditsHead =
+            credits && credits.querySelector(":scope > .credits-head");
           if (credits && creditsToggle) {
             creditsToggle.classList.add("card-toggle");
-            if (creditsToggle.dataset.bound !== "1") {
-              creditsToggle.dataset.bound = "1";
-              creditsToggle.addEventListener("click", () => {
+            if (creditsHead) {
+              creditsHead.style.cursor = "pointer";
+              creditsHead.setAttribute("role", "button");
+              creditsHead.setAttribute("tabindex", "0");
+            }
+            const bindEl = creditsHead || creditsToggle;
+            if (bindEl.dataset.bound !== "1") {
+              bindEl.dataset.bound = "1";
+              const toggleCredits = () =>
                 setCollapsed(credits, !credits.classList.contains("is-collapsed"));
+              bindEl.addEventListener("click", (ev) => {
+                if (ev.target.closest("a, input, select, textarea, label")) return;
+                // 若點到頭列內真正按鈕，也算整列點擊
+                toggleCredits();
+              });
+              bindEl.addEventListener("keydown", (ev) => {
+                if (ev.key !== "Enter" && ev.key !== " ") return;
+                ev.preventDefault();
+                toggleCredits();
               });
             }
             const key = sectionKey(credits);
@@ -4466,6 +4699,25 @@
               }
             }
           });
+          document.querySelectorAll(".bands .band-group").forEach((group) => {
+            const selfHit =
+              !q || (group.textContent || "").toLowerCase().includes(q);
+            let anyBand = false;
+            let el = group.nextElementSibling;
+            while (el && !el.classList.contains("band-group")) {
+              if (
+                el.classList.contains("band") &&
+                !el.classList.contains("is-filtered-out")
+              ) {
+                anyBand = true;
+                break;
+              }
+              el = el.nextElementSibling;
+            }
+            const hit = !q || selfHit || anyBand;
+            group.classList.toggle("is-filtered-out", !hit);
+            if (hit && q && selfHit) highlightQueryIn(group, q);
+          });
           const credits = $("credits");
           if (credits) {
             const text = (credits.textContent || "").toLowerCase();
@@ -4487,7 +4739,7 @@
 
         // 觸碰／點下回饋（手機 :active 常不穩，用 pointer + is-pressed）
         function setupPressFeedback() {
-          const SEL = "button, a.btn, .sponsor .kofi-btn";
+          const SEL = "button, a.btn, .band-bar, .credits-head, .sponsor .kofi-btn";
           function pressable(t) {
             const el = t && t.closest ? t.closest(SEL) : null;
             if (!el || el.disabled || el.getAttribute("aria-disabled") === "true")

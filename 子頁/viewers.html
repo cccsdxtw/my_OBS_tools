@@ -158,11 +158,6 @@
         const DECAPI_VIEWERS = (login) =>
           `https://decapi.me/twitch/viewercount/${encodeURIComponent(login)}`;
         const YT_API = "https://www.googleapis.com/youtube/v3";
-        // Twitch 維持原節奏；YouTube 可等 TW 開台後才查，並在未開台／失敗時降頻
-        const POLL_MS_TW = 15000;
-        const POLL_MS_YT_LIVE = 60000;
-        const POLL_MS_YT_OFF = 5 * 60 * 1000;
-        const POLL_MS_YT_FAIL = 3 * 60 * 1000;
         // 自動「找直播」成功後就記住；下播後至少隔這麼久才准再找下一次
         const YT_REFIND_MS = 2 * 60 * 60 * 1000;
         const YT_QUOTA_COOLDOWN_MS = 60 * 60 * 1000;
@@ -170,6 +165,12 @@
         const YT_FAIL_LABEL = "無法取得";
 
         const params = new URLSearchParams(location.search);
+
+        function clampPollMs(rawSec, fallbackSec, minSec, maxSec) {
+          const n = Number(rawSec);
+          const sec = Number.isFinite(n) && n > 0 ? n : fallbackSec;
+          return Math.round(Math.min(maxSec, Math.max(minSec, sec)) * 1000);
+        }
 
         function cssVar(name, value) {
           if (value) document.documentElement.style.setProperty(name, value);
@@ -241,18 +242,24 @@
             .trim()
             .toLowerCase()
         );
-        // 預覽更省；正式開台後才用較密輪詢（未開台見 POLL_MS_YT_OFF）
-        const ytPollLiveMs = isPreview
-          ? 3 * 60 * 1000
-          : ytVideoParam
-            ? POLL_MS_YT_LIVE
-            : 90 * 1000;
-        const ytPollOffMs = isPreview ? 5 * 60 * 1000 : POLL_MS_YT_OFF;
-        // 預設開：TW 偵測到開台後才打 YouTube（兩邊一起開台時省配額）
+        // 預設開：TW 偵測到開台後才打 YouTube（此時無視 ytPoll，跟 TW 一起查）
         const ytAfterTwParam = String(params.get("ytAfterTw") || "1")
           .trim()
           .toLowerCase();
         const ytAfterTw = !["0", "false", "off", "no"].includes(ytAfterTwParam);
+        const pollMsTw = clampPollMs(
+          params.get("twPoll") || params.get("twPollSec"),
+          isPreview ? 60 : 15,
+          5,
+          600
+        );
+        // 僅在未勾 ytAfterTw 時使用；勾了就跟 TW 節奏走
+        const pollMsYt = clampPollMs(
+          params.get("ytPoll") || params.get("ytPollSec"),
+          isPreview ? 180 : 60,
+          15,
+          3600
+        );
         const allowYtSearch = ["1", "true", "yes", "on"].includes(
           String(params.get("ytSearch") || "")
             .trim()
@@ -508,17 +515,8 @@
           ytErrTip = "";
         }
 
-        let ytKick = null;
-        function armYtKick(fn) {
-          ytKick = fn;
-        }
-        function kickYoutubeSoon() {
-          if (typeof ytKick === "function") ytKick();
-        }
-
         async function refreshTwitch() {
           if (!wantTw) return;
-          const wasLive = twLive;
           try {
             let data;
             if (twitchSource === "decapi") data = await fetchTwitchDecapi();
@@ -538,9 +536,10 @@
             twLive = false;
             twCount = failLabel(err, "tw");
           }
+          // 勾「TW 開台後才查 YT」：無視 YT 更新秒數，跟這次 TW 詢問一起查
           if (ytAfterTw && wantYt) {
-            if (wasLive && !twLive) parkYoutubeUntilTw();
-            if (!wasLive && twLive) kickYoutubeSoon();
+            if (!twLive) parkYoutubeUntilTw();
+            else await refreshYoutube();
           }
         }
 
@@ -901,21 +900,20 @@
           }
         }
 
-        function nextYtDelay() {
-          if (!ytAllowedByTw()) return POLL_MS_TW; // 等 TW 開台，跟 TW 節奏對齊醒來
-          if (isYtFail(ytCount)) return POLL_MS_YT_FAIL;
-          return ytLive ? ytPollLiveMs : ytPollOffMs;
-        }
-
         async function refreshTwitchOnly() {
           await refreshTwitch();
           render();
         }
 
+        // YT 獨立輪詢：未勾 ytAfterTw，或只填 YT 沒填 TW
+        function ytUsesOwnPoll() {
+          return wantYt && !(ytAfterTw && wantTw);
+        }
+
         let ytTimer = null;
         let ytBusy = false;
-        async function ytLoop(force) {
-          if (!wantYt) return;
+        async function ytLoop() {
+          if (!ytUsesOwnPoll()) return;
           if (ytBusy) return;
           ytBusy = true;
           try {
@@ -927,17 +925,16 @@
             render();
           } finally {
             ytBusy = false;
-            ytTimer = setTimeout(() => ytLoop(false), nextYtDelay());
+            ytTimer = setTimeout(ytLoop, pollMsYt);
           }
         }
-        armYtKick(() => ytLoop(true));
 
         render();
         if (wantTw) {
           refreshTwitchOnly();
-          setInterval(refreshTwitchOnly, POLL_MS_TW);
+          setInterval(refreshTwitchOnly, pollMsTw);
         }
-        if (wantYt) ytLoop(false);
+        if (ytUsesOwnPoll()) ytLoop();
       })();
     </script>
   </body>

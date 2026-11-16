@@ -234,6 +234,7 @@
       }
 
       .band-bar-title {
+        flex: 1 1 auto;
         margin: 0;
         font-size: 1.02rem;
         font-weight: 700;
@@ -353,6 +354,7 @@
 
       .band.is-filtered-out,
       .band-group.is-filtered-out,
+      .tool-block.is-filtered-out,
       .credits.is-filtered-out {
         display: none !important;
       }
@@ -422,11 +424,53 @@
         line-height: 1.45;
       }
 
+      .top-nav {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 10px 14px;
+        margin: 0 0 14px;
+      }
+
+      .layout-mode {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-self: start;
+        align-items: center;
+      }
+
+      .layout-mode button {
+        padding: 8px 14px;
+        font-size: 0.88rem;
+      }
+
+      .layout-mode button.is-active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+      }
+
+      .layout-mode-hint {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.35;
+        max-width: 14rem;
+      }
+
+      .layout-mode-hint[hidden] {
+        display: none !important;
+      }
+
       .group-jump {
         display: flex;
         flex-wrap: wrap;
+        justify-content: center;
+        justify-self: center;
         gap: 8px;
-        margin: 0 0 14px;
+        margin: 0;
+        grid-column: 2;
       }
 
       .group-jump a {
@@ -480,6 +524,72 @@
 
       .group-jump a[href="#group-local"] .jump-mark {
         color: var(--muted);
+      }
+
+      .tool-block {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .tool-block.is-dragging {
+        opacity: 0.55;
+      }
+
+      .tool-block.is-drag-over {
+        outline: 2px dashed var(--accent);
+        outline-offset: 4px;
+        border-radius: 12px;
+      }
+
+      .drag-handle {
+        display: none;
+        flex: 0 0 auto;
+        margin: 0 8px 0 0;
+        padding: 4px 6px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.85rem;
+        letter-spacing: -0.12em;
+        line-height: 1;
+        cursor: grab;
+      }
+
+      body.is-layout-custom .drag-handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      body.is-layout-custom .drag-handle:hover {
+        border-color: var(--line);
+        color: var(--accent);
+      }
+
+      body.is-layout-custom .tool-block.is-dragging .drag-handle {
+        cursor: grabbing;
+      }
+
+      @media (max-width: 900px) {
+        .top-nav {
+          grid-template-columns: 1fr;
+        }
+
+        .layout-mode,
+        .group-jump {
+          justify-self: stretch;
+        }
+
+        .group-jump {
+          grid-column: 1;
+          justify-content: center;
+        }
+
+        .layout-mode-hint {
+          max-width: none;
+        }
       }
 
       mark.search-hit {
@@ -1394,27 +1504,40 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v2.1.7</span>
+          <span class="brand-version" id="brandVersion">v3.0.0</span>
         </h1>
         <p>
-          先填最上方的共用設定，再依序看下方分類：A 帳號 → B 聊天 → C 免帳號（各組自行編號）。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
+          先填最上方的共用設定，再依序看下方分類：A 帳號 → B 聊天 → C 免帳號（各組自行編號）。上方可切「預設／切換」自己拖曳工具順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
         </p>
       </header>
 
-      <nav class="group-jump" aria-label="工具分類捷徑">
-        <a href="#group-account">
-          <span class="jump-label"><span class="jump-mark">A</span> 帳號</span>
-          <span class="jump-items">A - ① 人數 A - ② 資訊條 A - ③ 贊助 A - ⑤ 計數器</span>
-        </a>
-        <a href="#group-chat">
-          <span class="jump-label"><span class="jump-mark">B</span> 聊天</span>
-          <span class="jump-items">B - ① 聊天室 B - ② 回覆 B - ③ 彈幕 B - ⑤ 頭像對話框 B - ⑥ 走動頭像</span>
-        </a>
-        <a href="#group-local">
-          <span class="jump-label"><span class="jump-mark">C</span> 免帳號</span>
-          <span class="jump-items">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體</span>
-        </a>
-      </nav>
+      <div class="top-nav">
+        <div class="layout-mode" role="group" aria-label="排列模式">
+          <button type="button" class="secondary is-active" id="layoutDefaultBtn" aria-pressed="true">
+            預設
+          </button>
+          <button type="button" class="secondary" id="layoutCustomBtn" aria-pressed="false">
+            切換
+          </button>
+          <p class="layout-mode-hint" id="layoutModeHint" hidden>
+            切換模式：拖曳工具標題列可改順序（會記住）
+          </p>
+        </div>
+        <nav class="group-jump" aria-label="工具分類捷徑">
+          <a href="#group-account">
+            <span class="jump-label"><span class="jump-mark">A</span> 帳號</span>
+            <span class="jump-items">A - ① 人數 A - ② 資訊條 A - ③ 贊助 A - ⑤ 計數器</span>
+          </a>
+          <a href="#group-chat">
+            <span class="jump-label"><span class="jump-mark">B</span> 聊天</span>
+            <span class="jump-items">B - ① 聊天室 B - ② 回覆 B - ③ 彈幕 B - ⑤ 頭像對話框 B - ⑥ 走動頭像</span>
+          </a>
+          <a href="#group-local">
+            <span class="jump-label"><span class="jump-mark">C</span> 免帳號</span>
+            <span class="jump-items">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體</span>
+          </a>
+        </nav>
+      </div>
 
       <div class="page-tools" role="search">
         <label for="pageSearch">搜尋</label>
@@ -1652,7 +1775,8 @@
           </div>
         </div>
 
-        <!-- A - ① 觀眾人數 -->
+        <div class="tool-block" data-tool="viewers" data-group="account">
+<!-- A - ① 觀眾人數 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -1862,7 +1986,10 @@
           </aside>
         </div>
 
-        <!-- A - ② 資訊條 -->
+        <div class="tool-block" data-tool="info" data-group="account">
+</div>
+
+<!-- A - ② 資訊條 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -2134,7 +2261,10 @@
           </aside>
         </div>
 
-        <!-- A - ③ 贊助條 -->
+        <div class="tool-block" data-tool="donate" data-group="account">
+</div>
+
+<!-- A - ③ 贊助條 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -2393,7 +2523,10 @@
           </aside>
         </div>
 
-        <!-- A - ⑤ 計數器 -->
+        <div class="tool-block" data-tool="counter" data-group="account">
+</div>
+
+<!-- A - ⑤ 計數器 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -2586,6 +2719,9 @@
             </div>
           </aside>
         </div>
+</div>
+
+
 
         <div class="band-group" id="group-chat" data-group="chat">
           <div class="band-group-mark" aria-hidden="true">B</div>
@@ -2595,7 +2731,8 @@
           </div>
         </div>
 
-        <!-- B - ① 聊天室 -->
+        <div class="tool-block" data-tool="chat" data-group="chat">
+<!-- B - ① 聊天室 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -2946,7 +3083,10 @@
           </aside>
         </div>
 
-        <!-- B - ② 回覆（主播用） -->
+        <div class="tool-block" data-tool="reply" data-group="chat">
+</div>
+
+<!-- B - ② 回覆（主播用） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3000,7 +3140,10 @@
           </aside>
         </div>
 
-        <!-- B - ③ 彈幕（獨立；可與 B - ① 聊天室同時用） -->
+        <div class="tool-block" data-tool="danmaku" data-group="chat">
+</div>
+
+<!-- B - ③ 彈幕（獨立；可與 B - ① 聊天室同時用） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3136,7 +3279,10 @@
           </aside>
         </div>
 
-        <!-- B - ⑤ 頭像對話框（獨立） -->
+        <div class="tool-block" data-tool="chat-pop" data-group="chat">
+</div>
+
+<!-- B - ⑤ 頭像對話框（獨立） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3257,7 +3403,10 @@
           </aside>
         </div>
 
-        <!-- B - ⑥ 走動頭像（獨立） -->
+        <div class="tool-block" data-tool="chat-walk" data-group="chat">
+</div>
+
+<!-- B - ⑥ 走動頭像（獨立） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3379,6 +3528,9 @@
             </div>
           </aside>
         </div>
+</div>
+
+
 
         <div class="band-group" id="group-local" data-group="local">
           <div class="band-group-mark" aria-hidden="true">C</div>
@@ -3388,7 +3540,8 @@
           </div>
         </div>
 
-        <!-- C - ① 倒計時 -->
+        <div class="tool-block" data-tool="countdown" data-group="local">
+<!-- C - ① 倒計時 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3553,7 +3706,10 @@
           </aside>
         </div>
 
-        <!-- C - ② 倒數天數 -->
+        <div class="tool-block" data-tool="days" data-group="local">
+</div>
+
+<!-- C - ② 倒數天數 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3716,7 +3872,10 @@
           </aside>
         </div>
 
-        <!-- C - ③ 遊戲名稱 -->
+        <div class="tool-block" data-tool="game" data-group="local">
+</div>
+
+<!-- C - ③ 遊戲名稱 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -3905,7 +4064,10 @@
           </aside>
         </div>
 
-        <!-- C - ⑤ 媒體播放 -->
+        <div class="tool-block" data-tool="media" data-group="local">
+</div>
+
+<!-- C - ⑤ 媒體播放 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
@@ -4000,8 +4162,9 @@
           上方可見 A／B／C 分類標頭與捷徑；各組內自行編號（略過含 4，如 A - ④／B - ④），例如 A - ①②③⑤、B - ①②③⑤⑥、C - ①②③⑤。各編號右邊網址加 OBS 瀏覽器來源即可（B - ② 回覆除外）。
         </div>
       </div>
+</div>
 
-      <div class="bands" style="margin-top: 18px">
+<div class="bands" style="margin-top: 18px">
         <div class="band band-solo">
           <section class="card">
             <div class="card-head">
@@ -4231,7 +4394,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v2.1.7";
+        const APP_VERSION = "v3.0.0";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4677,6 +4840,271 @@
           bar.setAttribute("aria-expanded", "true");
           return bar;
         }
+        const DEFAULT_TOOL_ORDER = [
+          "viewers",
+          "info",
+          "donate",
+          "counter",
+          "chat",
+          "reply",
+          "danmaku",
+          "chat-pop",
+          "chat-walk",
+          "countdown",
+          "days",
+          "game",
+          "media",
+        ];
+        const TOOL_ORDER_KEY = "laji_obs_toolbox_tool_order";
+        const LAYOUT_MODE_KEY = "laji_obs_toolbox_layout_mode";
+
+        function getMainBandsRoot() {
+          return document.querySelector(".bands");
+        }
+
+        function readLayoutMode() {
+          return localStorage.getItem(LAYOUT_MODE_KEY) === "custom" ? "custom" : "default";
+        }
+
+        function writeLayoutMode(mode) {
+          try {
+            localStorage.setItem(
+              LAYOUT_MODE_KEY,
+              mode === "custom" ? "custom" : "default"
+            );
+          } catch (_) {}
+        }
+
+        function readToolOrder() {
+          try {
+            const raw = JSON.parse(localStorage.getItem(TOOL_ORDER_KEY) || "null");
+            if (!Array.isArray(raw)) return DEFAULT_TOOL_ORDER.slice();
+            const seen = new Set();
+            const out = [];
+            raw.forEach((id) => {
+              const s = String(id || "");
+              if (!DEFAULT_TOOL_ORDER.includes(s) || seen.has(s)) return;
+              seen.add(s);
+              out.push(s);
+            });
+            DEFAULT_TOOL_ORDER.forEach((id) => {
+              if (!seen.has(id)) out.push(id);
+            });
+            return out;
+          } catch (_) {
+            return DEFAULT_TOOL_ORDER.slice();
+          }
+        }
+
+        function writeToolOrder(order) {
+          try {
+            localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(order));
+          } catch (_) {}
+        }
+
+        function currentToolOrderFromDom() {
+          const root = getMainBandsRoot();
+          if (!root) return DEFAULT_TOOL_ORDER.slice();
+          return [...root.querySelectorAll(":scope > .tool-block")]
+            .map((el) => el.dataset.tool)
+            .filter((id) => DEFAULT_TOOL_ORDER.includes(id));
+        }
+
+        function applyToolOrder(order) {
+          const root = getMainBandsRoot();
+          if (!root) return;
+          const shared = root.querySelector(":scope > .band.band-solo");
+          const groups = {
+            account: root.querySelector("#group-account"),
+            chat: root.querySelector("#group-chat"),
+            local: root.querySelector("#group-local"),
+          };
+          const blocks = [...root.querySelectorAll(":scope > .tool-block")];
+          const byId = {};
+          blocks.forEach((b) => {
+            if (b.dataset.tool) byId[b.dataset.tool] = b;
+          });
+          const seen = new Set();
+          const finalOrder = [];
+          (Array.isArray(order) ? order : DEFAULT_TOOL_ORDER).forEach((id) => {
+            if (byId[id] && !seen.has(id)) {
+              finalOrder.push(id);
+              seen.add(id);
+            }
+          });
+          DEFAULT_TOOL_ORDER.forEach((id) => {
+            if (byId[id] && !seen.has(id)) {
+              finalOrder.push(id);
+              seen.add(id);
+            }
+          });
+          const frag = document.createDocumentFragment();
+          if (shared) frag.appendChild(shared);
+          let lastGroup = null;
+          finalOrder.forEach((id) => {
+            const block = byId[id];
+            const g = block.dataset.group;
+            if (g && g !== lastGroup && groups[g]) {
+              frag.appendChild(groups[g]);
+              lastGroup = g;
+            }
+            frag.appendChild(block);
+          });
+          ["account", "chat", "local"].forEach((g) => {
+            if (groups[g] && !frag.contains(groups[g])) frag.appendChild(groups[g]);
+          });
+          root.appendChild(frag);
+        }
+
+        function ensureToolDragHandle(block) {
+          const firstBand = block.querySelector(":scope > .band");
+          if (!firstBand) return null;
+          ensureBandStructure(firstBand);
+          const bar = firstBand.querySelector(":scope > .band-bar");
+          if (!bar) return null;
+          let handle = bar.querySelector(":scope > .drag-handle");
+          if (!handle) {
+            handle = document.createElement("button");
+            handle.type = "button";
+            handle.className = "drag-handle";
+            handle.title = "拖曳排序";
+            handle.setAttribute("aria-label", "拖曳排序");
+            handle.textContent = "⋮⋮";
+            bar.insertBefore(handle, bar.firstChild);
+            handle.addEventListener("click", (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+            });
+            handle.addEventListener("pointerdown", () => {
+              if (readLayoutMode() !== "custom") return;
+              block.draggable = true;
+            });
+          }
+          return handle;
+        }
+
+        function setLayoutMode(mode, { persist = true } = {}) {
+          const next = mode === "custom" ? "custom" : "default";
+          if (persist) writeLayoutMode(next);
+          document.body.classList.toggle("is-layout-custom", next === "custom");
+          const defBtn = $("layoutDefaultBtn");
+          const customBtn = $("layoutCustomBtn");
+          const hint = $("layoutModeHint");
+          if (defBtn) {
+            defBtn.classList.toggle("is-active", next === "default");
+            defBtn.setAttribute("aria-pressed", next === "default" ? "true" : "false");
+          }
+          if (customBtn) {
+            customBtn.classList.toggle("is-active", next === "custom");
+            customBtn.setAttribute("aria-pressed", next === "custom" ? "true" : "false");
+          }
+          if (hint) hint.hidden = next !== "custom";
+          if (next === "default") {
+            applyToolOrder(DEFAULT_TOOL_ORDER);
+          } else {
+            applyToolOrder(readToolOrder());
+          }
+          document.querySelectorAll(".bands > .tool-block").forEach((block) => {
+            ensureToolDragHandle(block);
+            if (next !== "custom") block.draggable = false;
+          });
+        }
+
+        function setupToolLayout() {
+          const root = getMainBandsRoot();
+          if (!root) return;
+          root.querySelectorAll(":scope > .tool-block").forEach((block) => {
+            ensureToolDragHandle(block);
+            block.addEventListener("dragstart", (ev) => {
+              if (readLayoutMode() !== "custom" || !block.draggable) {
+                ev.preventDefault();
+                return;
+              }
+              const id = block.dataset.tool || "";
+              if (!id) {
+                ev.preventDefault();
+                return;
+              }
+              try {
+                ev.dataTransfer.setData("text/tool-id", id);
+                ev.dataTransfer.setData("text/plain", id);
+                ev.dataTransfer.effectAllowed = "move";
+              } catch (_) {}
+              block.classList.add("is-dragging");
+              root.dataset.draggingTool = id;
+            });
+            block.addEventListener("dragend", () => {
+              block.classList.remove("is-dragging");
+              block.draggable = false;
+              delete root.dataset.draggingTool;
+              root
+                .querySelectorAll(".tool-block.is-drag-over")
+                .forEach((el) => el.classList.remove("is-drag-over"));
+            });
+            block.addEventListener("dragover", (ev) => {
+              if (readLayoutMode() !== "custom") return;
+              const from = root.dataset.draggingTool;
+              if (!from || from === block.dataset.tool) return;
+              ev.preventDefault();
+              try {
+                ev.dataTransfer.dropEffect = "move";
+              } catch (_) {}
+              root
+                .querySelectorAll(".tool-block.is-drag-over")
+                .forEach((el) => el.classList.remove("is-drag-over"));
+              block.classList.add("is-drag-over");
+            });
+            block.addEventListener("dragleave", () => {
+              block.classList.remove("is-drag-over");
+            });
+            block.addEventListener("drop", (ev) => {
+              if (readLayoutMode() !== "custom") return;
+              ev.preventDefault();
+              block.classList.remove("is-drag-over");
+              let from = "";
+              try {
+                from =
+                  ev.dataTransfer.getData("text/tool-id") ||
+                  ev.dataTransfer.getData("text/plain") ||
+                  root.dataset.draggingTool ||
+                  "";
+              } catch (_) {
+                from = root.dataset.draggingTool || "";
+              }
+              const to = block.dataset.tool || "";
+              if (!from || !to || from === to) return;
+              const order = currentToolOrderFromDom();
+              const fromIdx = order.indexOf(from);
+              const toIdx = order.indexOf(to);
+              if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+              order.splice(fromIdx, 1);
+              const insertAt = order.indexOf(to);
+              if (insertAt < 0) return;
+              order.splice(insertAt, 0, from);
+              writeToolOrder(order);
+              applyToolOrder(order);
+            });
+          });
+
+          const defBtn = $("layoutDefaultBtn");
+          const customBtn = $("layoutCustomBtn");
+          if (defBtn) {
+            defBtn.addEventListener("click", () => {
+              setLayoutMode("default");
+            });
+          }
+          if (customBtn) {
+            customBtn.addEventListener("click", () => {
+              // 進入切換時若尚無自訂順序，以目前／預設為起點
+              if (!localStorage.getItem(TOOL_ORDER_KEY)) {
+                writeToolOrder(currentToolOrderFromDom());
+              }
+              setLayoutMode("custom");
+            });
+          }
+          setLayoutMode(readLayoutMode(), { persist: false });
+        }
+
         function setupCollapsibles() {
           const map = loadCollapsedMap();
           document.querySelectorAll(".bands .band").forEach((band) => {
@@ -4691,7 +5119,7 @@
             bandsRoot.addEventListener("click", (ev) => {
               const bar = ev.target.closest(".band-bar");
               if (!bar || !bandsRoot.contains(bar)) return;
-              if (ev.target.closest("a, input, select, textarea, label")) return;
+              if (ev.target.closest("a, input, select, textarea, label, .drag-handle")) return;
               const band = bar.closest(".band");
               if (!band) return;
               setCollapsed(band, !band.classList.contains("is-collapsed"));
@@ -4879,12 +5307,25 @@
               }
             }
           });
+          document.querySelectorAll(".bands .tool-block").forEach((block) => {
+            const any = [...block.querySelectorAll(":scope > .band")].some(
+              (b) => !b.classList.contains("is-filtered-out")
+            );
+            block.classList.toggle("is-filtered-out", !!q && !any);
+          });
           document.querySelectorAll(".bands .band-group").forEach((group) => {
             const selfHit =
               !q || (group.textContent || "").toLowerCase().includes(q);
             let anyBand = false;
             let el = group.nextElementSibling;
             while (el && !el.classList.contains("band-group")) {
+              if (
+                el.classList.contains("tool-block") &&
+                !el.classList.contains("is-filtered-out")
+              ) {
+                anyBand = true;
+                break;
+              }
               if (
                 el.classList.contains("band") &&
                 !el.classList.contains("is-filtered-out")
@@ -4916,6 +5357,7 @@
         }
         setupCollapsibles();
         setupSubfolds();
+        setupToolLayout();
         // 備份／還原在第二個 .bands，舊版收合後可能點不開；開頁強制展開一次
         document.querySelectorAll(".bands .band").forEach((band) => {
           const title = band.querySelector(":scope > .band-bar .band-bar-title");
@@ -5297,6 +5739,8 @@
               })(),
               chatStyles: loadChatStyles(),
               sheetSyncUrl: readSheetSyncUrl(),
+              layoutMode: readLayoutMode(),
+              toolOrder: readToolOrder(),
             },
           };
         }
@@ -5404,6 +5848,19 @@
             writeSheetSyncUrl(data.extras.sheetSyncUrl);
             const urlEl = $("sheetSyncUrl") || $("sheetImportUrl");
             if (urlEl) urlEl.value = data.extras.sheetSyncUrl;
+          }
+          if (Array.isArray(data.extras?.toolOrder)) {
+            writeToolOrder(
+              data.extras.toolOrder
+                .map((id) => String(id || ""))
+                .filter((id) => DEFAULT_TOOL_ORDER.includes(id))
+            );
+          }
+          if (typeof data.extras?.layoutMode === "string") {
+            writeLayoutMode(data.extras.layoutMode === "custom" ? "custom" : "default");
+          }
+          if (typeof setLayoutMode === "function") {
+            setLayoutMode(readLayoutMode(), { persist: false });
           }
           syncAllBgFields();
           syncStylePlaceholders();
@@ -5534,6 +5991,10 @@
           if (ex.chatStyles) push("extras.chatStyles", ex.chatStyles);
           if (ex.sheetSyncUrl) push("extras.sheetSyncUrl", ex.sheetSyncUrl);
           else if (readSheetSyncUrl()) push("extras.sheetSyncUrl", readSheetSyncUrl());
+          if (ex.layoutMode) push("extras.layoutMode", ex.layoutMode);
+          else push("extras.layoutMode", readLayoutMode());
+          if (ex.toolOrder) push("extras.toolOrder", ex.toolOrder);
+          else push("extras.toolOrder", readToolOrder());
           return rows;
         }
 

@@ -5211,11 +5211,26 @@
           }
         }
 
+        function exportDateStamp() {
+          const d = new Date();
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          return `${y}${m}${day}`;
+        }
+
+        /** 下載檔名：拉基的OBS工具箱-{用途}-{YYYYMMDD}-{版號}.{ext} */
+        function exportDownloadName(kind, ext) {
+          const label = String(kind || "設定").trim() || "設定";
+          const e = String(ext || "csv").replace(/^\./, "");
+          return `拉基的OBS工具箱-${label}-${exportDateStamp()}-${APP_VERSION}.${e}`;
+        }
+
         function downloadAccountTxtFile(text) {
           const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
           const a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
-          a.download = "帳號.txt";
+          a.download = exportDownloadName("帳號", "txt");
           a.rel = "noopener";
           a.style.display = "none";
           document.body.appendChild(a);
@@ -8287,16 +8302,9 @@ function syncYtAfterTwUi() {
           }
         }
 
-        function downloadTextFile(filename, text) {
-          const blob = new Blob([text], { type: "application/octet-stream" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 2500);
+        function downloadStarterBatFile(filename, text) {
+          // 與上方 downloadTextFile(text, filename, mime) 分開，避免參數順序蓋掉 CSV／備份下載
+          downloadTextFile(text, filename, "application/octet-stream");
         }
 
         function buildMediaServerStarterBat(rootWin) {
@@ -8332,7 +8340,7 @@ function syncYtAfterTwUi() {
           // 瀏覽器不能直接執行 bat；只在「伺服器未開」時才下載啟動檔
           const root = getToolRootWinPath();
           if (root) {
-            downloadTextFile(
+            downloadStarterBatFile(
               "start-obs-media-server.bat",
               buildMediaServerStarterBat(root)
             );
@@ -9137,9 +9145,9 @@ function syncYtAfterTwUi() {
         if (backupSetupBtn) {
           backupSetupBtn.addEventListener("click", () => {
             const snap = collectSetupSnapshot();
-            const stamp = new Date().toISOString().slice(0, 10);
-            downloadJsonFile(snap, `my_OBS_tools-backup-${stamp}.json`);
-            setBackupStatus(`已下載備份 ${stamp}（完整設定 JSON）`);
+            const name = exportDownloadName("設定", "json");
+            downloadJsonFile(snap, name);
+            setBackupStatus(`已下載 ${name}`);
             const old = backupSetupBtn.textContent;
             backupSetupBtn.textContent = "已下載備份";
             setTimeout(() => {
@@ -9189,13 +9197,9 @@ function syncYtAfterTwUi() {
         if (exportSheetCsvBtn) {
           exportSheetCsvBtn.addEventListener("click", () => {
             const rows = snapshotToSheetRows(collectSetupSnapshot());
-            const stamp = new Date().toISOString().slice(0, 10);
-            downloadTextFile(
-              rowsToCsv(rows),
-              `my_OBS_tools-sheet-${stamp}.csv`,
-              "text/csv"
-            );
-            setBackupStatus(`已下載試算表 CSV ${stamp}（可上傳／貼到 Google 試算表）`);
+            const name = exportDownloadName("設定", "csv");
+            downloadTextFile(rowsToCsv(rows), name, "text/csv");
+            setBackupStatus(`已下載 ${name}（可上傳／貼到 Google 試算表）`);
             const old = exportSheetCsvBtn.textContent;
             exportSheetCsvBtn.textContent = "已下載 CSV";
             setTimeout(() => {

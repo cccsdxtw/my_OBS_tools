@@ -246,6 +246,12 @@
         border-color: var(--accent);
       }
 
+      .card-toggle:active,
+      .card-toggle.is-pressed {
+        transform: translateY(1px) scale(0.96);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+      }
+
       .band.is-collapsed > .band-body {
         display: none;
       }
@@ -277,6 +283,12 @@
 
       .subfold-toggle:hover {
         background: color-mix(in srgb, var(--steps-bg) 70%, transparent);
+      }
+
+      .subfold-toggle:active,
+      .subfold-toggle.is-pressed {
+        transform: translateY(1px) scale(0.99);
+        background: color-mix(in srgb, var(--accent) 12%, var(--steps-bg));
       }
 
       .subfold-title {
@@ -640,10 +652,31 @@
         border: 1px solid var(--line);
       }
 
+      .chip-row button:hover:not(:disabled) {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+      }
+
+      .chip-row button:active:not(:disabled),
+      .chip-row button.is-pressed:not(:disabled) {
+        transform: translateY(1px) scale(0.96);
+        background: color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+
       .chip-row button.is-active {
         background: var(--accent);
         color: #fff;
         border-color: transparent;
+      }
+
+      .chip-row button.is-active:hover:not(:disabled) {
+        filter: brightness(1.06);
+        background: var(--accent);
+      }
+
+      .chip-row button.is-active:active:not(:disabled),
+      .chip-row button.is-active.is-pressed:not(:disabled) {
+        filter: brightness(0.92);
       }
 
       .chip-row button.history {
@@ -677,6 +710,31 @@
         font: inherit;
         font-weight: 600;
         text-decoration: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        user-select: none;
+        transition:
+          filter 0.12s ease,
+          box-shadow 0.12s ease,
+          background 0.12s ease,
+          border-color 0.12s ease,
+          color 0.12s ease;
+        /* transform 不動畫：按下立刻縮小，手感比較清楚 */
+      }
+
+      button:hover:not(:disabled),
+      .btn:hover {
+        filter: brightness(1.07);
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+      }
+
+      button:active:not(:disabled),
+      .btn:active,
+      button.is-pressed:not(:disabled),
+      .btn.is-pressed {
+        transform: translateY(1px) scale(0.96);
+        filter: brightness(0.9);
+        box-shadow: none;
       }
 
       button.secondary,
@@ -684,6 +742,33 @@
         background: transparent;
         color: var(--ink);
         border: 1px solid var(--line);
+      }
+
+      button.secondary:hover:not(:disabled),
+      .btn.secondary:hover {
+        filter: none;
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        border-color: var(--accent);
+        color: var(--ink);
+        box-shadow: none;
+      }
+
+      button.secondary:active:not(:disabled),
+      .btn.secondary:active,
+      button.secondary.is-pressed:not(:disabled),
+      .btn.secondary.is-pressed {
+        filter: none;
+        background: color-mix(in srgb, var(--accent) 22%, transparent);
+        transform: translateY(1px) scale(0.96);
+      }
+
+      button:disabled,
+      .btn[aria-disabled="true"] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none !important;
+        filter: none !important;
+        box-shadow: none !important;
       }
 
       .steps {
@@ -946,6 +1031,76 @@
         filter: brightness(1.05);
       }
 
+      .sponsor .kofi-btn:active,
+      .sponsor .kofi-btn.is-pressed {
+        transform: translateY(1px) scale(0.96);
+        filter: brightness(0.92);
+      }
+
+      .bug-report {
+        margin-top: 12px;
+        padding: 14px 14px 12px;
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        background: var(--steps-bg);
+      }
+
+      .bug-report h3 {
+        margin: 0 0 4px;
+        font-size: 0.95rem;
+      }
+
+      .bug-report > p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
+      .bug-report-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .bug-report-list li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 10px;
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      .bug-report-list .tag {
+        flex: 0 0 auto;
+        min-width: 4.5em;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 0.82rem;
+      }
+
+      .bug-report-list a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .bug-report-list a:hover {
+        color: var(--accent-2);
+        text-decoration: underline;
+      }
+
+      .bug-report-list .mail {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88rem;
+        font-weight: 500;
+        word-break: break-all;
+      }
+
       .apply-dock {
         position: fixed;
         left: 0;
@@ -1091,10 +1246,10 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v1.8.1</span>
+          <span class="brand-version" id="brandVersion">v2.1.0</span>
         </h1>
         <p>
-          先填最上方的共用設定，再於各橫列調整樣式並複製 OBS 網址。資訊條／觀眾人數／倒計時／遊戲名稱／聊天室／計數器可分開放來源。
+          先填最上方的共用設定，再依序：帳號相關 → 聊天相關 → 免帳號。各橫列可分開放 OBS 來源。
         </p>
       </header>
 
@@ -1103,7 +1258,7 @@
         <input
           id="pageSearch"
           type="search"
-          placeholder="例如：聊天、倒計時、帳號、贊助…"
+          placeholder="例如：聊天、倒計時、帳號、贊助、BUG…"
           autocomplete="off"
         />
         <div class="page-tools-actions">
@@ -1158,6 +1313,15 @@
               來源約數十秒內會跟上（第一次可能要請你選工具資料夾以允許寫入）。金鑰需啟用 YouTube Data API v3。
             </p>
 
+            <datalist id="fontFamilySuggest">
+              <option value="IBM Plex Sans TC"></option>
+              <option value="Noto Sans TC"></option>
+              <option value="Microsoft JhengHei"></option>
+              <option value="PingFang TC"></option>
+              <option value="Source Han Sans TC"></option>
+              <option value="Inter"></option>
+              <option value="Roboto"></option>
+            </datalist>
             <div class="row">
               <div>
                 <label for="defaultFontSize">預設字級</label>
@@ -1173,6 +1337,33 @@
             </div>
             <div class="row">
               <div>
+                <label for="defaultFontFamily">預設字形</label>
+                <input
+                  id="defaultFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="空白＝內建 IBM Plex 等"
+                />
+              </div>
+              <div>
+                <label for="defaultFontUploadBtn">上傳字形</label>
+                <div class="actions" style="margin-top: 0">
+                  <button type="button" class="secondary" id="defaultFontUploadBtn">選擇字型檔</button>
+                  <input
+                    type="file"
+                    id="defaultFontUploadFile"
+                    accept=".ttf,.otf,.woff,.woff2,.ttc,font/ttf,font/otf,font/woff,font/woff2"
+                    hidden
+                  />
+                </div>
+              </div>
+            </div>
+            <p class="hint" id="defaultFontHint" style="margin-top: 6px">
+              字形可填字型名稱（如 <code>Noto Sans TC</code>），或 <code>fonts/我的字.ttf</code>。上傳會寫入工具夾
+              <code>fonts/</code> 並自動填路徑（需授權資料夾）。各窗空白＝用這裡。
+            </p>
+            <div class="row">
+              <div>
                 <label for="defaultIconColor">預設圖示色</label>
                 <div class="color-pair">
                   <input id="defaultIconColor" type="text" placeholder="空白＝跟文字色" />
@@ -1182,7 +1373,7 @@
               <div></div>
             </div>
             <p class="hint">
-              這裡是各窗共用的預設樣式：字級／文字色／圖示色／底色／底圖。各橫列沒填（或底圖選「用預設」）就沿用這裡。圖示色空白＝跟文字色。
+              這裡是各窗共用的預設樣式：字級／字形／文字色／圖示色／底色／底圖。各橫列沒填（或底圖選「用預設」）就沿用這裡。圖示色空白＝跟文字色。
             </p>
 
                         <div class="subfold is-collapsed" data-subfold="default-bg">
@@ -1283,11 +1474,215 @@
           </section>
         </div>
 
-        <!-- ① 資訊條 -->
+                <!-- A · 需要帳號／API：①②③⑤ -->
+<!-- ① 觀眾人數 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>① 資訊條設定</h2>
+              <h2>① 觀眾人數（TW + YT）</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              使用最上方的共用設定帳號。開台／離線可設不同更新秒數（開台要快、關台可慢）。YouTube：預設等
+              Twitch 開台後才查（此時無視 YT 秒數，改跟 TW 一起查）。也可用下方手動「開台／關台」強制狀態。YT
+              抓不到顯示同色「無法取得」。入口預覽也會打 API，OBS 開著可先收合預覽。
+            </p>
+
+            <div class="field">
+              <label for="vcMode">顯示方式</label>
+              <select id="vcMode">
+                <option value="split" selected>分開：圖示＋人數</option>
+                <option value="total">加總</option>
+              </select>
+            </div>
+            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              更新秒數
+            </p>
+            <div class="row" style="margin-top: 8px">
+              <div>
+                <label for="twPollLiveSec">TW 開台（秒）</label>
+                <input id="twPollLiveSec" type="number" min="5" max="600" value="15" />
+              </div>
+              <div>
+                <label for="twPollOffSec">TW 離線（秒）</label>
+                <input id="twPollOffSec" type="number" min="15" max="3600" value="90" />
+              </div>
+            </div>
+            <div class="row" id="ytPollRows">
+              <div>
+                <label for="ytPollLiveSec">YT 開台（秒）</label>
+                <input id="ytPollLiveSec" type="number" min="15" max="3600" value="60" />
+              </div>
+              <div>
+                <label for="ytPollOffSec">YT 離線（秒）</label>
+                <input id="ytPollOffSec" type="number" min="30" max="7200" value="300" />
+              </div>
+            </div>
+            <label class="check" style="margin-top: 10px"
+              ><input type="checkbox" id="ytAfterTw" checked /> Twitch
+              開台後才查 YouTube 人數</label
+            >
+            <p class="hint" id="ytAfterTwHint">
+              勾選＝YT 秒數忽略，跟 TW 節奏走；TW 還沒開台時 YT 顯示 0。
+            </p>
+
+            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              手動開台狀態
+            </p>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" id="streamLiveBtn">開台</button>
+              <button type="button" class="secondary" id="streamOffBtn">關台</button>
+              <button type="button" class="secondary" id="streamAutoBtn">自動</button>
+            </div>
+            <p class="hint" id="streamLiveStatus">目前：自動（依 Twitch 偵測）</p>
+            <p class="hint">
+              寫入 <code>資料/stream-live.js</code>，已開著的 OBS 人數來源會跟上。開台＝強制當開台（YT
+              可立刻查、用開台秒數）；關台＝強制當離線；自動＝交回偵測。
+            </p>
+
+            <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              平台左右順序
+            </p>
+            <div class="checks" id="vcPlatforms">
+              <div class="mod-row" data-key="tw">
+                <label>Twitch</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="twShowIcon" checked /> 顯示圖示</label
+                >
+                <input
+                  id="twIcon"
+                  type="text"
+                  placeholder="空白＝預設 Twitch 圖示；可貼圖片網址"
+                  style="grid-column: 1 / -1"
+                />
+              </div>
+              <div class="mod-row" data-key="yt">
+                <label>YouTube</label>
+                <div class="mod-move">
+                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
+                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
+                </div>
+                <label style="grid-column: 1 / -1; margin-top: 4px"
+                  ><input type="checkbox" id="ytShowIcon" checked /> 顯示圖示</label
+                >
+                <input
+                  id="ytIcon"
+                  type="text"
+                  placeholder="空白＝預設 YouTube 圖示；可貼圖片網址"
+                  style="grid-column: 1 / -1"
+                />
+              </div>
+            </div>
+            <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。勾選才顯示圖示；空白用平台預設，也可貼 PNG／SVG／WebP。</p>
+            <div class="row">
+              <div>
+                <label for="viewersFontSize">字級</label>
+                <input id="viewersFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="viewersColor">文字色</label>
+                <input id="viewersColor" type="text" placeholder="用預設" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="viewersFontFamily">字形</label>
+                <input
+                  id="viewersFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <p class="hint">字級／字形／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>① 觀眾人數網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="vcUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
+            <div class="actions">
+              <button type="button" id="copyVc">複製人數網址</button>
+              <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewVc" title="viewers preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="viewers-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+<div class="row">
+              <div>
+                <label><input type="checkbox" id="viewersShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="viewersBg">底色</label>
+                <input id="viewersBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="viewersShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="viewersPanelFit">底圖顯示</label>
+                <select id="viewersPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="viewersPanelImgRow">
+              <div>
+                <label for="viewersPanelImg">底圖網址</label>
+                <input
+                  id="viewersPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="viewersPanelInset">外推（px）</label>
+                <input
+                  id="viewersPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
+              </div>
+            </div>
+
+          </aside>
+        </div>
+
+        <!-- ② 資訊條 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>② 資訊條設定</h2>
               <span class="side-title">日期／時間／開台／國旗</span>
             </div>
 
@@ -1458,14 +1853,27 @@
                 </div>
               </div>
             </div>
-            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。底圖空白＝用最上方預設底圖。</p>
+            <div class="row">
+              <div>
+                <label for="overlayFontFamily">字形</label>
+                <input
+                  id="overlayFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <p class="hint">字級／字形／文字色／圖示色空白＝用最上方預設。底色取消勾選＝透明。底圖空白＝用最上方預設底圖。</p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
 
           <aside class="card">
             <div class="card-head">
-              <h2>① 資訊條網址</h2>
+              <h2>② 資訊條網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="url" class="url-box" readonly></textarea>
@@ -1535,998 +1943,11 @@
           </aside>
         </div>
 
-        <!-- ② 觀眾人數 -->
+        <!-- ③ 贊助條 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>② 觀眾人數（TW + YT）</h2>
-              <span class="side-title">獨立來源</span>
-            </div>
-            <p class="hint">
-              使用最上方的共用設定帳號。YouTube：有填「直播網址／影片 ID」最省（只查人數）。
-              沒填時「自動找直播」整場最多成功一次並記住，之後只輪詢人數、不再重找；下播後約 2
-              小時內也不再自動找。入口預覽也會打 API，OBS 開著可先收合預覽。
-            </p>
-
-            <div class="field">
-              <label for="vcMode">顯示方式</label>
-              <select id="vcMode">
-                <option value="split" selected>分開：圖示＋人數</option>
-                <option value="total">加總</option>
-              </select>
-            </div>
-
-            <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
-              平台左右順序
-            </p>
-            <div class="checks" id="vcPlatforms">
-              <div class="mod-row" data-key="tw">
-                <label>Twitch</label>
-                <div class="mod-move">
-                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
-                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
-                </div>
-                <label style="grid-column: 1 / -1; margin-top: 4px"
-                  ><input type="checkbox" id="twShowIcon" checked /> 顯示圖示</label
-                >
-                <input
-                  id="twIcon"
-                  type="text"
-                  placeholder="空白＝預設 Twitch 圖示；可貼圖片網址"
-                  style="grid-column: 1 / -1"
-                />
-              </div>
-              <div class="mod-row" data-key="yt">
-                <label>YouTube</label>
-                <div class="mod-move">
-                  <button type="button" data-dir="up" title="往左（往前）" aria-label="往前">↑</button>
-                  <button type="button" data-dir="down" title="往右（往後）" aria-label="往後">↓</button>
-                </div>
-                <label style="grid-column: 1 / -1; margin-top: 4px"
-                  ><input type="checkbox" id="ytShowIcon" checked /> 顯示圖示</label
-                >
-                <input
-                  id="ytIcon"
-                  type="text"
-                  placeholder="空白＝預設 YouTube 圖示；可貼圖片網址"
-                  style="grid-column: 1 / -1"
-                />
-              </div>
-            </div>
-            <p class="hint">用 ↑↓ 調整左右順序（列表上＝左邊）。勾選才顯示圖示；空白用平台預設，也可貼 PNG／SVG／WebP。</p>
-            <div class="row">
-              <div>
-                <label for="viewersFontSize">字級</label>
-                <input id="viewersFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="viewersColor">文字色</label>
-                <input id="viewersColor" type="text" placeholder="用預設" />
-              </div>
-            </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。底色可跟其他橫列分開。</p>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>② 觀眾人數網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="vcUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
-            <div class="actions">
-              <button type="button" id="copyVc">複製人數網址</button>
-              <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewVc" title="viewers preview"></iframe>
-            </div>
-            <div class="subfold is-collapsed" data-subfold="viewers-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-<div class="row">
-              <div>
-                <label><input type="checkbox" id="viewersShowBg" checked /> 顯示底色</label>
-              </div>
-              <div class="field" style="margin-top: 0">
-                <label for="viewersBg">底色</label>
-                <input id="viewersBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="viewersShowPanelImg" /> 顯示底圖</label
-                >
-              </div>
-              <div>
-                <label for="viewersPanelFit">底圖顯示</label>
-                <select id="viewersPanelFit">
-                  <option value="">用預設</option>
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="viewersPanelImgRow">
-              <div>
-                <label for="viewersPanelImg">底圖網址</label>
-                <input
-                  id="viewersPanelImg"
-                  type="text"
-                  placeholder="空白＝用上方預設底圖"
-                />
-              </div>
-              <div>
-                <label for="viewersPanelInset">外推（px）</label>
-                <input
-                  id="viewersPanelInset"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="用預設"
-                />
-              </div>
-            </div>
-
-              </div>
-            </div>
-
-          </aside>
-        </div>
-
-        <!-- ③ 倒計時 -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>③ 倒計時</h2>
-              <span class="side-title">獨立來源</span>
-            </div>
-
-            <div class="field">
-              <label for="countdown">目標時間（本地）</label>
-              <input id="countdown" type="datetime-local" step="1" />
-            </div>
-            <div class="row">
-              <div>
-                <label for="cdMins">或：從現在起（分鐘）</label>
-                <input id="cdMins" type="number" min="0" step="1" placeholder="例如 10" />
-              </div>
-              <div>
-                <label for="cdLabel">倒計時標籤</label>
-                <input id="cdLabel" type="text" placeholder="START" />
-              </div>
-            </div>
-            <div class="actions" style="margin-top: 12px">
-              <a
-                class="btn secondary"
-                href="https://fonts.google.com/icons"
-                target="_blank"
-                rel="noopener"
-                >開啟 Google Icons 圖示庫</a
-              >
-            </div>
-            <div class="field">
-              <label><input type="checkbox" id="cdShowIcon" checked /> 顯示圖示</label>
-            </div>
-            <div class="field">
-              <label for="cdIcon">倒計時圖示</label>
-              <input
-                id="cdIcon"
-                type="text"
-                list="materialIconSuggest"
-                placeholder="空白＝預設 hourglass_empty；或圖片網址"
-              />
-            </div>
-            <div class="row">
-              <div>
-                <label for="countdownIconColor">圖示色</label>
-                <div class="color-pair">
-                  <input id="countdownIconColor" type="text" placeholder="用預設／文字色" />
-                  <input type="color" data-sync="countdownIconColor" value="#ffffff" title="快速選色" />
-                </div>
-              </div>
-              <div></div>
-            </div>
-            <p class="hint">勾選才顯示圖示；勾了沒填＝預設沙漏。貼圖片網址則不套用圖示色。</p>
-            <div class="row">
-              <div>
-                <label for="countdownFontSize">字級</label>
-                <input id="countdownFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="countdownColor">文字色</label>
-                <div class="color-pair">
-                  <input id="countdownColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="countdownColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
-            <p class="hint">目標時間與「從現在起」擇一。字級／文字色空白＝用最上方預設。</p>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>③ 倒計時網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="cdUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 220–360、高度 40–60。</p>
-            <div class="actions">
-              <button type="button" id="copyCd">複製倒計時網址</button>
-              <a class="btn secondary" id="openCd" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewCd" title="countdown preview"></iframe>
-            </div>
-            <div class="subfold is-collapsed" data-subfold="countdown-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-<div class="row">
-              <div>
-                <label><input type="checkbox" id="countdownShowBg" checked /> 顯示底色</label>
-              </div>
-              <div class="field" style="margin-top: 0">
-                <label for="countdownBg">底色</label>
-                <input id="countdownBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="countdownShowPanelImg" /> 顯示底圖</label
-                >
-              </div>
-              <div>
-                <label for="countdownPanelFit">底圖顯示</label>
-                <select id="countdownPanelFit">
-                  <option value="">用預設</option>
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="countdownPanelImgRow">
-              <div>
-                <label for="countdownPanelImg">底圖網址</label>
-                <input
-                  id="countdownPanelImg"
-                  type="text"
-                  placeholder="空白＝用上方預設底圖"
-                />
-              </div>
-              <div>
-                <label for="countdownPanelInset">外推（px）</label>
-                <input
-                  id="countdownPanelInset"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="用預設"
-                />
-              </div>
-            </div>
-
-              </div>
-            </div>
-
-          </aside>
-        </div>
-
-        <!-- ⑤ 倒數天數（跳過 ④） -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑤ 倒數天數</h2>
-              <span class="side-title">離今天幾天</span>
-            </div>
-            <p class="hint">選一個目標日期，顯示還有幾天（依本地日曆日計算）。</p>
-            <div class="field">
-              <label for="daysDate">目標日期</label>
-              <input id="daysDate" type="date" />
-            </div>
-            <div class="row">
-              <div>
-                <label for="daysLabel">標籤（選填）</label>
-                <input id="daysLabel" type="text" placeholder="例如：距離活動" />
-              </div>
-              <div>
-                <label for="daysUnit">單位文字</label>
-                <input id="daysUnit" type="text" value="天" placeholder="天" />
-              </div>
-            </div>
-            <div class="actions" style="margin-top: 12px">
-              <a
-                class="btn secondary"
-                href="https://fonts.google.com/icons"
-                target="_blank"
-                rel="noopener"
-                >開啟 Google Icons 圖示庫</a
-              >
-            </div>
-            <div class="field">
-              <label><input type="checkbox" id="daysShowIcon" checked /> 顯示圖示</label>
-            </div>
-            <div class="field">
-              <label for="daysIcon">倒數天數圖示</label>
-              <input
-                id="daysIcon"
-                type="text"
-                list="materialIconSuggest"
-                placeholder="空白＝預設 event_upcoming；或圖片網址"
-              />
-            </div>
-            <div class="row">
-              <div>
-                <label for="daysIconColor">圖示色</label>
-                <div class="color-pair">
-                  <input id="daysIconColor" type="text" placeholder="用預設／文字色" />
-                  <input type="color" data-sync="daysIconColor" value="#ffffff" title="快速選色" />
-                </div>
-              </div>
-              <div></div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="daysFontSize">字級</label>
-                <input id="daysFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="daysColor">文字色</label>
-                <div class="color-pair">
-                  <input id="daysColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="daysColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
-                                  </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑤ 倒數天數網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="daysUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 180–320、高度 40–60。</p>
-            <div class="actions">
-              <button type="button" id="copyDays">複製倒數天數網址</button>
-              <a class="btn secondary" id="openDays" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewDays" title="days preview"></iframe>
-            </div>
-            <div class="subfold is-collapsed" data-subfold="days-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-<div class="row">
-              <div>
-                <label><input type="checkbox" id="daysShowBg" checked /> 顯示底色</label>
-              </div>
-              <div class="field" style="margin-top: 0">
-                <label for="daysBg">底色</label>
-                <input id="daysBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="daysShowPanelImg" /> 顯示底圖</label
-                >
-              </div>
-              <div>
-                <label for="daysPanelFit">底圖顯示</label>
-                <select id="daysPanelFit">
-                  <option value="">用預設</option>
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="daysPanelImgRow">
-              <div>
-                <label for="daysPanelImg">底圖網址</label>
-                <input
-                  id="daysPanelImg"
-                  type="text"
-                  placeholder="空白＝用上方預設底圖"
-                />
-              </div>
-              <div>
-                <label for="daysPanelInset">外推（px）</label>
-                <input
-                  id="daysPanelInset"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="用預設"
-                />
-              </div>
-            </div>
-
-              </div>
-            </div>
-
-          </aside>
-        </div>
-
-        <!-- ⑥ 遊戲名稱 -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑥ 遊戲名稱</h2>
-              <span class="side-title">獨立來源</span>
-            </div>
-            <p class="hint">顯示格式：<code>標籤： 平台 - 遊戲名</code>（例如「遊戲名稱： PC - 艾爾登法環」）</p>
-
-            <div class="field">
-              <label for="gameLabel">標籤</label>
-              <input id="gameLabel" type="text" value="遊戲名稱" placeholder="遊戲名稱" />
-            </div>
-
-            <label style="display: block; margin-top: 14px">平台（快速選）</label>
-            <div class="chip-row" id="gamePlatformPresets" role="group" aria-label="平台快捷">
-              <button type="button" data-platform="PC">PC</button>
-              <button type="button" data-platform="PS5">PS5</button>
-              <button type="button" data-platform="NS2">NS2</button>
-              <button type="button" data-platform="電競掌機">電競掌機</button>
-              <button type="button" data-platform="iOS">iOS</button>
-              <button type="button" data-platform="ANDROID">ANDROID</button>
-            </div>
-            <div class="field">
-              <label for="gamePlatform">平台</label>
-              <input id="gamePlatform" type="text" list="gamePlatformSuggest" value="PC" placeholder="PC / PS5 / NS2…" />
-              <datalist id="gamePlatformSuggest">
-                <option value="PC"></option>
-                <option value="PS5"></option>
-                <option value="NS2"></option>
-                <option value="電競掌機"></option>
-                <option value="iOS"></option>
-                <option value="ANDROID"></option>
-              </datalist>
-            </div>
-
-            <div class="field">
-              <label for="gameName">遊戲名</label>
-              <input id="gameName" type="text" list="gameNameSuggest" placeholder="例如 艾爾登法環" />
-              <datalist id="gameNameSuggest"></datalist>
-            </div>
-            <div class="actions" style="margin-top: 10px">
-              <button type="button" id="saveGameHistory" class="secondary">記住目前組合</button>
-              <button type="button" id="clearGameHistory" class="secondary">清除紀錄</button>
-            </div>
-            <p class="hint">最近用過的「平台 + 遊戲」會出現在下方，點一下即可套用；也會自動補進遊戲名建議清單。</p>
-            <div class="chip-row" id="gameHistoryList" aria-label="最近遊戲紀錄"></div>
-
-            <div class="actions" style="margin-top: 12px">
-              <a
-                class="btn secondary"
-                href="https://fonts.google.com/icons"
-                target="_blank"
-                rel="noopener"
-                >開啟 Google Icons 圖示庫</a
-              >
-            </div>
-            <div class="field">
-              <label><input type="checkbox" id="gameShowIcon" checked /> 顯示圖示</label>
-            </div>
-            <div class="field">
-              <label for="gameIcon">遊戲圖示</label>
-              <input
-                id="gameIcon"
-                type="text"
-                list="materialIconSuggest"
-                placeholder="空白＝預設 sports_esports；或圖片網址"
-              />
-            </div>
-            <div class="row">
-              <div>
-                <label for="gameIconColor">圖示色</label>
-                <div class="color-pair">
-                  <input id="gameIconColor" type="text" placeholder="用預設／文字色" />
-                  <input type="color" data-sync="gameIconColor" value="#ffffff" title="快速選色" />
-                </div>
-              </div>
-              <div></div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="gameFontSize">字級</label>
-                <input id="gameFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="gameColor">文字色</label>
-                <div class="color-pair">
-                  <input id="gameColor" type="text" placeholder="用預設" />
-                  <input type="color" data-sync="gameColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
-            <p class="hint">字級／文字色／圖示色空白＝用最上方預設。</p>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑥ 遊戲名稱網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-            <textarea id="gameUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 360–720、高度 40–60。換遊戲時改設定頁再複製，或直接改 OBS 網址參數。</p>
-            <div class="actions">
-              <button type="button" id="copyGame">複製遊戲名稱網址</button>
-              <a class="btn secondary" id="openGame" href="#" target="_blank" rel="noopener">預覽</a>
-            </div>
-            <div class="preview-wrap">
-              <iframe id="previewGame" title="game title preview"></iframe>
-            </div>
-            <div class="subfold is-collapsed" data-subfold="game-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-<div class="row">
-              <div>
-                <label><input type="checkbox" id="gameShowBg" checked /> 顯示底色</label>
-              </div>
-              <div class="field" style="margin-top: 0">
-                <label for="gameBg">底色</label>
-                <input id="gameBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="gameShowPanelImg" /> 顯示底圖</label
-                >
-              </div>
-              <div>
-                <label for="gamePanelFit">底圖顯示</label>
-                <select id="gamePanelFit">
-                  <option value="">用預設</option>
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="gamePanelImgRow">
-              <div>
-                <label for="gamePanelImg">底圖網址</label>
-                <input
-                  id="gamePanelImg"
-                  type="text"
-                  placeholder="空白＝用上方預設底圖"
-                />
-              </div>
-              <div>
-                <label for="gamePanelInset">外推（px）</label>
-                <input
-                  id="gamePanelInset"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="用預設"
-                />
-              </div>
-            </div>
-
-              </div>
-            </div>
-
-          </aside>
-        </div>
-
-        <!-- ⑦ 聊天室 -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑦ 聊天室（TW + YT）</h2>
-              <span class="side-title">獨立來源</span>
-            </div>
-            <p class="hint">
-              預設用最上方「本人」帳號。下面可再加<strong>連動／其他台</strong>的 Twitch、YouTube（逗號或換行分隔）。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。YouTube
-              建議填直播網址；沒填時自動找直播整場只找一次並與人數／贊助共用記住。
-            </p>
-            <div class="field" style="align-items: flex-start">
-              <label for="chatExtraTw">額外 Twitch（非本人）</label>
-              <textarea
-                id="chatExtraTw"
-                class="css-box"
-                style="min-height: 64px"
-                placeholder="例如&#10;friend_a&#10;friend_b&#10;（逗號或換行；不要填自己）"
-              ></textarea>
-            </div>
-            <div class="field" style="align-items: flex-start">
-              <label for="chatExtraYt">額外 YouTube（非本人）</label>
-              <textarea
-                id="chatExtraYt"
-                class="css-box"
-                style="min-height: 64px"
-                placeholder="例如&#10;@other_channel&#10;UCxxxxxxxx&#10;（逗號或換行；用最上方 API Key）"
-              ></textarea>
-            </div>
-            <div class="field">
-              <label for="chatExtraYtVideo">額外 YT 直播影片 ID（選填）</label>
-              <input
-                id="chatExtraYtVideo"
-                type="text"
-                placeholder="多個用逗號；可留空改自動找 live"
-              />
-            </div>
-            <p class="hint">額外台只影響聊天室；人數／開台仍只用最上方本人帳號。</p>
-            <div class="row">
-              <div>
-                <label for="chatLayout">1. 版面</label>
-                <select id="chatLayout">
-                  <option value="merge" selected>合併成一個（一頁）</option>
-                  <option value="split">分開成兩個（兩頁／兩個來源）</option>
-                </select>
-              </div>
-              <div id="chatSourceWrap">
-                <label for="chatSource">合併時來源</label>
-                <select id="chatSource">
-                  <option value="auto" selected>auto（有填就連）</option>
-                  <option value="both">TW + YT</option>
-                  <option value="twitch">只用 Twitch</option>
-                  <option value="youtube">只用 YouTube</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="chatStack">3. 方向</label>
-                <select id="chatStack">
-                  <option value="bottom" selected>從下到上（新在底部）</option>
-                  <option value="top">從上到下（新在頂部）</option>
-                </select>
-              </div>
-              <div>
-                <label for="chatTtl">2. 過幾秒最舊消失</label>
-                <input id="chatTtl" type="number" min="0" max="600" value="15" placeholder="0＝不限" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="chatMax">最多保留則數</label>
-                <input id="chatMax" type="number" min="5" max="100" value="30" />
-              </div>
-              <div>
-                <label
-                  ><input type="checkbox" id="chatShowSource" checked /> 6. 顯示留言來源（圖示）</label
-                >
-              </div>
-            </div>
-            <div class="row" id="chatSourceIconsRow">
-              <div>
-                <label for="chatTwIcon">TW 來源圖示</label>
-                <input
-                  id="chatTwIcon"
-                  type="text"
-                  placeholder="空白＝人數預設 Twitch 圖；可貼網址"
-                />
-              </div>
-              <div>
-                <label for="chatYtIcon">YT 來源圖示</label>
-                <input
-                  id="chatYtIcon"
-                  type="text"
-                  placeholder="空白＝人數預設 YouTube 圖；可貼網址"
-                />
-              </div>
-            </div>
-            <div class="row" id="chatSourceColorsRow">
-              <div>
-                <label for="chatTwIconColor">TW 圖示色</label>
-                <div class="color-pair">
-                  <input id="chatTwIconColor" type="text" value="#bf94ff" />
-                  <input
-                    type="color"
-                    data-sync="chatTwIconColor"
-                    value="#bf94ff"
-                    title="快速選色"
-                  />
-                </div>
-              </div>
-              <div>
-                <label for="chatYtIconColor">YT 圖示色</label>
-                <div class="color-pair">
-                  <input id="chatYtIconColor" type="text" value="#ff6b6b" />
-                  <input
-                    type="color"
-                    data-sync="chatYtIconColor"
-                    value="#ff6b6b"
-                    title="快速選色"
-                  />
-                </div>
-              </div>
-            </div>
-            <p class="hint">
-              2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。來源改顯示平台圖示（預設與②人數相同，可自己換）。圖示色預設為現在的紫／紅；只對內建 SVG 生效（自訂圖檔本身帶色）。
-            </p>
-            <div class="row">
-              <div>
-                <label for="chatFontSize">字級</label>
-                <input id="chatFontSize" type="number" min="12" max="64" placeholder="用預設" />
-              </div>
-              <div>
-                <label for="chatColor">文字色</label>
-                <input id="chatColor" type="text" placeholder="用預設" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
-              </div>
-              <div></div>
-            </div>
-            <p class="hint">字級／文字色空白＝用最上方預設。</p>
-            
-            <div class="field" style="align-items: flex-start">
-              <label for="chatCss">5. 自訂 CSS</label>
-              <textarea
-                id="chatCss"
-                class="css-box"
-                placeholder=".msg { font-size: 20px; }&#10;.plat.tw { color: #a970ff; }"
-              ></textarea>
-            </div>
-            <p class="hint">
-              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
-              每頁建議寬 360–480、高 500–720。
-            </p>
-
-            <div class="row">
-              <div>
-                <label for="chatStyleName">樣式預設名稱</label>
-                <input
-                  id="chatStyleName"
-                  type="text"
-                  placeholder="例如：粉框完整顯示"
-                  maxlength="40"
-                />
-              </div>
-              <div style="display: flex; align-items: flex-end">
-                <button type="button" id="saveChatStyleBtn" class="secondary">
-                  儲存目前樣式
-                </button>
-              </div>
-            </div>
-            <div class="chip-row" id="chatStyleList" aria-label="聊天室樣式預設"></div>
-            <p class="hint">
-              樣式含底圖／單則底／外推／顯示方式／圖示與顏色／字級／底色／CSS
-              等外觀；不含頻道帳號。點一下套用，右鍵刪除。會一併進頁面最下方備份。
-            </p>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑦ 聊天室網址</h2>
-              <span class="side-title">OBS 瀏覽器來源</span>
-            </div>
-
-            <div id="chatMergePanel">
-              <textarea id="chatUrl" class="url-box" readonly></textarea>
-              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
-              <div class="actions">
-                <button type="button" id="copyChat">複製聊天室網址</button>
-                <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 220px">
-                <iframe id="previewChat" title="chat preview" style="height: 220px"></iframe>
-              </div>
-            </div>
-
-            <div id="chatSplitPanel" hidden>
-              <p class="hint" style="margin-top: 0">分開：請在 OBS <strong>各加一個</strong>瀏覽器來源。</p>
-              <h3 style="margin: 12px 0 8px; font-size: 0.95rem">Twitch 聊天室</h3>
-              <textarea id="chatUrlTw" class="url-box" readonly></textarea>
-              <div class="actions">
-                <button type="button" id="copyChatTw">複製 TW 網址</button>
-                <a class="btn secondary" id="openChatTw" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 160px">
-                <iframe id="previewChatTw" title="twitch chat preview" style="height: 160px"></iframe>
-              </div>
-
-              <h3 style="margin: 18px 0 8px; font-size: 0.95rem">YouTube 聊天室</h3>
-              <textarea id="chatUrlYt" class="url-box" readonly></textarea>
-              <div class="actions">
-                <button type="button" id="copyChatYt">複製 YT 網址</button>
-                <a class="btn secondary" id="openChatYt" href="#" target="_blank" rel="noopener">預覽</a>
-              </div>
-              <div class="preview-wrap" style="min-height: 160px">
-                <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
-              </div>
-            </div>
-<div class="subfold is-collapsed" data-subfold="chat-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-            <div class="row">
-              <div>
-                <label><input type="checkbox" id="chatShowBg" checked /> 顯示底色</label>
-              </div>
-              <div class="field" style="margin-top: 0">
-                <label for="chatBg">底色</label>
-                <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="chatShowPanelImg" /> 留言區底圖</label
-                >
-              </div>
-              <div>
-                <label for="chatPanelInset">底圖外推（px）</label>
-                <input
-                  id="chatPanelInset"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="用預設"
-                  title="內容往內縮，避開底圖周圍裝飾"
-                />
-              </div>
-            </div>
-            <div class="row" id="chatPanelImgRow">
-              <div>
-                <label for="chatPanelImg">留言區底圖網址</label>
-                <input
-                  id="chatPanelImg"
-                  type="text"
-                  placeholder="空白＝用上方預設底圖"
-                />
-              </div>
-              <div>
-                <label for="chatPanelFit">底圖顯示</label>
-                <select id="chatPanelFit">
-                  <option value="">用預設</option>
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="chatShowMsgBg" /> 每一則留言底</label
-                >
-              </div>
-              <div>
-                <label for="chatMsgInset">單則外推（px）</label>
-                <input
-                  id="chatMsgInset"
-                  type="text"
-                  inputmode="numeric"
-                  value="8"
-                  placeholder="8 或 6 10"
-                  title="單則文字往內縮，避開單則底圖周圍裝飾"
-                />
-              </div>
-            </div>
-            <div class="row" id="chatMsgBgRow">
-              <div>
-                <label for="chatMsgImg">單則底圖</label>
-                <input
-                  id="chatMsgImg"
-                  type="text"
-                  placeholder="可貼圖檔網址；空白＝只用底色"
-                />
-              </div>
-              <div>
-                <label for="chatMsgFit">單則底圖顯示</label>
-                <select id="chatMsgFit">
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="chatMsgBgColorRow">
-              <div>
-                <label for="chatMsgBgColor">單則底色</label>
-                <input
-                  id="chatMsgBgColor"
-                  type="text"
-                  value="rgba(0,0,0,0.35)"
-                  placeholder="rgba(0,0,0,0.35)"
-                />
-              </div>
-              <div></div>
-            </div>
-            <p class="hint">
-              底圖／單則底：勾選後才套用。留言區底圖網址／顯示／外推空白＝用最上方預設。單則完整顯示會依圖比例長高。
-            </p>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <!-- ⑧ 回覆（主播用） -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑧ 聊天回覆</h2>
-              <span class="side-title">主播用 · 非 OBS</span>
-            </div>
-            <p class="hint">
-              <strong>建議用 Restream Chat</strong>：TW／YT 等平台授權存在 Restream，平常回覆不用自己換 token，也可一次回兩邊。
-              OBS 上的⑦聊天室覆蓋仍只負責「顯示」、免發話授權。
-            </p>
-            <p class="hint">
-              沒有 Restream 才用下方本機回覆頁（要自己貼 TW／YT 發話 token，那些<strong>會過期</strong>）。
-              回覆相關網址都<strong>不要</strong>加進 OBS 瀏覽器來源。
-            </p>
-            <div class="field">
-              <label for="restreamChatUrl">Restream Chat 網址（選填）</label>
-              <input
-                id="restreamChatUrl"
-                type="text"
-                placeholder="空白＝官方 chat.restream.io；可改貼你的 embed 網址"
-              />
-            </div>
-            <p class="hint">
-              預設開
-              <a href="https://chat.restream.io/" target="_blank" rel="noopener">chat.restream.io</a>
-              （用你的 Restream 帳號登入即可）。若你有「Embed in stream」專用網址也可貼上。
-            </p>
-          </section>
-
-          <div class="band-divider" aria-hidden="true"></div>
-
-          <aside class="card">
-            <div class="card-head">
-              <h2>⑧ 開啟回覆</h2>
-              <span class="side-title">用瀏覽器開啟</span>
-            </div>
-            <div class="actions" style="margin-top: 0">
-              <a class="btn" id="openRestreamChat" href="https://chat.restream.io/" target="_blank" rel="noopener"
-                >開啟 Restream Chat（建議）</a
-              >
-            </div>
-            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑦覆蓋、一邊回覆。</p>
-
-            <h3 style="margin: 18px 0 8px; font-size: 0.95rem">備選：本機回覆頁</h3>
-            <textarea id="chatReplyUrl" class="url-box" readonly></textarea>
-            <p class="hint">自備 token 才需要。可 TW＋YT 一起送，但 token 過期要重貼。</p>
-            <div class="actions">
-              <button type="button" id="copyChatReply">複製本機回覆網址</button>
-              <a class="btn secondary" id="openChatReply" href="#" target="_blank" rel="noopener">開啟本機回覆頁</a>
-            </div>
-          </aside>
-        </div>
-
-        <!-- ⑨ 贊助條 -->
-        <div class="band">
-          <section class="card">
-            <div class="card-head">
-              <h2>⑨ 贊助條</h2>
+              <h2>③ 贊助條</h2>
               <span class="side-title">TW 小奇點 · YT 超留</span>
             </div>
             <p class="hint">
@@ -2674,6 +2095,19 @@
             </div>
             <div class="row">
               <div>
+                <label for="spFontFamily">字形</label>
+                <input
+                  id="spFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
+              <div>
                 <label for="spColor">文字色</label>
                 <input id="spColor" type="text" placeholder="用預設" />
               </div>
@@ -2687,7 +2121,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑨ 贊助條網址</h2>
+              <h2>③ 贊助條網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="spUrl" class="url-box" readonly></textarea>
@@ -2760,11 +2194,11 @@
           </aside>
         </div>
 
-        <!-- ⑩ 計數器 -->
+        <!-- ⑤ 計數器 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑩ 計數器</h2>
+              <h2>⑤ 計數器</h2>
               <span class="side-title">可多組 · !指令</span>
             </div>
             <p class="hint">
@@ -2861,7 +2295,7 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑩ 計數器網址</h2>
+              <h2>⑤ 計數器網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <label for="ctrPreviewPick">預覽哪一組</label>
@@ -2893,6 +2327,19 @@
                     <input id="ctrBg" type="text" value="rgba(0,0,0,0.45)" />
                   </div>
                 </div>
+            <div class="row">
+              <div>
+                <label for="ctrFontFamily">字形</label>
+                <input
+                  id="ctrFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
                 <div class="row">
                   <div>
                     <label
@@ -2933,107 +2380,421 @@
           </aside>
         </div>
 
-        <!-- ⑪ 媒體播放 -->
+                <!-- B · 聊天室相關：⑥⑦⑧⑨⑩ -->
+<!-- ⑥ 聊天室 -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑪ 媒體播放</h2>
-              <span class="side-title">影片／網站清單</span>
+              <h2>⑥ 聊天室（TW + YT）</h2>
+              <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              <strong>一個網址、OBS 一個來源</strong>，清單一個個接播。有 YouTube
-              時用右邊「啟動本機伺服器／啟動並播放」（本機 http，避免 Error 153）。
+              預設用最上方「本人」帳號。下面可再加<strong>連動／其他台</strong>的 Twitch、YouTube（逗號或換行分隔）。選「分開成兩個」會給<strong>兩個獨立 OBS 網址</strong>（各一頁），不是左右分欄。YouTube
+              建議填直播網址；沒填時自動找直播整場只找一次並與人數／贊助共用記住。
             </p>
             <div class="field" style="align-items: flex-start">
-              <label for="mediaList">播放清單（多行＝整份歌單）</label>
+              <label for="chatExtraTw">額外 Twitch（非本人）</label>
               <textarea
-                id="mediaList"
+                id="chatExtraTw"
                 class="css-box"
-                style="min-height: 140px"
-                placeholder="例如&#10;https://www.youtube.com/watch?v=……&#10;https://www.youtube.com/watch?v=……&#10;C:\Videos\intro.mp4&#10;圖片/loop.webm"
+                style="min-height: 64px"
+                placeholder="例如&#10;friend_a&#10;friend_b&#10;（逗號或換行；不要填自己）"
               ></textarea>
             </div>
+            <div class="field" style="align-items: flex-start">
+              <label for="chatExtraYt">額外 YouTube（非本人）</label>
+              <textarea
+                id="chatExtraYt"
+                class="css-box"
+                style="min-height: 64px"
+                placeholder="例如&#10;@other_channel&#10;UCxxxxxxxx&#10;（逗號或換行；用最上方 API Key）"
+              ></textarea>
+            </div>
+            <div class="field">
+              <label for="chatExtraYtVideo">額外 YT 直播影片 ID（選填）</label>
+              <input
+                id="chatExtraYtVideo"
+                type="text"
+                placeholder="多個用逗號；可留空改自動找 live"
+              />
+            </div>
+            <p class="hint">額外台只影響聊天室；人數／開台仍只用最上方本人帳號。</p>
             <div class="row">
               <div>
-                <label for="mediaMode">播放模式</label>
-                <select id="mediaMode">
-                  <option value="loop" selected>循環（播完重來）</option>
-                  <option value="seq">順序（播完停止）</option>
-                  <option value="random">隨機</option>
+                <label for="chatLayout">1. 版面</label>
+                <select id="chatLayout">
+                  <option value="merge" selected>合併成一個（一頁）</option>
+                  <option value="split">分開成兩個（兩頁／兩個來源）</option>
+                </select>
+              </div>
+              <div id="chatSourceWrap">
+                <label for="chatSource">合併時來源</label>
+                <select id="chatSource">
+                  <option value="auto" selected>auto（有填就連）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只用 Twitch</option>
+                  <option value="youtube">只用 YouTube</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="chatStack">3. 方向</label>
+                <select id="chatStack">
+                  <option value="bottom" selected>從下到上（新在底部）</option>
+                  <option value="top">從上到下（新在頂部）</option>
                 </select>
               </div>
               <div>
-                <label for="mediaDwell">網頁停留（秒）</label>
-                <input id="mediaDwell" type="number" min="3" step="1" value="15" />
+                <label for="chatTtl">2. 過幾秒最舊消失</label>
+                <input id="chatTtl" type="number" min="0" max="600" value="15" placeholder="0＝不限" />
               </div>
             </div>
             <div class="row">
               <div>
-                <label for="mediaFit">影片填滿</label>
-                <select id="mediaFit">
-                  <option value="contain" selected>完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                  <option value="fill">拉伸填滿</option>
-                </select>
+                <label for="chatMax">最多保留則數</label>
+                <input id="chatMax" type="number" min="5" max="100" value="30" />
               </div>
               <div>
-                <label><input type="checkbox" id="mediaMute" /> 全程靜音（不勾＝OBS 內有聲自動播）</label>
+                <label
+                  ><input type="checkbox" id="chatShowSource" checked /> 6. 顯示留言來源（圖示）</label
+                >
+              </div>
+            </div>
+            <div class="row" id="chatSourceIconsRow">
+              <div>
+                <label for="chatTwIcon">TW 來源圖示</label>
+                <input
+                  id="chatTwIcon"
+                  type="text"
+                  placeholder="空白＝人數預設 Twitch 圖；可貼網址"
+                />
+              </div>
+              <div>
+                <label for="chatYtIcon">YT 來源圖示</label>
+                <input
+                  id="chatYtIcon"
+                  type="text"
+                  placeholder="空白＝人數預設 YouTube 圖；可貼網址"
+                />
+              </div>
+            </div>
+            <div class="row" id="chatSourceColorsRow">
+              <div>
+                <label for="chatTwIconColor">TW 圖示色</label>
+                <div class="color-pair">
+                  <input id="chatTwIconColor" type="text" value="#bf94ff" />
+                  <input
+                    type="color"
+                    data-sync="chatTwIconColor"
+                    value="#bf94ff"
+                    title="快速選色"
+                  />
+                </div>
+              </div>
+              <div>
+                <label for="chatYtIconColor">YT 圖示色</label>
+                <div class="color-pair">
+                  <input id="chatYtIconColor" type="text" value="#ff6b6b" />
+                  <input
+                    type="color"
+                    data-sync="chatYtIconColor"
+                    value="#ff6b6b"
+                    title="快速選色"
+                  />
+                </div>
+              </div>
+            </div>
+            <p class="hint">
+              2：填秒數，最舊留言到期淡出；0＝只依則數。分開兩頁時各頁各自計算。來源改顯示平台圖示（預設與①人數相同，可自己換）。圖示色預設為現在的紫／紅；只對內建 SVG 生效（自訂圖檔本身帶色）。
+            </p>
+            <div class="row">
+              <div>
+                <label for="chatFontSize">字級</label>
+                <input id="chatFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="chatColor">文字色</label>
+                <input id="chatColor" type="text" placeholder="用預設" />
               </div>
             </div>
             <div class="row">
               <div>
-                <label for="mediaVolume">音量（0–1，預設 0.5＝50%）</label>
-                <input id="mediaVolume" type="number" min="0" max="1" step="0.05" value="0.5" />
+                <label for="chatFontFamily">字形</label>
+                <input
+                  id="chatFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
               </div>
+              <div></div>
+            </div>
+
+            <div class="row">
               <div>
-                <label><input type="checkbox" id="mediaHud" checked /> 顯示左下角狀態</label>
+                <label><input type="checkbox" id="chatHideStatus" checked /> 隱藏連線狀態</label>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">字級／字形／文字色空白＝用最上方預設。</p>
+            
+            <div class="field" style="align-items: flex-start">
+              <label for="chatCss">5. 自訂 CSS</label>
+              <textarea
+                id="chatCss"
+                class="css-box"
+                placeholder=".msg { font-size: 20px; }&#10;.plat.tw { color: #a970ff; }"
+              ></textarea>
+            </div>
+            <p class="hint">
+              5：CSS 寫進網址；太長可能被 OBS 截斷。選擇器：`.msg` `.plat` `.user` `.text` `#wrap` `#feed`。
+              每頁建議寬 360–480、高 500–720。
+            </p>
+
+            <div class="row">
+              <div>
+                <label for="chatStyleName">樣式預設名稱</label>
+                <input
+                  id="chatStyleName"
+                  type="text"
+                  placeholder="例如：粉框完整顯示"
+                  maxlength="40"
+                />
+              </div>
+              <div style="display: flex; align-items: flex-end">
+                <button type="button" id="saveChatStyleBtn" class="secondary">
+                  儲存目前樣式
+                </button>
               </div>
             </div>
-            <p class="hint">YouTube／mp4 播完自動下一則；一般網頁用「網頁停留」秒數。</p>
+            <div class="chip-row" id="chatStyleList" aria-label="聊天室樣式預設"></div>
+            <p class="hint">
+              樣式含底圖／單則底／外推／顯示方式／圖示與顏色／字級／底色／CSS
+              等外觀；不含頻道帳號。點一下套用，右鍵刪除。會一併進頁面最下方備份。
+            </p>
           </section>
 
           <div class="band-divider" aria-hidden="true"></div>
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑪ 媒體播放網址</h2>
-              <span class="side-title">整份清單 · 一個來源</span>
+              <h2>⑥ 聊天室網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
             </div>
-            <textarea id="mediaUrl" class="url-box" readonly></textarea>
-            <p class="hint" id="mediaUrlHint">這一個網址＝整份清單。貼到 OBS 一個瀏覽器來源就會自動接播。</p>
-            <p class="hint" id="mediaServerStatus" hidden></p>
-            <div class="actions">
-              <button type="button" id="startMediaServerBtn">啟動本機伺服器</button>
-              <button type="button" id="startMediaServerPlayBtn">啟動並播放</button>
-              <button type="button" id="copyMedia">複製媒體網址</button>
-              <a class="btn secondary" id="openMedia" href="#" target="_blank" rel="noopener"
-                >開播放頁</a
-              >
-              <button type="button" class="secondary" id="checkMediaServerBtn">
-                檢查本機伺服器
+
+            <div id="chatMergePanel">
+              <textarea id="chatUrl" class="url-box" readonly></textarea>
+              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
+              <div class="actions">
+                <button type="button" id="copyChat">複製聊天室網址</button>
+                <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 220px">
+                <iframe id="previewChat" title="chat preview" style="height: 220px"></iframe>
+              </div>
+            </div>
+
+            <div id="chatSplitPanel" hidden>
+              <p class="hint" style="margin-top: 0">分開：請在 OBS <strong>各加一個</strong>瀏覽器來源。</p>
+              <h3 style="margin: 12px 0 8px; font-size: 0.95rem">Twitch 聊天室</h3>
+              <textarea id="chatUrlTw" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatTw">複製 TW 網址</button>
+                <a class="btn secondary" id="openChatTw" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatTw" title="twitch chat preview" style="height: 160px"></iframe>
+              </div>
+
+              <h3 style="margin: 18px 0 8px; font-size: 0.95rem">YouTube 聊天室</h3>
+              <textarea id="chatUrlYt" class="url-box" readonly></textarea>
+              <div class="actions">
+                <button type="button" id="copyChatYt">複製 YT 網址</button>
+                <a class="btn secondary" id="openChatYt" href="#" target="_blank" rel="noopener">預覽</a>
+              </div>
+              <div class="preview-wrap" style="min-height: 160px">
+                <iframe id="previewChatYt" title="youtube chat preview" style="height: 160px"></iframe>
+              </div>
+            </div>
+<div class="subfold is-collapsed" data-subfold="chat-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
               </button>
+              <div class="subfold-body">
+            <div class="row">
+              <div>
+                <label><input type="checkbox" id="chatShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="chatBg">底色</label>
+                <input id="chatBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
             </div>
-            <div class="preview-wrap" style="min-height: 180px">
-              <iframe id="previewMedia" title="media playlist preview"></iframe>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="chatShowPanelImg" /> 留言區底圖</label
+                >
+              </div>
+              <div>
+                <label for="chatPanelInset">底圖外推（px）</label>
+                <input
+                  id="chatPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                  title="內容往內縮，避開底圖周圍裝飾"
+                />
+              </div>
+            </div>
+            <div class="row" id="chatPanelImgRow">
+              <div>
+                <label for="chatPanelImg">留言區底圖網址</label>
+                <input
+                  id="chatPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="chatPanelFit">底圖顯示</label>
+                <select id="chatPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="chatShowMsgBg" /> 每一則留言底</label
+                >
+              </div>
+              <div>
+                <label for="chatMsgInset">單則外推（px）</label>
+                <input
+                  id="chatMsgInset"
+                  type="text"
+                  inputmode="numeric"
+                  value="8"
+                  placeholder="8 或 6 10"
+                  title="單則文字往內縮，避開單則底圖周圍裝飾"
+                />
+              </div>
+            </div>
+            <div class="row" id="chatMsgBgRow">
+              <div>
+                <label for="chatMsgImg">單則底圖</label>
+                <input
+                  id="chatMsgImg"
+                  type="text"
+                  placeholder="可貼圖檔網址；空白＝只用底色"
+                />
+              </div>
+              <div>
+                <label for="chatMsgFit">單則底圖顯示</label>
+                <select id="chatMsgFit">
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="chatMsgBgColorRow">
+              <div>
+                <label for="chatMsgBgColor">單則底色</label>
+                <input
+                  id="chatMsgBgColor"
+                  type="text"
+                  value="rgba(0,0,0,0.35)"
+                  placeholder="rgba(0,0,0,0.35)"
+                />
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              底圖／單則底：勾選後才套用。留言區底圖網址／顯示／外推空白＝用最上方預設。單則完整顯示會依圖比例長高。
+            </p>
+              </div>
             </div>
           </aside>
         </div>
 
-        <!-- ⑫ 彈幕（獨立；可與⑦聊天室同時用） -->
+        <!-- ⑦ 回覆（主播用） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑫ 彈幕（飛過畫面）</h2>
+              <h2>⑦ 聊天回覆</h2>
+              <span class="side-title">主播用 · 非 OBS</span>
+            </div>
+            <p class="hint">
+              <strong>建議用 Restream Chat</strong>：TW／YT 等平台授權存在 Restream，平常回覆不用自己換 token，也可一次回兩邊。
+              OBS 上的⑥聊天室覆蓋仍只負責「顯示」、免發話授權。
+            </p>
+            <p class="hint">
+              沒有 Restream 才用下方本機回覆頁（要自己貼 TW／YT 發話 token，那些<strong>會過期</strong>）。
+              回覆相關網址都<strong>不要</strong>加進 OBS 瀏覽器來源。
+            </p>
+            <div class="field">
+              <label for="restreamChatUrl">Restream Chat 網址（選填）</label>
+              <input
+                id="restreamChatUrl"
+                type="text"
+                placeholder="空白＝官方 chat.restream.io；可改貼你的 embed 網址"
+              />
+            </div>
+            <p class="hint">
+              預設開
+              <a href="https://chat.restream.io/" target="_blank" rel="noopener">chat.restream.io</a>
+              （用你的 Restream 帳號登入即可）。若你有「Embed in stream」專用網址也可貼上。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑦ 開啟回覆</h2>
+              <span class="side-title">用瀏覽器開啟</span>
+            </div>
+            <div class="actions" style="margin-top: 0">
+              <a class="btn" id="openRestreamChat" href="https://chat.restream.io/" target="_blank" rel="noopener"
+                >開啟 Restream Chat（建議）</a
+              >
+            </div>
+            <p class="hint">第二螢幕開著 Restream Chat，一邊看⑥覆蓋、一邊回覆。</p>
+
+            <h3 style="margin: 18px 0 8px; font-size: 0.95rem">備選：本機回覆頁</h3>
+            <textarea id="chatReplyUrl" class="url-box" readonly></textarea>
+            <p class="hint">自備 token 才需要。可 TW＋YT 一起送，但 token 過期要重貼。</p>
+            <div class="actions">
+              <button type="button" id="copyChatReply">複製本機回覆網址</button>
+              <a class="btn secondary" id="openChatReply" href="#" target="_blank" rel="noopener">開啟本機回覆頁</a>
+            </div>
+          </aside>
+        </div>
+
+        <!-- ⑧ 彈幕（獨立；可與⑥聊天室同時用） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑧ 彈幕（飛過畫面）</h2>
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              跟⑦聊天室<strong>分開</strong>：可同時加兩個 OBS 瀏覽器來源（一個清單聊天、一個彈幕）。
-              帳號預設用最上方本人；可勾選沿用⑦的額外台。
+              跟⑥聊天室<strong>分開</strong>：可同時加兩個 OBS 瀏覽器來源（一個清單聊天、一個彈幕）。
+              帳號預設用最上方本人；可勾選沿用⑥的額外台。
             </p>
             <div class="row">
               <label
                 ><input type="checkbox" id="dmUseChatExtra" checked />
-                沿用⑦聊天室的額外 TW／YT 台</label
+                沿用⑥聊天室的額外 TW／YT 台</label
               >
             </div>
             <div class="row">
@@ -3096,6 +2857,19 @@
               </div>
             </div>
             <div class="row">
+              <div>
+                <label for="dmFontFamily">字形</label>
+                <input
+                  id="dmFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
               <label
                 ><input type="checkbox" id="dmShowUser" checked /> 顯示暱稱</label
               >
@@ -3112,11 +2886,11 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑫ 彈幕網址</h2>
+              <h2>⑧ 彈幕網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="dmUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋（寬×高跟畫布一樣）。可與⑦同時使用。</p>
+            <p class="hint">建議全螢幕透明覆蓋（寬×高跟畫布一樣）。可與⑥同時使用。</p>
             <div class="actions">
               <button type="button" id="copyDm">複製彈幕網址</button>
               <a class="btn secondary" id="openDm" href="#" target="_blank" rel="noopener"
@@ -3129,20 +2903,20 @@
           </aside>
         </div>
 
-        <!-- ⑬ 頭像對話框（獨立） -->
+        <!-- ⑨ 頭像對話框（獨立） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑬ 頭像對話框</h2>
+              <h2>⑨ 頭像對話框</h2>
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              下方跳出頭像，上方對話框顯示留言。跟⑦聊天室、⑫彈幕<strong>分開</strong>，可同時使用。
+              下方跳出頭像，上方對話框顯示留言。跟⑥聊天室、⑧彈幕<strong>分開</strong>，可同時使用。
             </p>
             <div class="row">
               <label
                 ><input type="checkbox" id="popUseChatExtra" checked />
-                沿用⑦聊天室的額外 TW／YT 台</label
+                沿用⑥聊天室的額外 TW／YT 台</label
               >
             </div>
             <div class="row">
@@ -3192,6 +2966,19 @@
               </div>
             </div>
             <div class="row">
+              <div>
+                <label for="popFontFamily">字形</label>
+                <input
+                  id="popFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
               <label
                 ><input type="checkbox" id="popShowUser" checked /> 顯示暱稱</label
               >
@@ -3208,11 +2995,11 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑬ 頭像對話框網址</h2>
+              <h2>⑨ 頭像對話框網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="popUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋。可與⑦／⑫同時加來源。</p>
+            <p class="hint">建議全螢幕透明覆蓋。可與⑥／⑧同時加來源。</p>
             <div class="actions">
               <button type="button" id="copyPop">複製頭像對話框網址</button>
               <a class="btn secondary" id="openPop" href="#" target="_blank" rel="noopener"
@@ -3225,20 +3012,20 @@
           </aside>
         </div>
 
-        <!-- ⑮ 走動頭像（獨立） -->
+        <!-- ⑩ 走動頭像（獨立） -->
         <div class="band">
           <section class="card">
             <div class="card-head">
-              <h2>⑮ 走動頭像</h2>
+              <h2>⑩ 走動頭像</h2>
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              頭像在畫面下方走來走去；有留言就冒對話框。跟⑦／⑫／⑬<strong>分開</strong>，可同時用。
+              頭像在畫面下方走來走去；有留言就冒對話框。跟⑥／⑧／⑨<strong>分開</strong>，可同時用。
             </p>
             <div class="row">
               <label
                 ><input type="checkbox" id="walkUseChatExtra" checked />
-                沿用⑦聊天室的額外 TW／YT 台</label
+                沿用⑥聊天室的額外 TW／YT 台</label
               >
             </div>
             <div class="row">
@@ -3288,6 +3075,19 @@
             </div>
             <div class="row">
               <div>
+                <label for="walkFontFamily">字形</label>
+                <input
+                  id="walkFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
+              <div>
                 <label for="walkColor">文字色</label>
                 <input id="walkColor" type="text" value="#1a1a1a" />
               </div>
@@ -3307,11 +3107,11 @@
 
           <aside class="card">
             <div class="card-head">
-              <h2>⑮ 走動頭像網址</h2>
+              <h2>⑩ 走動頭像網址</h2>
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="walkUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋。可與⑦／⑫／⑬同時加來源。</p>
+            <p class="hint">建議全螢幕透明覆蓋。可與⑥／⑧／⑨同時加來源。</p>
             <div class="actions">
               <button type="button" id="copyWalk">複製走動頭像網址</button>
               <a class="btn secondary" id="openWalk" href="#" target="_blank" rel="noopener"
@@ -3324,12 +3124,594 @@
           </aside>
         </div>
 
-        <div class="note">
+                <!-- C · 不需要帳號：⑪⑫⑬⑮ -->
+<!-- ⑪ 倒計時 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑪ 倒計時</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+
+            <div class="field">
+              <label for="countdown">目標時間（本地）</label>
+              <input id="countdown" type="datetime-local" step="1" />
+            </div>
+            <div class="row">
+              <div>
+                <label for="cdMins">或：從現在起（分鐘）</label>
+                <input id="cdMins" type="number" min="0" step="1" placeholder="例如 10" />
+              </div>
+              <div>
+                <label for="cdLabel">倒計時標籤</label>
+                <input id="cdLabel" type="text" placeholder="START" />
+              </div>
+            </div>
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="cdShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
+              <label for="cdIcon">倒計時圖示</label>
+              <input
+                id="cdIcon"
+                type="text"
+                list="materialIconSuggest"
+                placeholder="空白＝預設 hourglass_empty；或圖片網址"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="countdownIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="countdownIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="countdownIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">勾選才顯示圖示；勾了沒填＝預設沙漏。貼圖片網址則不套用圖示色。</p>
+            <div class="row">
+              <div>
+                <label for="countdownFontSize">字級</label>
+                <input id="countdownFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="countdownColor">文字色</label>
+                <div class="color-pair">
+                  <input id="countdownColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="countdownColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="countdownFontFamily">字形</label>
+                <input
+                  id="countdownFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <p class="hint">目標時間與「從現在起」擇一。字級／字形／文字色空白＝用最上方預設。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑪ 倒計時網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="cdUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 220–360、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyCd">複製倒計時網址</button>
+              <a class="btn secondary" id="openCd" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewCd" title="countdown preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="countdown-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+<div class="row">
+              <div>
+                <label><input type="checkbox" id="countdownShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="countdownBg">底色</label>
+                <input id="countdownBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="countdownShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="countdownPanelFit">底圖顯示</label>
+                <select id="countdownPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="countdownPanelImgRow">
+              <div>
+                <label for="countdownPanelImg">底圖網址</label>
+                <input
+                  id="countdownPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="countdownPanelInset">外推（px）</label>
+                <input
+                  id="countdownPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
+              </div>
+            </div>
+
+          </aside>
+        </div>
+
+        <!-- ⑫ 倒數天數（跳過 ④） -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑫ 倒數天數</h2>
+              <span class="side-title">離今天幾天</span>
+            </div>
+            <p class="hint">選一個目標日期，顯示還有幾天（依本地日曆日計算）。</p>
+            <div class="field">
+              <label for="daysDate">目標日期</label>
+              <input id="daysDate" type="date" />
+            </div>
+            <div class="row">
+              <div>
+                <label for="daysLabel">標籤（選填）</label>
+                <input id="daysLabel" type="text" placeholder="例如：距離活動" />
+              </div>
+              <div>
+                <label for="daysUnit">單位文字</label>
+                <input id="daysUnit" type="text" value="天" placeholder="天" />
+              </div>
+            </div>
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="daysShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
+              <label for="daysIcon">倒數天數圖示</label>
+              <input
+                id="daysIcon"
+                type="text"
+                list="materialIconSuggest"
+                placeholder="空白＝預設 event_upcoming；或圖片網址"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="daysIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="daysIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="daysIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="daysFontSize">字級</label>
+                <input id="daysFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="daysColor">文字色</label>
+                <div class="color-pair">
+                  <input id="daysColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="daysColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+                                  </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑫ 倒數天數網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="daysUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 180–320、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyDays">複製倒數天數網址</button>
+              <a class="btn secondary" id="openDays" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewDays" title="days preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="days-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+<div class="row">
+              <div>
+                <label><input type="checkbox" id="daysShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="daysBg">底色</label>
+                <input id="daysBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="daysFontFamily">字形</label>
+                <input
+                  id="daysFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="daysShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="daysPanelFit">底圖顯示</label>
+                <select id="daysPanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="daysPanelImgRow">
+              <div>
+                <label for="daysPanelImg">底圖網址</label>
+                <input
+                  id="daysPanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="daysPanelInset">外推（px）</label>
+                <input
+                  id="daysPanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
+              </div>
+            </div>
+
+          </aside>
+        </div>
+
+        <!-- ⑬ 遊戲名稱 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑬ 遊戲名稱</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">顯示格式：<code>標籤： 平台 - 遊戲名</code>（例如「遊戲名稱： PC - 艾爾登法環」）</p>
+
+            <div class="field">
+              <label for="gameLabel">標籤</label>
+              <input id="gameLabel" type="text" value="遊戲名稱" placeholder="遊戲名稱" />
+            </div>
+
+            <label style="display: block; margin-top: 14px">平台（快速選）</label>
+            <div class="chip-row" id="gamePlatformPresets" role="group" aria-label="平台快捷">
+              <button type="button" data-platform="PC">PC</button>
+              <button type="button" data-platform="PS5">PS5</button>
+              <button type="button" data-platform="NS2">NS2</button>
+              <button type="button" data-platform="電競掌機">電競掌機</button>
+              <button type="button" data-platform="iOS">iOS</button>
+              <button type="button" data-platform="ANDROID">ANDROID</button>
+            </div>
+            <div class="field">
+              <label for="gamePlatform">平台</label>
+              <input id="gamePlatform" type="text" list="gamePlatformSuggest" value="PC" placeholder="PC / PS5 / NS2…" />
+              <datalist id="gamePlatformSuggest">
+                <option value="PC"></option>
+                <option value="PS5"></option>
+                <option value="NS2"></option>
+                <option value="電競掌機"></option>
+                <option value="iOS"></option>
+                <option value="ANDROID"></option>
+              </datalist>
+            </div>
+
+            <div class="field">
+              <label for="gameName">遊戲名</label>
+              <input id="gameName" type="text" list="gameNameSuggest" placeholder="例如 艾爾登法環" />
+              <datalist id="gameNameSuggest"></datalist>
+            </div>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" id="saveGameHistory" class="secondary">記住目前組合</button>
+              <button type="button" id="clearGameHistory" class="secondary">清除紀錄</button>
+            </div>
+            <p class="hint">最近用過的「平台 + 遊戲」會出現在下方，點一下即可套用；也會自動補進遊戲名建議清單。</p>
+            <div class="chip-row" id="gameHistoryList" aria-label="最近遊戲紀錄"></div>
+
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="gameShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
+              <label for="gameIcon">遊戲圖示</label>
+              <input
+                id="gameIcon"
+                type="text"
+                list="materialIconSuggest"
+                placeholder="空白＝預設 sports_esports；或圖片網址"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="gameIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="gameIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="gameIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="gameFontSize">字級</label>
+                <input id="gameFontSize" type="number" min="12" max="64" placeholder="用預設" />
+              </div>
+              <div>
+                <label for="gameColor">文字色</label>
+                <div class="color-pair">
+                  <input id="gameColor" type="text" placeholder="用預設" />
+                  <input type="color" data-sync="gameColor" value="#d9d9d9" title="快速選色" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="gameFontFamily">字形</label>
+                <input
+                  id="gameFontFamily"
+                  type="text"
+                  list="fontFamilySuggest"
+                  placeholder="用預設"
+                />
+              </div>
+              <div></div>
+            </div>
+
+            <p class="hint">字級／字形／文字色／圖示色空白＝用最上方預設。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑬ 遊戲名稱網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="gameUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 360–720、高度 40–60。換遊戲時改設定頁再複製，或直接改 OBS 網址參數。</p>
+            <div class="actions">
+              <button type="button" id="copyGame">複製遊戲名稱網址</button>
+              <a class="btn secondary" id="openGame" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewGame" title="game title preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="game-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+<div class="row">
+              <div>
+                <label><input type="checkbox" id="gameShowBg" checked /> 顯示底色</label>
+              </div>
+              <div class="field" style="margin-top: 0">
+                <label for="gameBg">底色</label>
+                <input id="gameBg" type="text" value="rgba(0,0,0,0.45)" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label
+                  ><input type="checkbox" id="gameShowPanelImg" /> 顯示底圖</label
+                >
+              </div>
+              <div>
+                <label for="gamePanelFit">底圖顯示</label>
+                <select id="gamePanelFit">
+                  <option value="">用預設</option>
+                  <option value="stretch">拉伸填滿</option>
+                  <option value="contain">完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" id="gamePanelImgRow">
+              <div>
+                <label for="gamePanelImg">底圖網址</label>
+                <input
+                  id="gamePanelImg"
+                  type="text"
+                  placeholder="空白＝用上方預設底圖"
+                />
+              </div>
+              <div>
+                <label for="gamePanelInset">外推（px）</label>
+                <input
+                  id="gamePanelInset"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="用預設"
+                />
+              </div>
+            </div>
+
+              </div>
+            </div>
+
+          </aside>
+        </div>
+
+        <!-- ⑮ 媒體播放 -->
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>⑮ 媒體播放</h2>
+              <span class="side-title">影片／網站清單</span>
+            </div>
+            <p class="hint">
+              <strong>一個網址、OBS 一個來源</strong>，清單一個個接播。有 YouTube
+              時用右邊「啟動本機伺服器／啟動並播放」（本機 http，避免 Error 153）。
+            </p>
+            <div class="field" style="align-items: flex-start">
+              <label for="mediaList">播放清單（多行＝整份歌單）</label>
+              <textarea
+                id="mediaList"
+                class="css-box"
+                style="min-height: 140px"
+                placeholder="例如&#10;https://www.youtube.com/watch?v=……&#10;https://www.youtube.com/watch?v=……&#10;C:\Videos\intro.mp4&#10;圖片/loop.webm"
+              ></textarea>
+            </div>
+            <div class="row">
+              <div>
+                <label for="mediaMode">播放模式</label>
+                <select id="mediaMode">
+                  <option value="loop" selected>循環（播完重來）</option>
+                  <option value="seq">順序（播完停止）</option>
+                  <option value="random">隨機</option>
+                </select>
+              </div>
+              <div>
+                <label for="mediaDwell">網頁停留（秒）</label>
+                <input id="mediaDwell" type="number" min="3" step="1" value="15" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="mediaFit">影片填滿</label>
+                <select id="mediaFit">
+                  <option value="contain" selected>完整顯示</option>
+                  <option value="cover">裁切填滿</option>
+                  <option value="fill">拉伸填滿</option>
+                </select>
+              </div>
+              <div>
+                <label><input type="checkbox" id="mediaMute" /> 全程靜音（不勾＝OBS 內有聲自動播）</label>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="mediaVolume">音量（0–1，預設 0.5＝50%）</label>
+                <input id="mediaVolume" type="number" min="0" max="1" step="0.05" value="0.5" />
+              </div>
+              <div>
+                <label><input type="checkbox" id="mediaHud" checked /> 顯示左下角狀態</label>
+              </div>
+            </div>
+            <p class="hint">YouTube／mp4 播完自動下一則；一般網頁用「網頁停留」秒數。</p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>⑮ 媒體播放網址</h2>
+              <span class="side-title">整份清單 · 一個來源</span>
+            </div>
+            <textarea id="mediaUrl" class="url-box" readonly></textarea>
+            <p class="hint" id="mediaUrlHint">這一個網址＝整份清單。貼到 OBS 一個瀏覽器來源就會自動接播。</p>
+            <p class="hint" id="mediaServerStatus" hidden></p>
+            <div class="actions">
+              <button type="button" id="startMediaServerBtn">啟動本機伺服器</button>
+              <button type="button" id="startMediaServerPlayBtn">啟動並播放</button>
+              <button type="button" id="copyMedia">複製媒體網址</button>
+              <a class="btn secondary" id="openMedia" href="#" target="_blank" rel="noopener"
+                >開播放頁</a
+              >
+              <button type="button" class="secondary" id="checkMediaServerBtn">
+                檢查本機伺服器
+              </button>
+            </div>
+            <div class="preview-wrap" style="min-height: 180px">
+              <iframe id="previewMedia" title="media playlist preview"></iframe>
+            </div>
+          </aside>
+        </div>
+
+        
+<div class="note">
           <strong>為什麼不用一直驗證？</strong><br />
           舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
           這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
           回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          ①②③⑤⑥⑦⑨⑩⑪⑫⑬⑮ 右邊網址各自加 OBS 瀏覽器來源即可（⑧ 回覆除外；編號跳過含 4 的數字，如 ④⑭）。
+          排列：帳號相關（①②③⑤）→ 聊天相關（⑥⑦⑧⑨⑩）→ 免帳號（⑪⑫⑬⑮）。各編號右邊網址加 OBS 瀏覽器來源即可（⑦ 回覆除外；編號跳過含 4，如 ④⑭）。
         </div>
       </div>
 
@@ -3376,7 +3758,7 @@
         </div>
       </div>
 
-      <section class="credits" id="credits" aria-label="製作名單與贊助">
+      <section class="credits" id="credits" aria-label="製作名單、贊助與 BUG 回報">
         <div class="credits-head">
           <div>
             <h2>製作名單 / 感恩專區</h2>
@@ -3434,6 +3816,40 @@
               >Ko-fi · 贊助</a
             >
           </div>
+          <div class="bug-report" id="bugReport">
+            <h3>BUG 回報</h3>
+            <p>用起來怪怪的、壞掉、或有想法，歡迎從下面管道找我們。</p>
+            <ul class="bug-report-list">
+              <li>
+                <span class="tag">Lit.Link</span>
+                <a href="https://lit.link/en/lajidan" target="_blank" rel="noopener">lajidan</a>
+              </li>
+              <li>
+                <span class="tag">FB 粉絲團</span>
+                <a href="https://www.facebook.com/garbageegg/" target="_blank" rel="noopener"
+                  >拉基蛋的拉基桶</a
+                >
+              </li>
+              <li>
+                <span class="tag">GitHub</span>
+                <a href="https://github.com/cccsdxtw" target="_blank" rel="noopener">董浩</a>
+              </li>
+              <li>
+                <span class="tag">Discord</span>
+                <a href="https://discord.com/invite/pegSKKWh8w" target="_blank" rel="noopener"
+                  >拉基蛋的拉基桶</a
+                >
+              </li>
+              <li>
+                <span class="tag">Email</span>
+                <a class="mail" href="mailto:hi0729@hotmail.com">hi0729@hotmail.com</a>
+              </li>
+              <li>
+                <span class="tag">Email</span>
+                <a class="mail" href="mailto:cccsdxtw@gmail.com">cccsdxtw@gmail.com</a>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -3456,7 +3872,7 @@
             </label>
             <button type="button" class="secondary" id="checkUpdateBtn">檢查更新</button>
           </div>
-          <p class="apply-status" id="versionStatus">本機 v1.8.1</p>
+          <p class="apply-status" id="versionStatus">本機 v2.1.0</p>
         </div>
         <div class="apply-dock-actions">
           <button type="button" id="installUpdateBtn" hidden>覆蓋並重開</button>
@@ -3470,7 +3886,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v1.8.1";
+        const APP_VERSION = "v2.1.0";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -3482,7 +3898,9 @@
           "入口.html",
           "material-icons.js",
           "panel-bg.js",
+          "font-style.js",
           "yt-live-sync.js",
+          "stream-live-sync.js",
           "update-files.json",
           "fonts/MaterialSymbolsOutlined.ttf",
           "子頁/overlay.html",
@@ -3708,7 +4126,9 @@
           // 舊入口升級時清單可能沒有這些；強制補上避免空白覆蓋頁
           [
             "panel-bg.js",
+            "font-style.js",
             "yt-live-sync.js",
+            "stream-live-sync.js",
             "子頁/counter.html",
             "子頁/media.html",
             "子頁/danmaku.html",
@@ -4064,6 +4484,45 @@
         }
         setupCollapsibles();
         setupSubfolds();
+
+        // 觸碰／點下回饋（手機 :active 常不穩，用 pointer + is-pressed）
+        function setupPressFeedback() {
+          const SEL = "button, a.btn, .sponsor .kofi-btn";
+          function pressable(t) {
+            const el = t && t.closest ? t.closest(SEL) : null;
+            if (!el || el.disabled || el.getAttribute("aria-disabled") === "true")
+              return null;
+            return el;
+          }
+          function clearAll() {
+            document.querySelectorAll(".is-pressed").forEach((el) => {
+              el.classList.remove("is-pressed");
+            });
+          }
+          document.addEventListener(
+            "pointerdown",
+            (e) => {
+              if (e.button != null && e.button !== 0) return;
+              const el = pressable(e.target);
+              if (!el) return;
+              el.classList.add("is-pressed");
+            },
+            { passive: true }
+          );
+          document.addEventListener("pointerup", clearAll, { passive: true });
+          document.addEventListener("pointercancel", clearAll, { passive: true });
+          document.addEventListener(
+            "pointerleave",
+            (e) => {
+              const el = pressable(e.target);
+              if (el) el.classList.remove("is-pressed");
+            },
+            true
+          );
+          window.addEventListener("blur", clearAll);
+        }
+        setupPressFeedback();
+
         const pageSearch = $("pageSearch");
         if (pageSearch) {
           pageSearch.addEventListener("input", () => applyPageSearch(pageSearch.value));
@@ -4492,6 +4951,7 @@
           renderGameHistory();
           renderChatStyles();
           syncChatPanels();
+          syncYtAfterTwUi();
           buildUrls();
           ensureYtChannelIdResolved();
         }
@@ -4534,6 +4994,11 @@
         const fields = {
           channel: $("channel"),
           vcMode: $("vcMode"),
+          ytAfterTw: $("ytAfterTw"),
+          twPollLiveSec: $("twPollLiveSec"),
+          twPollOffSec: $("twPollOffSec"),
+          ytPollLiveSec: $("ytPollLiveSec"),
+          ytPollOffSec: $("ytPollOffSec"),
           ytChannel: $("ytChannel"),
           ytVideo: $("ytVideo"),
           ytKey: $("ytKey"),
@@ -4559,6 +5024,7 @@
           cdMins: $("cdMins"),
           cdLabel: $("cdLabel"),
           defaultFontSize: $("defaultFontSize"),
+          defaultFontFamily: $("defaultFontFamily"),
           defaultColor: $("defaultColor"),
           defaultIconColor: $("defaultIconColor"),
           defaultShowBg: $("defaultShowBg"),
@@ -4568,6 +5034,7 @@
           defaultPanelFit: $("defaultPanelFit"),
           defaultPanelInset: $("defaultPanelInset"),
           overlayFontSize: $("overlayFontSize"),
+          overlayFontFamily: $("overlayFontFamily"),
           overlayColor: $("overlayColor"),
           overlayIconColor: $("overlayIconColor"),
           overlayShowBg: $("overlayShowBg"),
@@ -4577,6 +5044,7 @@
           overlayPanelFit: $("overlayPanelFit"),
           overlayPanelInset: $("overlayPanelInset"),
           viewersFontSize: $("viewersFontSize"),
+          viewersFontFamily: $("viewersFontFamily"),
           viewersColor: $("viewersColor"),
           viewersShowBg: $("viewersShowBg"),
           viewersBg: $("viewersBg"),
@@ -4585,6 +5053,7 @@
           viewersPanelFit: $("viewersPanelFit"),
           viewersPanelInset: $("viewersPanelInset"),
           countdownFontSize: $("countdownFontSize"),
+          countdownFontFamily: $("countdownFontFamily"),
           countdownColor: $("countdownColor"),
           countdownIconColor: $("countdownIconColor"),
           countdownShowBg: $("countdownShowBg"),
@@ -4600,6 +5069,7 @@
           daysIcon: $("daysIcon"),
           daysIconColor: $("daysIconColor"),
           daysFontSize: $("daysFontSize"),
+          daysFontFamily: $("daysFontFamily"),
           daysColor: $("daysColor"),
           daysShowBg: $("daysShowBg"),
           daysBg: $("daysBg"),
@@ -4614,6 +5084,7 @@
           gameIcon: $("gameIcon"),
           gameIconColor: $("gameIconColor"),
           gameFontSize: $("gameFontSize"),
+          gameFontFamily: $("gameFontFamily"),
           gameColor: $("gameColor"),
           gameShowBg: $("gameShowBg"),
           gameBg: $("gameBg"),
@@ -4636,6 +5107,7 @@
           chatYtIconColor: $("chatYtIconColor"),
           chatHideStatus: $("chatHideStatus"),
           chatFontSize: $("chatFontSize"),
+          chatFontFamily: $("chatFontFamily"),
           chatColor: $("chatColor"),
           chatShowBg: $("chatShowBg"),
           chatBg: $("chatBg"),
@@ -4670,6 +5142,7 @@
           spBitsRate: $("spBitsRate"),
           spMax: $("spMax"),
           spFontSize: $("spFontSize"),
+          spFontFamily: $("spFontFamily"),
           spColor: $("spColor"),
           spHideStatus: $("spHideStatus"),
           spShowBg: $("spShowBg"),
@@ -4690,6 +5163,7 @@
           ctrIconColor: $("ctrIconColor"),
           ctrHideStatus: $("ctrHideStatus"),
           ctrFontSize: $("ctrFontSize"),
+          ctrFontFamily: $("ctrFontFamily"),
           ctrColor: $("ctrColor"),
           ctrShowBg: $("ctrShowBg"),
           ctrBg: $("ctrBg"),
@@ -4711,6 +5185,7 @@
           dmDuration: $("dmDuration"),
           dmTracks: $("dmTracks"),
           dmFontSize: $("dmFontSize"),
+          dmFontFamily: $("dmFontFamily"),
           dmColor: $("dmColor"),
           dmOpacity: $("dmOpacity"),
           dmShowUser: $("dmShowUser"),
@@ -4722,6 +5197,7 @@
           popHold: $("popHold"),
           popMax: $("popMax"),
           popFontSize: $("popFontSize"),
+          popFontFamily: $("popFontFamily"),
           popAvatarSize: $("popAvatarSize"),
           popBubbleBg: $("popBubbleBg"),
           popColor: $("popColor"),
@@ -4735,6 +5211,7 @@
           walkIdle: $("walkIdle"),
           walkMax: $("walkMax"),
           walkFontSize: $("walkFontSize"),
+          walkFontFamily: $("walkFontFamily"),
           walkAvatarSize: $("walkAvatarSize"),
           walkBubbleBg: $("walkBubbleBg"),
           walkColor: $("walkColor"),
@@ -5299,11 +5776,43 @@
           return (defaultEl.value || "").trim();
         }
 
-        function styleParams(p, showBgEl, bgEl, fontEl, colorEl, iconColorEl) {
+        function resolveDefaultFontFamily() {
+          return (fields.defaultFontFamily && fields.defaultFontFamily.value
+            ? fields.defaultFontFamily.value
+            : ""
+          ).trim();
+        }
+
+        function applyFontFamilyParam(p, fontFamilyEl) {
+          const raw = resolveStyle(
+            fontFamilyEl || { value: "" },
+            fields.defaultFontFamily || { value: "" }
+          ).trim();
+          if (!raw) return;
+          const looksFile =
+            /\.(ttf|otf|woff2?|ttc)(\?|#|$)/i.test(raw) ||
+            raw.startsWith("fonts/") ||
+            raw.startsWith("./fonts/") ||
+            raw.startsWith("../fonts/");
+          if (looksFile) {
+            const path = raw.replace(/^\.\//, "");
+            p.set("fontUrl", resolveAssetUrl(path));
+            const base = path
+              .split("/")
+              .pop()
+              .replace(/\.(ttf|otf|woff2?|ttc).*$/i, "");
+            p.set("fontFamily", base || "ObsCustomFont");
+          } else {
+            p.set("fontFamily", raw);
+          }
+        }
+
+        function styleParams(p, showBgEl, bgEl, fontEl, colorEl, iconColorEl, fontFamilyEl) {
           const fontSize = resolveStyle(fontEl, fields.defaultFontSize);
           const color = resolveStyle(colorEl, fields.defaultColor);
           if (fontSize) p.set("fontSize", fontSize);
           if (color) p.set("color", color);
+          applyFontFamilyParam(p, fontFamilyEl);
           if (iconColorEl) {
             const iconColor =
               (iconColorEl.value || "").trim() ||
@@ -5416,6 +5925,7 @@
 
         function syncStylePlaceholders() {
           const fs = fields.defaultFontSize.value || "22";
+          const ff = resolveDefaultFontFamily() || "內建";
           const col = fields.defaultColor.value.trim() || "rgba(255,255,255,0.85)";
           const iconCol =
             fields.defaultIconColor.value.trim() || col || "跟文字色";
@@ -5431,6 +5941,22 @@
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = `預設 ${fs}`;
+          });
+          [
+            fields.overlayFontFamily,
+            fields.viewersFontFamily,
+            fields.countdownFontFamily,
+            fields.daysFontFamily,
+            fields.gameFontFamily,
+            fields.chatFontFamily,
+            fields.spFontFamily,
+            fields.ctrFontFamily,
+            fields.dmFontFamily,
+            fields.popFontFamily,
+            fields.walkFontFamily,
+          ].forEach((el) => {
+            if (!el) return;
+            el.placeholder = `預設 ${ff}`;
           });
           [
             fields.overlayColor,
@@ -6074,7 +6600,16 @@
           if (s.startsWith("../圖片/")) {
             return new URL(s.slice(3), location.href).href;
           }
+          if (s.startsWith("fonts/") || s.startsWith("./fonts/")) {
+            return new URL(s.replace(/^\.\//, ""), location.href).href;
+          }
+          if (s.startsWith("../fonts/")) {
+            return new URL(s.slice(3), location.href).href;
+          }
           if (/\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s)) {
+            return new URL(s.replace(/^\.\//, ""), location.href).href;
+          }
+          if (/\.(ttf|otf|woff2?|ttc)(\?|#|$)/i.test(s)) {
             return new URL(s.replace(/^\.\//, ""), location.href).href;
           }
           return s;
@@ -6120,7 +6655,8 @@
             fields.overlayBg,
             fields.overlayFontSize,
             fields.overlayColor,
-            fields.overlayIconColor
+            fields.overlayIconColor,
+            fields.overlayFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6152,7 +6688,8 @@
             fields.countdownBg,
             fields.countdownFontSize,
             fields.countdownColor,
-            fields.countdownIconColor
+            fields.countdownIconColor,
+            fields.countdownFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6187,7 +6724,8 @@
             fields.daysBg,
             fields.daysFontSize,
             fields.daysColor,
-            fields.daysIconColor
+            fields.daysIconColor,
+            fields.daysFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6212,6 +6750,23 @@
           if (ytVideo) p.set("ytVideo", ytVideo);
           if (ytKey) p.set("ytKey", ytKey);
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
+          // 預設開；關掉才顯式傳 0（覆蓋頁預設也是開）
+          if (fields.ytAfterTw && !fields.ytAfterTw.checked) p.set("ytAfterTw", "0");
+          const twLiveSec = Number(fields.twPollLiveSec && fields.twPollLiveSec.value);
+          const twOffSec = Number(fields.twPollOffSec && fields.twPollOffSec.value);
+          if (Number.isFinite(twLiveSec) && twLiveSec > 0)
+            p.set("twPollLive", String(Math.round(twLiveSec)));
+          if (Number.isFinite(twOffSec) && twOffSec > 0)
+            p.set("twPollOff", String(Math.round(twOffSec)));
+          // 勾「TW 開台後才查 YT」時無視 YT 更新秒數，不寫進網址
+          if (!(fields.ytAfterTw && fields.ytAfterTw.checked)) {
+            const ytLiveSec = Number(fields.ytPollLiveSec && fields.ytPollLiveSec.value);
+            const ytOffSec = Number(fields.ytPollOffSec && fields.ytPollOffSec.value);
+            if (Number.isFinite(ytLiveSec) && ytLiveSec > 0)
+              p.set("ytPollLive", String(Math.round(ytLiveSec)));
+            if (Number.isFinite(ytOffSec) && ytOffSec > 0)
+              p.set("ytPollOff", String(Math.round(ytOffSec)));
+          }
           const vcPlatformOrder = getVcPlatformOrder();
           if (vcPlatformOrder.length) p.set("vcOrder", vcPlatformOrder.join(","));
           // 空白＝平台預設 SVG；勾掉＝不顯示（傳 0）
@@ -6226,7 +6781,9 @@
             fields.viewersShowBg,
             fields.viewersBg,
             fields.viewersFontSize,
-            fields.viewersColor
+            fields.viewersColor,
+            null,
+            fields.viewersFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6255,7 +6812,8 @@
             fields.gameBg,
             fields.gameFontSize,
             fields.gameColor,
-            fields.gameIconColor
+            fields.gameIconColor,
+            fields.gameFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6361,7 +6919,9 @@
             fields.chatShowBg,
             fields.chatBg,
             fields.chatFontSize,
-            fields.chatColor
+            fields.chatColor,
+            null,
+            fields.chatFontFamily
           );
           return url.toString();
         }
@@ -6427,6 +6987,7 @@
           if (ytKey) p.set("ytKey", ytKey);
           // 回覆視窗一次看兩邊較方便
           p.set("chatSource", "both");
+          applyFontFamilyParam(p, null);
           return url.toString();
         }
 
@@ -6465,6 +7026,7 @@
           if (fields.dmDuration.value) p.set("duration", fields.dmDuration.value);
           if (fields.dmTracks.value) p.set("tracks", fields.dmTracks.value);
           if (fields.dmFontSize.value) p.set("fontSize", fields.dmFontSize.value);
+          applyFontFamilyParam(p, fields.dmFontFamily);
           if (fields.dmColor.value.trim()) p.set("color", fields.dmColor.value.trim());
           if (fields.dmOpacity.value) p.set("opacity", fields.dmOpacity.value);
           p.set("showUser", fields.dmShowUser.checked ? "1" : "0");
@@ -6508,6 +7070,7 @@
           if (fields.popHold.value) p.set("hold", fields.popHold.value);
           if (fields.popMax.value) p.set("max", fields.popMax.value);
           if (fields.popFontSize.value) p.set("fontSize", fields.popFontSize.value);
+          applyFontFamilyParam(p, fields.popFontFamily);
           if (fields.popAvatarSize.value)
             p.set("avatarSize", fields.popAvatarSize.value);
           if (fields.popBubbleBg.value.trim())
@@ -6557,6 +7120,7 @@
           if (fields.walkIdle.value) p.set("idle", fields.walkIdle.value);
           if (fields.walkMax.value) p.set("max", fields.walkMax.value);
           if (fields.walkFontSize.value) p.set("fontSize", fields.walkFontSize.value);
+          applyFontFamilyParam(p, fields.walkFontFamily);
           if (fields.walkAvatarSize.value)
             p.set("avatarSize", fields.walkAvatarSize.value);
           if (fields.walkBubbleBg.value.trim())
@@ -6570,7 +7134,83 @@
           return url.toString();
         }
 
-function syncChatPanels() {
+function syncYtAfterTwUi() {
+          const gated = !!(fields.ytAfterTw && fields.ytAfterTw.checked);
+          ["ytPollLiveSec", "ytPollOffSec"].forEach((k) => {
+            const el = fields[k];
+            if (!el) return;
+            el.disabled = gated;
+            el.title = gated
+              ? "已勾「TW 開台後才查 YT」：無視 YT 秒數，改跟 TW 更新"
+              : "";
+          });
+          const hint = $("ytAfterTwHint");
+          if (hint) {
+            hint.textContent = gated
+              ? "勾選中：無視 YT 開台／離線秒數；TW 還沒開台 YT 顯示 0，開台後跟 TW 節奏查。只填 YT、沒填 TW 時不受影響。"
+              : "未勾選：YT 用上方「YT 開台／離線（秒）」自己輪詢。";
+          }
+        }
+
+        const STREAM_LIVE_LS_KEY = "my_obs_tools_stream_live";
+        function streamLiveLabel(mode) {
+          if (mode === "live") return "目前：手動開台";
+          if (mode === "off") return "目前：手動關台";
+          return "目前：自動（依 Twitch 偵測）";
+        }
+        function readStreamLiveMode() {
+          try {
+            const raw = JSON.parse(localStorage.getItem(STREAM_LIVE_LS_KEY) || "null");
+            if (raw && (raw.mode === "live" || raw.mode === "off" || raw.mode === "auto"))
+              return raw.mode;
+          } catch (_) {}
+          return "auto";
+        }
+        function setStreamLiveStatus(mode, note) {
+          const el = $("streamLiveStatus");
+          if (!el) return;
+          el.textContent = streamLiveLabel(mode) + (note ? " · " + note : "");
+        }
+        async function writeStreamLiveJsToDisk(payload) {
+          if (!canUseDirPicker()) return false;
+          const data = {
+            mode: (payload && payload.mode) || "auto",
+            ts: (payload && payload.ts) || Date.now(),
+          };
+          const body =
+            "// 由入口「開台／關台／自動」覆寫；OBS 人數頁會定期讀取\n" +
+            "window.__MY_OBS_STREAM_LIVE__ = " +
+            JSON.stringify(data, null, 2) +
+            ";\n";
+          try {
+            let dir = await pickInstallDir({ force: false });
+            if (!dir) return false;
+            const dataDir = await dir.getDirectoryHandle("資料", { create: true });
+            const fh = await dataDir.getFileHandle("stream-live.js", { create: true });
+            const w = await fh.createWritable();
+            await w.write(body);
+            await w.close();
+            return true;
+          } catch (err) {
+            console.warn("write stream-live.js", err);
+            return false;
+          }
+        }
+        async function setStreamLiveMode(mode) {
+          const m = mode === "live" || mode === "off" ? mode : "auto";
+          const payload = { mode: m, ts: Date.now() };
+          try {
+            localStorage.setItem(STREAM_LIVE_LS_KEY, JSON.stringify(payload));
+          } catch (_) {}
+          const wrote = await writeStreamLiveJsToDisk(payload);
+          setStreamLiveStatus(
+            m,
+            wrote ? "已寫入 資料/stream-live.js" : "已記在本機（請授權資料夾以便 OBS 跟上）"
+          );
+          buildUrls();
+        }
+
+        function syncChatPanels() {
           const split = fields.chatLayout.value === "split";
           $("chatMergePanel").hidden = split;
           $("chatSplitPanel").hidden = !split;
@@ -6655,7 +7295,15 @@ function syncChatPanels() {
             p.set("demo", "1");
             p.set("preview", "1");
           }
-          styleParams(p, fields.spShowBg, fields.spBg, fields.spFontSize, fields.spColor);
+          styleParams(
+            p,
+            fields.spShowBg,
+            fields.spBg,
+            fields.spFontSize,
+            fields.spColor,
+            null,
+            fields.spFontFamily
+          );
           applyPanelImageParams(
             p,
             fields.spShowPanelImg,
@@ -6721,7 +7369,8 @@ function syncChatPanels() {
             fields.ctrBg,
             fields.ctrFontSize,
             fields.ctrColor,
-            fields.ctrIconColor
+            fields.ctrIconColor,
+            fields.ctrFontFamily
           );
           applyPanelImageParams(
             p,
@@ -6761,7 +7410,7 @@ function syncChatPanels() {
             ts: Date.now(),
           };
           const body =
-            "// 由入口⑪自動覆寫；OBS 媒體頁會定期讀取\n" +
+            "// 由入口⑮自動覆寫；OBS 媒體頁會定期讀取\n" +
             "window.__MY_OBS_MEDIA_PLAYLIST__ = " +
             JSON.stringify(data, null, 2) +
             ";\n";
@@ -7485,12 +8134,68 @@ function syncChatPanels() {
             ) {
               syncAllBgFields();
             }
+            if (el === fields.ytAfterTw) syncYtAfterTwUi();
             buildUrls();
           });
         });
         document.querySelectorAll("#modules input").forEach((el) =>
           el.addEventListener("change", buildUrls)
         );
+        syncYtAfterTwUi();
+        setStreamLiveStatus(readStreamLiveMode());
+        const streamLiveBtn = $("streamLiveBtn");
+        const streamOffBtn = $("streamOffBtn");
+        const streamAutoBtn = $("streamAutoBtn");
+        if (streamLiveBtn)
+          streamLiveBtn.addEventListener("click", () => setStreamLiveMode("live"));
+        if (streamOffBtn)
+          streamOffBtn.addEventListener("click", () => setStreamLiveMode("off"));
+        if (streamAutoBtn)
+          streamAutoBtn.addEventListener("click", () => setStreamLiveMode("auto"));
+
+        async function writeFontFileToDisk(file) {
+          if (!file || !canUseDirPicker()) return null;
+          const safe = String(file.name || "custom-font.ttf")
+            .replace(/[\\/:*?"<>|]+/g, "_")
+            .trim() || "custom-font.ttf";
+          try {
+            let dir = await pickInstallDir({ force: false });
+            if (!dir) return null;
+            const fontsDir = await dir.getDirectoryHandle("fonts", { create: true });
+            const fh = await fontsDir.getFileHandle(safe, { create: true });
+            const w = await fh.createWritable();
+            await w.write(await file.arrayBuffer());
+            await w.close();
+            return "fonts/" + safe;
+          } catch (err) {
+            console.warn("write font", err);
+            return null;
+          }
+        }
+
+        const defaultFontUploadBtn = $("defaultFontUploadBtn");
+        const defaultFontUploadFile = $("defaultFontUploadFile");
+        if (defaultFontUploadBtn && defaultFontUploadFile) {
+          defaultFontUploadBtn.addEventListener("click", () => defaultFontUploadFile.click());
+          defaultFontUploadFile.addEventListener("change", async () => {
+            const file = defaultFontUploadFile.files && defaultFontUploadFile.files[0];
+            defaultFontUploadFile.value = "";
+            if (!file) return;
+            const path = await writeFontFileToDisk(file);
+            const hint = $("defaultFontHint");
+            if (path && fields.defaultFontFamily) {
+              fields.defaultFontFamily.value = path;
+              syncStylePlaceholders();
+              buildUrls();
+              if (hint)
+                hint.textContent =
+                  "已上傳並填入 " + path + "。請重新複製各覆蓋網址；OBS 來源需能讀到 fonts/。";
+            } else if (hint) {
+              hint.textContent =
+                "上傳失敗：請先按「確定」授權工具資料夾，或手動把字型放到 fonts/ 再填路徑。";
+            }
+          });
+        }
 
         function parseAccountTxt(text) {
           const map = {};

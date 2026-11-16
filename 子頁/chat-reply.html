@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>拉基的OBS工具箱 · 聊天回覆</title>
+    <script src="../font-style.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -371,6 +372,10 @@
       (() => {
         const YT_API = "https://www.googleapis.com/youtube/v3";
         const params = new URLSearchParams(location.search);
+        if (window.ObsFontStyle) {
+          const _cssVar = (n, v) => { if (v) document.documentElement.style.setProperty(n, v); };
+          ObsFontStyle.applyFromParams(params, { cssVar: _cssVar });
+        }
         const storeKey = "laji_obs_chat_reply";
 
         const twitchLogin = (

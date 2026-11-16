@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>拉基的OBS工具箱 · 頭像對話框</title>
+    <script src="../font-style.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -246,6 +247,7 @@
           "--size",
           params.get("fontSize") ? `${params.get("fontSize")}px` : ""
         );
+        if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
         cssVar("--fg", params.get("color") || "");
         cssVar("--bubble-bg", params.get("bubbleBg") || "");
         cssVar("--name", params.get("nameColor") || "");

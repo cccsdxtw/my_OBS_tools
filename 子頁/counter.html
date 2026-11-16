@@ -12,6 +12,7 @@
     />
     <script src="../material-icons.js"></script>
     <script src="../panel-bg.js"></script>
+    <script src="../font-style.js"></script>
     <script src="../yt-live-sync.js"></script>
     <style>
       :root {
@@ -181,6 +182,7 @@
         }
 
         cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
         cssVar("--fg", params.get("color"));
         cssVar("--icon", params.get("iconColor") || params.get("iconColour"));
         const bgParam = (params.get("bg") || "").trim();

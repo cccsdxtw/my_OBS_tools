@@ -11,7 +11,9 @@
       rel="stylesheet"
     />
     <script src="../panel-bg.js"></script>
+    <script src="../font-style.js"></script>
     <script src="../yt-live-sync.js"></script>
+    <script src="../stream-live-sync.js"></script>
     <style>
       :root {
         --bg: rgba(0, 0, 0, 0.45);
@@ -102,6 +104,14 @@
       .error {
         color: #ff8f8f;
       }
+
+      /* YouTube 無法取得：與數字同色（不再用紅字 403／ERR） */
+      .value.soft-fail {
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.72);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
     </style>
   </head>
   <body>
@@ -150,21 +160,26 @@
         const DECAPI_VIEWERS = (login) =>
           `https://decapi.me/twitch/viewercount/${encodeURIComponent(login)}`;
         const YT_API = "https://www.googleapis.com/youtube/v3";
-        // Twitch 可較密；YouTube 免費配額一天約 10000，search.list 一次就 100
-        const POLL_MS_TW = 15000;
-        const POLL_MS_YT = 60000;
         // 自動「找直播」成功後就記住；下播後至少隔這麼久才准再找下一次
         const YT_REFIND_MS = 2 * 60 * 60 * 1000;
         const YT_QUOTA_COOLDOWN_MS = 60 * 60 * 1000;
         const YT_QUOTA_UNTIL_KEY = "my_obs_tools_yt_quota_until";
+        const YT_FAIL_LABEL = "無法取得";
 
         const params = new URLSearchParams(location.search);
+
+        function clampPollMs(rawSec, fallbackSec, minSec, maxSec) {
+          const n = Number(rawSec);
+          const sec = Number.isFinite(n) && n > 0 ? n : fallbackSec;
+          return Math.round(Math.min(maxSec, Math.max(minSec, sec)) * 1000);
+        }
 
         function cssVar(name, value) {
           if (value) document.documentElement.style.setProperty(name, value);
         }
 
         cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
         cssVar("--fg", params.get("color"));
         const bgParam = (params.get("bg") || "").trim();
         if (!bgParam || bgParam === "0" || bgParam === "false" || bgParam === "none" || bgParam === "off") {
@@ -230,12 +245,36 @@
             .trim()
             .toLowerCase()
         );
-        // 預覽／未填直播網址時更省；正式 OBS 有 ytVideo 時約 1 分鐘一查
-        const ytPollMs = isPreview
-          ? 3 * 60 * 1000
-          : ytVideoParam
-            ? POLL_MS_YT
-            : 90 * 1000;
+        // 預設開：TW 偵測到開台後才打 YouTube（此時無視 YT 秒數，跟 TW 一起查）
+        const ytAfterTwParam = String(params.get("ytAfterTw") || "1")
+          .trim()
+          .toLowerCase();
+        const ytAfterTw = !["0", "false", "off", "no"].includes(ytAfterTwParam);
+        // 開台要快、離線可慢（可從入口自訂）
+        const pollMsTwLive = clampPollMs(
+          params.get("twPollLive") || params.get("twPoll") || params.get("twPollSec"),
+          isPreview ? 60 : 15,
+          5,
+          600
+        );
+        const pollMsTwOff = clampPollMs(
+          params.get("twPollOff"),
+          isPreview ? 120 : 90,
+          15,
+          3600
+        );
+        const pollMsYtLive = clampPollMs(
+          params.get("ytPollLive") || params.get("ytPoll") || params.get("ytPollSec"),
+          isPreview ? 180 : 60,
+          15,
+          3600
+        );
+        const pollMsYtOff = clampPollMs(
+          params.get("ytPollOff"),
+          isPreview ? 300 : 300,
+          30,
+          7200
+        );
         const allowYtSearch = ["1", "true", "yes", "on"].includes(
           String(params.get("ytSearch") || "")
             .trim()
@@ -318,40 +357,96 @@
           return;
         }
 
-        let twCount = null; // null=未知, number=值
-        let ytCount = null;
+        let twCount = null; // null=未知, number=值, "ERR"|"403"=TW失敗
+        let ytCount = null; // null=未知, number=值, YT_FAIL_LABEL=YT失敗
+        let twLiveDetected = false; // API 偵測
+        let ytLive = false;
+        let manualMode = "auto"; // auto | live | off（入口按鈕／stream-live.js）
         let ytVideoId = ytVideoParam || null;
         let ytChannelId = null;
         let lastYtResolve = 0;
+
+        function effectiveLive() {
+          if (manualMode === "live") return true;
+          if (manualMode === "off") return false;
+          return !!twLiveDetected;
+        }
+
+        function isYtFail(v) {
+          return (
+            v === YT_FAIL_LABEL ||
+            v === "ERR" ||
+            v === "FILE" ||
+            v === "403"
+          );
+        }
+
+        function isTwFail(v) {
+          return v === "ERR" || v === "FILE" || v === "403";
+        }
+
+        function setYtValueEl(el, value, tip) {
+          if (!el) return;
+          const failed = isYtFail(value);
+          const ok = typeof value === "number";
+          el.classList.remove("error");
+          el.classList.toggle("soft-fail", failed);
+          el.textContent = failed
+            ? YT_FAIL_LABEL
+            : ok
+              ? String(value)
+              : "—";
+          el.title = failed ? tip || "YouTube 人數暫時抓不到" : "";
+        }
 
         function render() {
           const twOk = typeof twCount === "number";
           const ytOk = typeof ytCount === "number";
           if (mode === "total") {
             if (!twOk && !ytOk) {
-              els.total.textContent = "—";
+              const ytBad = isYtFail(ytCount);
+              const twBad = isTwFail(twCount);
+              if (ytBad && !twBad) {
+                setYtValueEl(els.total, YT_FAIL_LABEL, ytErrTip);
+                return;
+              }
+              els.total.classList.remove("soft-fail");
+              els.total.classList.toggle("error", twBad || ytBad);
+              els.total.textContent = twBad
+                ? String(twCount)
+                : ytBad
+                  ? YT_FAIL_LABEL
+                  : "—";
+              els.total.title = twBad
+                ? twErrTip || "Twitch 人數抓取失敗"
+                : ytBad
+                  ? ytErrTip || ""
+                  : "";
               return;
             }
             const sum = (twOk ? twCount : 0) + (ytOk ? ytCount : 0);
-            els.total.classList.remove("error");
+            els.total.classList.remove("error", "soft-fail");
+            els.total.title = "";
             els.total.textContent = String(sum);
             return;
           }
           if (wantTw) {
-            const bad =
-              twCount === "ERR" || twCount === "FILE" || twCount === "403";
+            const bad = isTwFail(twCount);
+            els.tw.classList.remove("soft-fail");
             els.tw.classList.toggle("error", bad);
-            els.tw.textContent = bad ? String(twCount) : twOk ? String(twCount) : "—";
+            els.tw.textContent = bad
+              ? String(twCount)
+              : twOk
+                ? String(twCount)
+                : "—";
             els.tw.title = bad ? twErrTip || "Twitch 人數抓取失敗" : "";
           }
           if (wantYt) {
-            const bad =
-              ytCount === "ERR" || ytCount === "FILE" || ytCount === "403";
-            els.yt.classList.toggle("error", bad);
-            els.yt.textContent = bad ? String(ytCount) : ytOk ? String(ytCount) : "—";
-            els.yt.title = bad
-              ? ytErrTip || "YouTube 人數抓取失敗（金鑰限制／配額／找不到直播）"
-              : "";
+            setYtValueEl(
+              els.yt,
+              ytCount,
+              ytErrTip || "YouTube 人數抓取失敗（金鑰限制／配額／找不到直播）"
+            );
           }
         }
 
@@ -370,17 +465,18 @@
           if (!res.ok) throw new Error(`gql ${res.status}`);
           const json = await res.json();
           const stream = json?.data?.user?.stream;
-          return stream ? stream.viewersCount ?? 0 : 0;
+          if (!stream) return { live: false, viewers: 0 };
+          return { live: true, viewers: stream.viewersCount ?? 0 };
         }
 
         async function fetchTwitchDecapi() {
           const text = (
             await fetch(DECAPI_VIEWERS(twitchLogin)).then((r) => r.text())
           ).trim();
-          if (/offline/i.test(text)) return 0;
+          if (/offline/i.test(text)) return { live: false, viewers: 0 };
           const n = parseInt(text, 10);
           if (Number.isNaN(n)) throw new Error("decapi");
-          return n;
+          return { live: true, viewers: n };
         }
 
         const isFileOrigin = location.protocol === "file:";
@@ -411,35 +507,97 @@
         }
         function failLabel(err, which) {
           const msg = String((err && err.message) || err || "");
-          console.error(which || "viewers", err);
-          const tip = msg
+          if (which === "yt") console.warn("viewers yt", err);
+          else console.error(which || "viewers", err);
+          let tip = msg
             ? msg
             : isFileOrigin
               ? "本機 file:// 請求失敗"
               : "人數抓取失敗";
-          if (which === "yt") ytErrTip = tip;
-          else if (which === "tw") twErrTip = tip;
-          if (/403/.test(msg)) {
-            if (which === "yt") ytErrTip = yt403Tip(msg);
-            return "403";
+          if (which === "yt") {
+            if (/403/.test(msg)) tip = yt403Tip(msg);
+            ytErrTip = tip;
+            return YT_FAIL_LABEL;
           }
+          if (which === "tw") twErrTip = tip;
+          if (/403/.test(msg)) return "403";
           return "ERR";
+        }
+
+        function ytAllowedByTw() {
+          // 沒勾「等 TW」或沒填 TW → YT 自己跑；有填 TW 則等「有效開台」
+          if (!ytAfterTw) return true;
+          if (!wantTw) return true;
+          return effectiveLive();
+        }
+
+        function parkYoutubeUntilTw() {
+          ytLive = false;
+          ytCount = 0;
+          ytErrTip = "";
+        }
+
+        async function refreshManualMode() {
+          let fileMode = null;
+          let fileTs = 0;
+          if (window.MyObsStreamLiveSync) {
+            try {
+              const data = await MyObsStreamLiveSync.fetchSharedStreamLive();
+              if (
+                data &&
+                (data.mode === "live" || data.mode === "off" || data.mode === "auto")
+              ) {
+                fileMode = data.mode;
+                fileTs = Number(data.ts) || 0;
+              }
+            } catch (_) {}
+          }
+          let lsMode = null;
+          let lsTs = 0;
+          try {
+            const raw = JSON.parse(
+              localStorage.getItem("my_obs_tools_stream_live") || "null"
+            );
+            if (
+              raw &&
+              (raw.mode === "live" || raw.mode === "off" || raw.mode === "auto")
+            ) {
+              lsMode = raw.mode;
+              lsTs = Number(raw.ts) || 0;
+            }
+          } catch (_) {}
+          if (fileMode && lsMode) manualMode = lsTs >= fileTs ? lsMode : fileMode;
+          else if (fileMode) manualMode = fileMode;
+          else if (lsMode) manualMode = lsMode;
+          return manualMode;
         }
 
         async function refreshTwitch() {
           if (!wantTw) return;
+          await refreshManualMode();
           try {
-            if (twitchSource === "decapi") twCount = await fetchTwitchDecapi();
+            let data;
+            if (twitchSource === "decapi") data = await fetchTwitchDecapi();
             else {
               try {
-                twCount = await fetchTwitchGql();
+                data = await fetchTwitchGql();
               } catch (e) {
                 console.warn("GQL failed, DecAPI", e);
-                twCount = await fetchTwitchDecapi();
+                data = await fetchTwitchDecapi();
               }
             }
+            twLiveDetected = !!data.live;
+            // TW 維持原本顯示：人數仍跟 API；手動開台只影響節奏／YT 閘門
+            twCount = data.viewers;
+            twErrTip = "";
           } catch (err) {
+            twLiveDetected = false;
             twCount = failLabel(err, "tw");
+          }
+          // 勾「TW 開台後才查 YT」：無視 YT 秒數，跟這次 TW 詢問一起查
+          if (ytAfterTw && wantYt) {
+            if (!effectiveLive()) parkYoutubeUntilTw();
+            else await refreshYoutube();
           }
         }
 
@@ -739,7 +897,7 @@
         async function fetchYoutubeViewers() {
           assertYtQuotaOk();
           const videoId = await resolveYoutubeLiveVideoId(false);
-          if (!videoId) return 0;
+          if (!videoId) return { live: false, viewers: 0 };
           const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
             videoId
           )}&key=${encodeURIComponent(ytKey)}`;
@@ -748,15 +906,25 @@
           if (!details || details.actualEndTime) {
             // 下播：忘掉本場，但兩小時內不再自動找下一場
             const channelId = ytChannelId || (readYtCache() || {}).channelId || "";
-            ytVideoId = null;
-            writeYtCache({
-              channelId,
-              videoId: null,
-              endedAt: Date.now(),
-              ts: Date.now(),
-            });
+            // 有固定填直播網址時保留 id，之後用慢輪詢等再開台
+            if (!ytVideoParam) {
+              ytVideoId = null;
+              writeYtCache({
+                channelId,
+                videoId: null,
+                endedAt: Date.now(),
+                ts: Date.now(),
+              });
+            } else {
+              writeYtCache({
+                channelId,
+                videoId: ytVideoParam,
+                endedAt: Date.now(),
+                ts: Date.now(),
+              });
+            }
             lastYtResolve = Date.now();
-            return 0;
+            return { live: false, viewers: 0 };
           }
           if (!ytVideoParam) {
             writeYtCache({
@@ -767,15 +935,25 @@
             });
           }
           const n = parseInt(details.concurrentViewers || "0", 10);
-          return Number.isNaN(n) ? 0 : n;
+          return {
+            live: true,
+            viewers: Number.isNaN(n) ? 0 : n,
+          };
         }
 
         async function refreshYoutube() {
           if (!wantYt) return;
+          if (!ytAllowedByTw()) {
+            parkYoutubeUntilTw();
+            return;
+          }
           try {
-            ytCount = await fetchYoutubeViewers();
+            const data = await fetchYoutubeViewers();
+            ytLive = !!data.live;
+            ytCount = ytLive ? data.viewers : 0;
             ytErrTip = "";
           } catch (err) {
+            ytLive = false;
             ytCount = failLabel(err, "yt");
           }
         }
@@ -785,18 +963,73 @@
           render();
         }
 
-        async function refreshAll() {
-          await Promise.all([refreshTwitch(), refreshYoutube()]);
-          render();
+        function nextTwDelay() {
+          return effectiveLive() ? pollMsTwLive : pollMsTwOff;
+        }
+
+        function nextYtDelay() {
+          // 獨立 YT 輪詢：開台用開台秒數、離線用離線秒數（此處 live＝YT 自己有沒有在播）
+          return ytLive ? pollMsYtLive : pollMsYtOff;
+        }
+
+        // YT 獨立輪詢：未勾 ytAfterTw，或只填 YT 沒填 TW
+        function ytUsesOwnPoll() {
+          return wantYt && !(ytAfterTw && wantTw);
+        }
+
+        let twTimer = null;
+        let twBusy = false;
+        async function twLoop() {
+          if (!wantTw) return;
+          if (twBusy) return;
+          twBusy = true;
+          try {
+            if (twTimer) {
+              clearTimeout(twTimer);
+              twTimer = null;
+            }
+            await refreshTwitchOnly();
+          } finally {
+            twBusy = false;
+            twTimer = setTimeout(twLoop, nextTwDelay());
+          }
+        }
+
+        let ytTimer = null;
+        let ytBusy = false;
+        async function ytLoop() {
+          if (!ytUsesOwnPoll()) return;
+          if (ytBusy) return;
+          ytBusy = true;
+          try {
+            if (ytTimer) {
+              clearTimeout(ytTimer);
+              ytTimer = null;
+            }
+            await refreshManualMode();
+            // 手動關台時：獨立 YT 也先停（省配額）；手動開台／自動照常
+            if (manualMode === "off") {
+              parkYoutubeUntilTw();
+              render();
+            } else {
+              await refreshYoutube();
+              render();
+            }
+          } finally {
+            ytBusy = false;
+            const delay =
+              manualMode === "off"
+                ? pollMsYtOff
+                : manualMode === "live"
+                  ? pollMsYtLive
+                  : nextYtDelay();
+            ytTimer = setTimeout(ytLoop, delay);
+          }
         }
 
         render();
-        refreshAll();
-        setInterval(refreshTwitchOnly, POLL_MS_TW);
-        setInterval(async () => {
-          await refreshYoutube();
-          render();
-        }, ytPollMs);
+        if (wantTw) twLoop();
+        if (ytUsesOwnPoll()) ytLoop();
       })();
     </script>
   </body>

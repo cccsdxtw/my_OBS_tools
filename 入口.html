@@ -1500,7 +1500,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.0.6</span>
+          <span class="brand-version" id="brandVersion">v3.0.7</span>
         </h1>
         <p>
           先填最上方的共用設定。預設模式依 A 帳號 → B 聊天 → C 免帳號排列；切換模式可自己拖曳 A - ①、B - ①… 各工具順序（不再顯示 ABC 分欄）。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -4380,7 +4380,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.0.6";
+        const APP_VERSION = "v3.0.7";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4912,10 +4912,22 @@
           return next;
         }
 
+        function restoreScrollY(y) {
+          const top = typeof y === "number" ? y : 0;
+          const apply = () => {
+            window.scrollTo(0, top);
+            if (document.documentElement) document.documentElement.scrollTop = top;
+            if (document.body) document.body.scrollTop = top;
+          };
+          apply();
+          requestAnimationFrame(apply);
+        }
+
         /** flat=true：切換模式，每個功能塊獨立，不插入 ABC 分欄 */
-        function applyToolOrder(order, { flat = false } = {}) {
+        function applyToolOrder(order, { flat = false, preserveScroll = true } = {}) {
           const root = getMainBandsRoot();
           if (!root) return;
+          const scrollY = preserveScroll ? window.scrollY || window.pageYOffset || 0 : null;
           const shared = root.querySelector(":scope > .band.band-solo");
           const groups = {
             account: root.querySelector("#group-account"),
@@ -4951,6 +4963,25 @@
             });
           }
           root.appendChild(frag);
+          if (preserveScroll && scrollY != null) restoreScrollY(scrollY);
+        }
+
+        /** 切換模式拖曳：只移動單一功能塊，較不易跳卷軸 */
+        function moveToolBlockBefore(fromId, toId) {
+          const root = getMainBandsRoot();
+          if (!root) return false;
+          const fromEl = root.querySelector(
+            `:scope > .tool-block[data-tool="${CSS.escape(fromId)}"]`
+          );
+          const toEl = root.querySelector(
+            `:scope > .tool-block[data-tool="${CSS.escape(toId)}"]`
+          );
+          if (!fromEl || !toEl || fromEl === toEl) return false;
+          const scrollY = window.scrollY || window.pageYOffset || 0;
+          root.insertBefore(fromEl, toEl);
+          writeToolOrder(currentToolOrderFromDom());
+          restoreScrollY(scrollY);
+          return true;
         }
 
         function ensureToolDragHandle(block) {
@@ -5071,10 +5102,15 @@
                 from = root.dataset.draggingTool || "";
               }
               const to = block.dataset.tool || "";
-              const next = moveToolInOrder(currentToolOrderFromDom(), from, to);
-              if (!next) return;
-              writeToolOrder(next);
-              applyToolOrder(next, { flat: true });
+              if (!from || !to || from === to) return;
+              const scrollY = window.scrollY || window.pageYOffset || 0;
+              if (!moveToolBlockBefore(from, to)) {
+                const next = moveToolInOrder(currentToolOrderFromDom(), from, to);
+                if (!next) return;
+                writeToolOrder(next);
+                applyToolOrder(next, { flat: true, preserveScroll: true });
+              }
+              restoreScrollY(scrollY);
               document.querySelectorAll(".bands > .tool-block").forEach((b) => {
                 ensureToolDragHandle(b);
               });

@@ -1,4 +1,4 @@
-// 由入口 C⑤媒體播放設定後自動覆寫。OBS 子頁會定期讀取。
+// 由入口 C - ⑤媒體播放設定後自動覆寫。OBS 子頁會定期讀取。
 window.__MY_OBS_MEDIA_PLAYLIST__ = {
   items: [],
   mode: "loop",

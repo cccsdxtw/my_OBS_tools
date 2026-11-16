@@ -240,6 +240,30 @@
         const ytVideoParam = extractYoutubeVideoId(params.get("ytVideo") || "");
         const ytKey = (params.get("ytKey") || params.get("youtubeKey") || "").trim();
         const twitchSource = (params.get("viewersSource") || "auto").toLowerCase();
+        function normalizeYtViewersMethod(raw, fallback) {
+          const s = String(raw || "")
+            .trim()
+            .toLowerCase();
+          if (s === "web" || s === "page" || s === "live_stats" || s === "innertube")
+            return "web";
+          if (s === "api" || s === "data") return "api";
+          if (s === "off" || s === "0" || s === "none" || s === "false" || s === "no")
+            return "off";
+          return fallback;
+        }
+        // 主要／次要：web＝網頁方式（不耗 Data API，需本機 8765）；api＝官方 API；off＝不用
+        const ytViewersPrimary = normalizeYtViewersMethod(
+          params.get("ytViewersPrimary") || params.get("ytVcPrimary"),
+          "web"
+        );
+        const ytViewersSecondary = normalizeYtViewersMethod(
+          params.get("ytViewersSecondary") || params.get("ytVcSecondary"),
+          "api"
+        );
+        const usesYtWebForViewers =
+          ytViewersPrimary === "web" || ytViewersSecondary === "web";
+        const usesYtApiForViewers =
+          ytViewersPrimary === "api" || ytViewersSecondary === "api";
         const isPreview = ["1", "true", "yes", "on"].includes(
           String(params.get("preview") || params.get("demo") || "")
             .trim()
@@ -325,7 +349,10 @@
         applyCustomIcon(els.totalIcon, totalIconUrl);
 
         const wantTw = !!twitchLogin;
-        const wantYt = !!(ytVideoParam || (ytChannel && ytKey));
+        // 有頻道或直播網址，且至少選了一種人數讀法
+        const wantYt =
+          (usesYtWebForViewers || usesYtApiForViewers) &&
+          !!(ytVideoParam || ytChannel);
 
         if (mode === "total") {
           els.modTotal.hidden = !(wantTw || wantYt);
@@ -856,6 +883,11 @@
             return null;
           }
 
+          // 自動找直播仍走 Data API；沒金鑰就只能靠手動／入口共用的本場 ID
+          if (!ytKey) {
+            return ytVideoId || null;
+          }
+
           const channelId = await resolveYoutubeChannelId();
           let id = null;
           let lastErr = null;
@@ -894,37 +926,38 @@
           return null;
         }
 
-        async function fetchYoutubeViewers() {
+        function markYoutubeEnded(videoIdHint) {
+          const channelId = ytChannelId || (readYtCache() || {}).channelId || "";
+          if (!ytVideoParam) {
+            ytVideoId = null;
+            writeYtCache({
+              channelId,
+              videoId: null,
+              endedAt: Date.now(),
+              ts: Date.now(),
+            });
+          } else {
+            writeYtCache({
+              channelId,
+              videoId: ytVideoParam || videoIdHint || null,
+              endedAt: Date.now(),
+              ts: Date.now(),
+            });
+          }
+          lastYtResolve = Date.now();
+        }
+
+        async function fetchYoutubeViewersViaApi(videoId) {
+          if (!ytKey) throw new Error("缺 YouTube API Key");
           assertYtQuotaOk();
-          const videoId = await resolveYoutubeLiveVideoId(false);
-          if (!videoId) return { live: false, viewers: 0 };
           const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
             videoId
           )}&key=${encodeURIComponent(ytKey)}`;
           const json = await ytFetchJson(url, "yt videos");
           const details = json?.items?.[0]?.liveStreamingDetails;
           if (!details || details.actualEndTime) {
-            // 下播：忘掉本場，但兩小時內不再自動找下一場
-            const channelId = ytChannelId || (readYtCache() || {}).channelId || "";
-            // 有固定填直播網址時保留 id，之後用慢輪詢等再開台
-            if (!ytVideoParam) {
-              ytVideoId = null;
-              writeYtCache({
-                channelId,
-                videoId: null,
-                endedAt: Date.now(),
-                ts: Date.now(),
-              });
-            } else {
-              writeYtCache({
-                channelId,
-                videoId: ytVideoParam,
-                endedAt: Date.now(),
-                ts: Date.now(),
-              });
-            }
-            lastYtResolve = Date.now();
-            return { live: false, viewers: 0 };
+            markYoutubeEnded(videoId);
+            return { live: false, viewers: 0, source: "api" };
           }
           if (!ytVideoParam) {
             writeYtCache({
@@ -938,7 +971,79 @@
           return {
             live: true,
             viewers: Number.isNaN(n) ? 0 : n,
+            source: "api",
           };
+        }
+
+        async function fetchYoutubeViewersViaWeb(videoId) {
+          const bases = [];
+          if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(location.origin)) {
+            bases.push(location.origin);
+          }
+          bases.push("http://127.0.0.1:8765");
+          let lastErr = null;
+          for (const base of bases) {
+            try {
+              const r = await fetch(
+                base +
+                  "/api/yt-viewers?v=" +
+                  encodeURIComponent(videoId) +
+                  "&t=" +
+                  Date.now(),
+                { cache: "no-store" }
+              );
+              if (!r.ok) throw new Error("proxy " + r.status);
+              const j = await r.json();
+              if (!j || typeof j.viewers !== "number") {
+                throw new Error("bad proxy payload");
+              }
+              if (!j.live) {
+                markYoutubeEnded(videoId);
+                return { live: false, viewers: 0, source: "web" };
+              }
+              if (!ytVideoParam) {
+                writeYtCache({
+                  channelId: ytChannelId || (readYtCache() || {}).channelId,
+                  videoId,
+                  ts: Date.now(),
+                  foundOnce: true,
+                });
+              }
+              return {
+                live: true,
+                viewers: j.viewers,
+                source: "web",
+              };
+            } catch (e) {
+              lastErr = e;
+            }
+          }
+          throw lastErr || new Error("網頁方式需要本機伺服器（8765）");
+        }
+
+        async function fetchYoutubeViewersByMethod(method, videoId) {
+          if (method === "web") return fetchYoutubeViewersViaWeb(videoId);
+          if (method === "api") return fetchYoutubeViewersViaApi(videoId);
+          throw new Error("method off");
+        }
+
+        async function fetchYoutubeViewers() {
+          const videoId = await resolveYoutubeLiveVideoId(false);
+          if (!videoId) return { live: false, viewers: 0 };
+          const chain = [ytViewersPrimary, ytViewersSecondary].filter(
+            (m, i, arr) => m && m !== "off" && arr.indexOf(m) === i
+          );
+          if (!chain.length) throw new Error("未啟用任何 YT 人數來源");
+          let lastErr = null;
+          for (const method of chain) {
+            try {
+              return await fetchYoutubeViewersByMethod(method, videoId);
+            } catch (e) {
+              lastErr = e;
+              console.warn("yt viewers via " + method + " failed", e);
+            }
+          }
+          throw lastErr || new Error("yt viewers failed");
         }
 
         async function refreshYoutube() {

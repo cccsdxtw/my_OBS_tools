@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.0.2</span>
+          <span class="brand-version" id="brandVersion">v3.0.3</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -1790,8 +1790,8 @@
             </div>
             <p class="hint">
               使用最上方的共用設定帳號。開台／離線可設不同更新秒數（開台要快、關台可慢）。YouTube：預設等
-              Twitch 開台後才查（此時無視 YT 秒數，改跟 TW 一起查）。也可用下方手動「開台／關台」強制狀態。YT
-              抓不到顯示同色「無法取得」。入口預覽也會打 API，OBS 開著可先收合預覽。
+              Twitch 開台後才查（此時無視 YT 秒數，改跟 TW 一起查）。人數可選「網頁方式／Data API」當主要或次要（也可關閉）。也可用下方手動「開台／關台」強制狀態。YT
+              抓不到顯示同色「無法取得」。入口預覽也會打來源，OBS 開著可先收合預覽。
             </p>
 
             <div class="field">
@@ -1830,6 +1830,33 @@
             >
             <p class="hint" id="ytAfterTwHint">
               勾選＝YT 秒數忽略，跟 TW 節奏走；TW 還沒開台時 YT 顯示 0。
+            </p>
+
+            <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              YouTube 人數讀取方式
+            </p>
+            <div class="row" style="margin-top: 8px">
+              <div>
+                <label for="ytViewersPrimary">主要</label>
+                <select id="ytViewersPrimary">
+                  <option value="web" selected>網頁方式（不耗 API）</option>
+                  <option value="api">Data API（耗配額）</option>
+                  <option value="off">關閉</option>
+                </select>
+              </div>
+              <div>
+                <label for="ytViewersSecondary">次要（主要失敗才用）</label>
+                <select id="ytViewersSecondary">
+                  <option value="api" selected>Data API（耗配額）</option>
+                  <option value="web">網頁方式（不耗 API）</option>
+                  <option value="off">關閉</option>
+                </select>
+              </div>
+            </div>
+            <p class="hint" id="ytViewersMethodHint">
+              網頁方式走本機伺服器代理（與媒體相同，埠 8765），不扣 YouTube Data API
+              配額；失敗才改打次要。兩邊都關＝不顯示 YT 人數。找直播／頻道 ID 若沒填本場直播網址，仍可能需要 API
+              Key。
             </p>
 
             <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
@@ -4388,7 +4415,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.0.2";
+        const APP_VERSION = "v3.0.3";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -6308,6 +6335,8 @@
           channel: $("channel"),
           vcMode: $("vcMode"),
           ytAfterTw: $("ytAfterTw"),
+          ytViewersPrimary: $("ytViewersPrimary"),
+          ytViewersSecondary: $("ytViewersSecondary"),
           twPollLiveSec: $("twPollLiveSec"),
           twPollOffSec: $("twPollOffSec"),
           ytPollLiveSec: $("ytPollLiveSec"),
@@ -8065,6 +8094,10 @@
           if (fields.vcMode.value) p.set("vcMode", fields.vcMode.value);
           // 預設開；關掉才顯式傳 0（覆蓋頁預設也是開）
           if (fields.ytAfterTw && !fields.ytAfterTw.checked) p.set("ytAfterTw", "0");
+          const ytPri = (fields.ytViewersPrimary && fields.ytViewersPrimary.value) || "web";
+          const ytSec = (fields.ytViewersSecondary && fields.ytViewersSecondary.value) || "api";
+          if (ytPri && ytPri !== "web") p.set("ytViewersPrimary", ytPri);
+          if (ytSec && ytSec !== "api") p.set("ytViewersSecondary", ytSec);
           const twLiveSec = Number(fields.twPollLiveSec && fields.twPollLiveSec.value);
           const twOffSec = Number(fields.twPollOffSec && fields.twPollOffSec.value);
           if (Number.isFinite(twLiveSec) && twLiveSec > 0)

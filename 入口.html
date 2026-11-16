@@ -1500,7 +1500,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.0.5</span>
+          <span class="brand-version" id="brandVersion">v3.0.6</span>
         </h1>
         <p>
           先填最上方的共用設定。預設模式依 A 帳號 → B 聊天 → C 免帳號排列；切換模式可自己拖曳 A - ①、B - ①… 各工具順序（不再顯示 ABC 分欄）。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -4140,14 +4140,14 @@
           </aside>
         </div>
         </div>
+      </div>
 
-        <div class="note">
-          <strong>為什麼不用一直驗證？</strong><br />
-          舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
-          這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
-          回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
-          上方可見 A／B／C 分類標頭與捷徑；各組內自行編號（略過含 4，如 A - ④／B - ④），例如 A - ①②③⑤、B - ①②③⑤⑥、C - ①②③⑤。各編號右邊網址加 OBS 瀏覽器來源即可（B - ② 回覆除外）。
-        </div>
+      <div class="note">
+        <strong>為什麼不用一直驗證？</strong><br />
+        舊版 livestats2 要把 Twitch Access Token 塞進網址，過期就要重授權。
+        這裡 OBS 顯示用覆蓋改抓公開資料，日常不必再跑 OAuth。
+        回覆請優先用 Restream（授權由 Restream 維持）；本機回覆頁才需要自己管會過期的發話 token。
+        上方可見 A／B／C 分類標頭與捷徑；各組內自行編號（略過含 4，如 A - ④／B - ④），例如 A - ①②③⑤、B - ①②③⑤⑥、C - ①②③⑤。各編號右邊網址加 OBS 瀏覽器來源即可（B - ② 回覆除外）。
       </div>
 
       <div class="bands" style="margin-top: 18px">
@@ -4380,7 +4380,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.0.5";
+        const APP_VERSION = "v3.0.6";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

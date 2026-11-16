@@ -478,6 +478,73 @@
         display: none !important;
       }
 
+      .tool-order-panel {
+        width: min(720px, 100%);
+        margin: 0 auto 14px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .tool-order-panel[hidden] {
+        display: none !important;
+      }
+
+      .tool-order-panel-title {
+        margin: 0 0 8px;
+        font-size: 0.92rem;
+        font-weight: 700;
+      }
+
+      .tool-order-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .tool-order-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--steps-bg);
+        cursor: grab;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .tool-order-item:hover {
+        border-color: var(--accent);
+      }
+
+      .tool-order-item.is-dragging {
+        opacity: 0.5;
+      }
+
+      .tool-order-item.is-drag-over {
+        outline: 2px dashed var(--accent);
+        outline-offset: 2px;
+      }
+
+      .tool-order-grip {
+        color: var(--muted);
+        font-size: 0.85rem;
+        letter-spacing: -0.12em;
+        line-height: 1;
+      }
+
+      .tool-order-label {
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+
       .group-jump a {
         display: inline-flex;
         flex-direction: column;
@@ -1500,7 +1567,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.0.1</span>
+          <span class="brand-version" id="brandVersion">v3.0.2</span>
         </h1>
         <p>
           先填最上方的共用設定。預設模式依 A 帳號 → B 聊天 → C 免帳號排列；切換模式可自己拖曳 A - ①、B - ①… 各工具順序（不再顯示 ABC 分欄）。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -1517,7 +1584,7 @@
           </button>
         </div>
         <p class="layout-mode-hint" id="layoutModeHint" hidden>
-          切換模式：拖曳各工具（A - ①、B - ①…）標題列左側 ⋮⋮ 改順序；ABC 分欄會隱藏
+          切換模式：下面清單每一項（A - ①、A - ②…）都可單獨拖曳排序；ABC 分欄會關掉
         </p>
         <nav class="group-jump" aria-label="工具分類捷徑">
           <a href="#group-account">
@@ -1533,6 +1600,11 @@
             <span class="jump-items">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體</span>
           </a>
         </nav>
+      </div>
+
+      <div class="tool-order-panel" id="toolOrderPanel" hidden>
+        <p class="tool-order-panel-title">自訂順序（每一項都可拖）</p>
+        <ul class="tool-order-list" id="toolOrderList" aria-label="工具順序"></ul>
       </div>
 
       <div class="page-tools" role="search">
@@ -4390,7 +4462,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.0.1";
+        const APP_VERSION = "v3.0.2";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4851,6 +4923,21 @@
           "game",
           "media",
         ];
+        const TOOL_LABELS = {
+          viewers: "A - ① 人數",
+          info: "A - ② 資訊條",
+          donate: "A - ③ 贊助",
+          counter: "A - ⑤ 計數器",
+          chat: "B - ① 聊天室",
+          reply: "B - ② 回覆",
+          danmaku: "B - ③ 彈幕",
+          "chat-pop": "B - ⑤ 頭像對話框",
+          "chat-walk": "B - ⑥ 走動頭像",
+          countdown: "C - ① 倒計時",
+          days: "C - ② 倒數天數",
+          game: "C - ③ 遊戲名稱",
+          media: "C - ⑤ 媒體",
+        };
         const TOOL_ORDER_KEY = "laji_obs_toolbox_tool_order";
         const LAYOUT_MODE_KEY = "laji_obs_toolbox_layout_mode";
 
@@ -4871,22 +4958,25 @@
           } catch (_) {}
         }
 
+        function normalizeToolOrder(order) {
+          const seen = new Set();
+          const out = [];
+          (Array.isArray(order) ? order : []).forEach((id) => {
+            const s = String(id || "");
+            if (!DEFAULT_TOOL_ORDER.includes(s) || seen.has(s)) return;
+            seen.add(s);
+            out.push(s);
+          });
+          DEFAULT_TOOL_ORDER.forEach((id) => {
+            if (!seen.has(id)) out.push(id);
+          });
+          return out;
+        }
+
         function readToolOrder() {
           try {
             const raw = JSON.parse(localStorage.getItem(TOOL_ORDER_KEY) || "null");
-            if (!Array.isArray(raw)) return DEFAULT_TOOL_ORDER.slice();
-            const seen = new Set();
-            const out = [];
-            raw.forEach((id) => {
-              const s = String(id || "");
-              if (!DEFAULT_TOOL_ORDER.includes(s) || seen.has(s)) return;
-              seen.add(s);
-              out.push(s);
-            });
-            DEFAULT_TOOL_ORDER.forEach((id) => {
-              if (!seen.has(id)) out.push(id);
-            });
-            return out;
+            return normalizeToolOrder(raw);
           } catch (_) {
             return DEFAULT_TOOL_ORDER.slice();
           }
@@ -4894,19 +4984,32 @@
 
         function writeToolOrder(order) {
           try {
-            localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(order));
+            localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(normalizeToolOrder(order)));
           } catch (_) {}
         }
 
         function currentToolOrderFromDom() {
           const root = getMainBandsRoot();
           if (!root) return DEFAULT_TOOL_ORDER.slice();
-          return [...root.querySelectorAll(":scope > .tool-block")]
-            .map((el) => el.dataset.tool)
-            .filter((id) => DEFAULT_TOOL_ORDER.includes(id));
+          return normalizeToolOrder(
+            [...root.querySelectorAll(":scope > .tool-block")].map((el) => el.dataset.tool)
+          );
         }
 
-        function applyToolOrder(order) {
+        function moveToolInOrder(order, fromId, toId) {
+          const next = normalizeToolOrder(order);
+          const fromIdx = next.indexOf(fromId);
+          const toIdx = next.indexOf(toId);
+          if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return null;
+          next.splice(fromIdx, 1);
+          const insertAt = next.indexOf(toId);
+          if (insertAt < 0) return null;
+          next.splice(insertAt, 0, fromId);
+          return next;
+        }
+
+        /** flat=true：切換模式，每個工具獨立一列，不插入 ABC 分欄 */
+        function applyToolOrder(order, { flat = false } = {}) {
           const root = getMainBandsRoot();
           if (!root) return;
           const shared = root.querySelector(":scope > .band.band-solo");
@@ -4920,63 +5023,60 @@
           blocks.forEach((b) => {
             if (b.dataset.tool) byId[b.dataset.tool] = b;
           });
-          const seen = new Set();
-          const finalOrder = [];
-          (Array.isArray(order) ? order : DEFAULT_TOOL_ORDER).forEach((id) => {
-            if (byId[id] && !seen.has(id)) {
-              finalOrder.push(id);
-              seen.add(id);
-            }
-          });
-          DEFAULT_TOOL_ORDER.forEach((id) => {
-            if (byId[id] && !seen.has(id)) {
-              finalOrder.push(id);
-              seen.add(id);
-            }
-          });
+          const finalOrder = normalizeToolOrder(order).filter((id) => byId[id]);
           const frag = document.createDocumentFragment();
           if (shared) frag.appendChild(shared);
-          let lastGroup = null;
-          finalOrder.forEach((id) => {
-            const block = byId[id];
-            const g = block.dataset.group;
-            if (g && g !== lastGroup && groups[g]) {
-              frag.appendChild(groups[g]);
-              lastGroup = g;
-            }
-            frag.appendChild(block);
-          });
-          ["account", "chat", "local"].forEach((g) => {
-            if (groups[g] && !frag.contains(groups[g])) frag.appendChild(groups[g]);
-          });
+          if (flat) {
+            finalOrder.forEach((id) => frag.appendChild(byId[id]));
+            ["account", "chat", "local"].forEach((g) => {
+              if (groups[g]) frag.appendChild(groups[g]);
+            });
+          } else {
+            let lastGroup = null;
+            finalOrder.forEach((id) => {
+              const block = byId[id];
+              const g = block.dataset.group;
+              if (g && g !== lastGroup && groups[g]) {
+                frag.appendChild(groups[g]);
+                lastGroup = g;
+              }
+              frag.appendChild(block);
+            });
+            ["account", "chat", "local"].forEach((g) => {
+              if (groups[g] && !frag.contains(groups[g])) frag.appendChild(groups[g]);
+            });
+          }
           root.appendChild(frag);
         }
 
-        function ensureToolDragHandle(block) {
-          const firstBand = block.querySelector(":scope > .band");
-          if (!firstBand) return null;
-          ensureBandStructure(firstBand);
-          const bar = firstBand.querySelector(":scope > .band-bar");
-          if (!bar) return null;
-          let handle = bar.querySelector(":scope > .drag-handle");
-          if (!handle) {
-            handle = document.createElement("button");
-            handle.type = "button";
-            handle.className = "drag-handle";
-            handle.title = "拖曳排序";
-            handle.setAttribute("aria-label", "拖曳排序");
-            handle.textContent = "⋮⋮";
-            bar.insertBefore(handle, bar.firstChild);
-            handle.addEventListener("click", (ev) => {
-              ev.preventDefault();
-              ev.stopPropagation();
-            });
-            handle.addEventListener("pointerdown", () => {
-              if (readLayoutMode() !== "custom") return;
-              block.draggable = true;
-            });
-          }
-          return handle;
+        function renderToolOrderList(order) {
+          const list = $("toolOrderList");
+          if (!list) return;
+          const finalOrder = normalizeToolOrder(order);
+          list.innerHTML = "";
+          finalOrder.forEach((id) => {
+            const li = document.createElement("li");
+            li.className = "tool-order-item";
+            li.dataset.tool = id;
+            li.draggable = true;
+            li.setAttribute("role", "listitem");
+            const grip = document.createElement("span");
+            grip.className = "tool-order-grip";
+            grip.setAttribute("aria-hidden", "true");
+            grip.textContent = "⋮⋮";
+            const label = document.createElement("span");
+            label.className = "tool-order-label";
+            label.textContent = TOOL_LABELS[id] || id;
+            li.append(grip, label);
+            list.appendChild(li);
+          });
+        }
+
+        function commitToolOrder(order) {
+          const next = normalizeToolOrder(order);
+          writeToolOrder(next);
+          applyToolOrder(next, { flat: true });
+          renderToolOrderList(next);
         }
 
         function setLayoutMode(mode, { persist = true } = {}) {
@@ -4986,6 +5086,7 @@
           const defBtn = $("layoutDefaultBtn");
           const customBtn = $("layoutCustomBtn");
           const hint = $("layoutModeHint");
+          const panel = $("toolOrderPanel");
           if (defBtn) {
             defBtn.classList.toggle("is-active", next === "default");
             defBtn.setAttribute("aria-pressed", next === "default" ? "true" : "false");
@@ -4995,92 +5096,89 @@
             customBtn.setAttribute("aria-pressed", next === "custom" ? "true" : "false");
           }
           if (hint) hint.hidden = next !== "custom";
+          if (panel) panel.hidden = next !== "custom";
           if (next === "default") {
-            applyToolOrder(DEFAULT_TOOL_ORDER);
+            applyToolOrder(DEFAULT_TOOL_ORDER, { flat: false });
           } else {
-            applyToolOrder(readToolOrder());
+            const order = readToolOrder();
+            applyToolOrder(order, { flat: true });
+            renderToolOrderList(order);
           }
-          document.querySelectorAll(".bands > .tool-block").forEach((block) => {
-            ensureToolDragHandle(block);
-            if (next !== "custom") block.draggable = false;
-          });
         }
 
         function setupToolLayout() {
-          const root = getMainBandsRoot();
-          if (!root) return;
-          root.querySelectorAll(":scope > .tool-block").forEach((block) => {
-            ensureToolDragHandle(block);
-            block.addEventListener("dragstart", (ev) => {
-              if (readLayoutMode() !== "custom" || !block.draggable) {
+          const list = $("toolOrderList");
+          if (list && list.dataset.bound !== "1") {
+            list.dataset.bound = "1";
+            let draggingId = "";
+            list.addEventListener("dragstart", (ev) => {
+              if (readLayoutMode() !== "custom") {
                 ev.preventDefault();
                 return;
               }
-              const id = block.dataset.tool || "";
-              if (!id) {
+              const item = ev.target.closest(".tool-order-item");
+              if (!item || !list.contains(item)) {
                 ev.preventDefault();
                 return;
               }
+              draggingId = item.dataset.tool || "";
+              if (!draggingId) {
+                ev.preventDefault();
+                return;
+              }
+              item.classList.add("is-dragging");
               try {
-                ev.dataTransfer.setData("text/tool-id", id);
-                ev.dataTransfer.setData("text/plain", id);
+                ev.dataTransfer.setData("text/tool-id", draggingId);
+                ev.dataTransfer.setData("text/plain", draggingId);
                 ev.dataTransfer.effectAllowed = "move";
               } catch (_) {}
-              block.classList.add("is-dragging");
-              root.dataset.draggingTool = id;
+              list.dataset.draggingTool = draggingId;
             });
-            block.addEventListener("dragend", () => {
-              block.classList.remove("is-dragging");
-              block.draggable = false;
-              delete root.dataset.draggingTool;
-              root
-                .querySelectorAll(".tool-block.is-drag-over")
-                .forEach((el) => el.classList.remove("is-drag-over"));
+            list.addEventListener("dragend", () => {
+              draggingId = "";
+              delete list.dataset.draggingTool;
+              list
+                .querySelectorAll(".tool-order-item.is-dragging, .tool-order-item.is-drag-over")
+                .forEach((el) => {
+                  el.classList.remove("is-dragging", "is-drag-over");
+                });
             });
-            block.addEventListener("dragover", (ev) => {
+            list.addEventListener("dragover", (ev) => {
               if (readLayoutMode() !== "custom") return;
-              const from = root.dataset.draggingTool;
-              if (!from || from === block.dataset.tool) return;
+              const item = ev.target.closest(".tool-order-item");
+              const from = list.dataset.draggingTool || draggingId;
+              if (!item || !from || from === item.dataset.tool) return;
               ev.preventDefault();
               try {
                 ev.dataTransfer.dropEffect = "move";
               } catch (_) {}
-              root
-                .querySelectorAll(".tool-block.is-drag-over")
+              list
+                .querySelectorAll(".tool-order-item.is-drag-over")
                 .forEach((el) => el.classList.remove("is-drag-over"));
-              block.classList.add("is-drag-over");
+              item.classList.add("is-drag-over");
             });
-            block.addEventListener("dragleave", () => {
-              block.classList.remove("is-drag-over");
-            });
-            block.addEventListener("drop", (ev) => {
+            list.addEventListener("drop", (ev) => {
               if (readLayoutMode() !== "custom") return;
               ev.preventDefault();
-              block.classList.remove("is-drag-over");
+              const item = ev.target.closest(".tool-order-item");
+              if (!item) return;
+              item.classList.remove("is-drag-over");
               let from = "";
               try {
                 from =
                   ev.dataTransfer.getData("text/tool-id") ||
                   ev.dataTransfer.getData("text/plain") ||
-                  root.dataset.draggingTool ||
+                  list.dataset.draggingTool ||
+                  draggingId ||
                   "";
               } catch (_) {
-                from = root.dataset.draggingTool || "";
+                from = list.dataset.draggingTool || draggingId || "";
               }
-              const to = block.dataset.tool || "";
-              if (!from || !to || from === to) return;
-              const order = currentToolOrderFromDom();
-              const fromIdx = order.indexOf(from);
-              const toIdx = order.indexOf(to);
-              if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
-              order.splice(fromIdx, 1);
-              const insertAt = order.indexOf(to);
-              if (insertAt < 0) return;
-              order.splice(insertAt, 0, from);
-              writeToolOrder(order);
-              applyToolOrder(order);
+              const to = item.dataset.tool || "";
+              const next = moveToolInOrder(readToolOrder(), from, to);
+              if (next) commitToolOrder(next);
             });
-          });
+          }
 
           const defBtn = $("layoutDefaultBtn");
           const customBtn = $("layoutCustomBtn");
@@ -5091,9 +5189,8 @@
           }
           if (customBtn) {
             customBtn.addEventListener("click", () => {
-              // 進入切換時若尚無自訂順序，以目前／預設為起點
               if (!localStorage.getItem(TOOL_ORDER_KEY)) {
-                writeToolOrder(currentToolOrderFromDom());
+                writeToolOrder(DEFAULT_TOOL_ORDER.slice());
               }
               setLayoutMode("custom");
             });

@@ -440,6 +440,13 @@
         align-items: center;
       }
 
+      .layout-mode-label {
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
       .layout-mode button {
         padding: 8px 14px;
         font-size: 0.88rem;
@@ -1500,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.0.1</span>
+          <span class="brand-version" id="brandVersion">v3.0.2</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -1508,7 +1515,8 @@
       </header>
 
       <div class="top-nav">
-        <div class="layout-mode" role="group" aria-label="排列模式">
+        <div class="layout-mode" role="group" aria-label="排序方式">
+          <span class="layout-mode-label">排序方式：</span>
           <button type="button" class="secondary is-active" id="layoutDefaultBtn" aria-pressed="true">
             預設
           </button>
@@ -4380,7 +4388,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.0.1";
+        const APP_VERSION = "v3.0.2";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

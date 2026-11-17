@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>拉基的OBS工具箱 · 走動頭像</title>
     <script src="../font-style.js"></script>
+    <script src="../chat-emote.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -84,6 +85,14 @@
       .walker .bubble .meta .plat.tw { color: var(--tw); }
       .walker .bubble .meta .plat.yt { color: var(--yt); }
       .walker .bubble .text { font-weight: 600; }
+      .walker .bubble .text .emote {
+        height: 1.35em;
+        width: auto;
+        max-height: 40px;
+        vertical-align: middle;
+        display: inline-block;
+        margin: 0 0.08em;
+      }
       .walker .avatar-wrap {
         width: var(--avatar); height: var(--avatar); border-radius: 50%;
         overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,0.35);
@@ -383,7 +392,15 @@
           }
           const text = document.createElement("div");
           text.className = "text";
-          text.textContent = msg.text || "";
+          if (msg.platform === "tw" && window.ObsChatEmote) {
+            ObsChatEmote.fillTextWithTwitchEmotes(
+              text,
+              msg.text || "",
+              msg.emotes || ""
+            );
+          } else {
+            text.textContent = msg.text || "";
+          }
           if (meta.childNodes.length) w.bubble.appendChild(meta);
           w.bubble.appendChild(text);
           w.bubble.classList.add("show");
@@ -523,7 +540,8 @@
               platform: "tw",
               user: "NightOwl",
               login: "shroud",
-              text: "走走走",
+              text: "Kappa 走走走",
+              emotes: "25:0-4",
             },
             {
               platform: "yt",
@@ -584,8 +602,11 @@
                     /^(?:@([^ ]+) )?(?::([^ ]+) )?PRIVMSG #([^ ]+) :(.*)$/
                   );
                   if (!m) return;
-                  const tags = {};
-                  if (m[1]) {
+                  const tags =
+                    window.ObsChatEmote && ObsChatEmote.parseIrcTags
+                      ? ObsChatEmote.parseIrcTags(m[1] || "")
+                      : {};
+                  if (!window.ObsChatEmote && m[1]) {
                     m[1].split(";").forEach((kv) => {
                       const i = kv.indexOf("=");
                       if (i > -1) tags[kv.slice(0, i)] = kv.slice(i + 1);
@@ -604,6 +625,7 @@
                     user,
                     login,
                     text: m[4],
+                    emotes: tags.emotes || "",
                   });
                 });
             });

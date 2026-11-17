@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>拉基的OBS工具箱 · 彈幕</title>
     <script src="../font-style.js"></script>
+    <script src="../chat-emote.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -87,6 +88,14 @@
       }
       .danmu .text {
         font-weight: 600;
+      }
+      .danmu .text .emote {
+        height: 1.2em;
+        width: auto;
+        max-height: 48px;
+        vertical-align: middle;
+        display: inline-block;
+        margin: 0 0.08em;
       }
       body.hide-source .danmu .plat {
         display: none;
@@ -339,7 +348,7 @@
           return lane;
         }
 
-        function spawnDanmaku({ platform, user, text }) {
+        function spawnDanmaku({ platform, user, text, emotes }) {
           const el = document.createElement("div");
           el.className = "danmu";
           if (showSource) el.appendChild(makePlatIcon(platform));
@@ -351,7 +360,11 @@
           }
           const t = document.createElement("span");
           t.className = "text";
-          t.textContent = text || "";
+          if (platform === "tw" && window.ObsChatEmote) {
+            ObsChatEmote.fillTextWithTwitchEmotes(t, text || "", emotes || "");
+          } else {
+            t.textContent = text || "";
+          }
           el.appendChild(t);
           stage.appendChild(el);
 
@@ -431,7 +444,12 @@
           const all = [
             { platform: "tw", user: "拉基粉絲A", text: "哈哈哈這招好強" },
             { platform: "yt", user: "YT觀眾1", text: "剛進來～晚安" },
-            { platform: "tw", user: "NightOwl", text: "KKK 太好笑了" },
+            {
+              platform: "tw",
+              user: "NightOwl",
+              text: "Kappa 太好笑了",
+              emotes: "25:0-4",
+            },
             { platform: "yt", user: "貓奴", text: "求歌單！" },
             { platform: "tw", user: "BoxBox", text: "POG 彈幕飛起來" },
             { platform: "yt", user: "小白", text: "訂閱了～" },
@@ -484,8 +502,11 @@
                     /^(?:@([^ ]+) )?(?::([^ ]+) )?PRIVMSG #([^ ]+) :(.*)$/
                   );
                   if (!m) return;
-                  const tags = {};
-                  if (m[1]) {
+                  const tags =
+                    window.ObsChatEmote && ObsChatEmote.parseIrcTags
+                      ? ObsChatEmote.parseIrcTags(m[1] || "")
+                      : {};
+                  if (!window.ObsChatEmote && m[1]) {
                     m[1].split(";").forEach((kv) => {
                       const i = kv.indexOf("=");
                       if (i > -1) tags[kv.slice(0, i)] = kv.slice(i + 1);
@@ -497,7 +518,12 @@
                     ) ||
                     (m[2] || "").split("!")[0] ||
                     "twitch";
-                  addMessage({ platform: "tw", user, text: m[4] });
+                  addMessage({
+                    platform: "tw",
+                    user,
+                    text: m[4],
+                    emotes: tags.emotes || "",
+                  });
                 });
             });
             ws.addEventListener("close", () => {

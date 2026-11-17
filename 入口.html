@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.0.3</span>
+          <span class="brand-version" id="brandVersion">v3.0.4</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -1566,7 +1566,7 @@
           <section class="card">
             <div class="card-head">
               <h2>共用設定</h2>
-              <span class="side-title">人數 · 開台 · 聊天室共用</span>
+              <span class="side-title">帳號 · 本機伺服器 · 預設樣式</span>
             </div>
             <div class="row">
               <div>
@@ -1602,6 +1602,18 @@
               建議在入口找一次或手動貼上直播網址。會寫入 <code>資料/yt-live.js</code>，已開著的 OBS
               來源約數十秒內會跟上（第一次可能要請你選工具資料夾以允許寫入）。金鑰需啟用 YouTube Data API v3。
             </p>
+
+            <p class="hint" style="margin-top: 14px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
+              本機伺服器代理
+            </p>
+            <p class="hint" style="margin-top: 6px">
+              埠 <code>8765</code>。給兩處共用：① YouTube 人數「網頁方式」② 媒體清單含 YouTube。開一次即可兩邊用。
+            </p>
+            <p class="hint local-server-status" id="localServerStatus" hidden></p>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" id="startLocalServerBtn">啟動本機伺服器</button>
+              <button type="button" class="secondary" id="checkLocalServerBtn">檢查本機伺服器</button>
+            </div>
 
             <datalist id="fontFamilySuggest">
               <option value="IBM Plex Sans TC"></option>
@@ -1854,10 +1866,16 @@
               </div>
             </div>
             <p class="hint" id="ytViewersMethodHint">
-              網頁方式走本機伺服器代理（與媒體相同，埠 8765），不扣 YouTube Data API
-              配額；失敗才改打次要。兩邊都關＝不顯示 YT 人數。找直播／頻道 ID 若沒填本場直播網址，仍可能需要 API
-              Key。
+              網頁方式需本機伺服器代理（埠 8765，與上方共用設定／媒體相同），不扣 Data API
+              配額；失敗才改打次要。兩邊都關＝不顯示 YT 人數。找直播若沒填本場網址，仍可能需要 API Key。
             </p>
+            <p class="hint local-server-status" id="ytViewersServerStatus" hidden></p>
+            <div class="actions" style="margin-top: 8px">
+              <button type="button" id="ytViewersStartServerBtn">啟動本機伺服器</button>
+              <button type="button" class="secondary" id="ytViewersCheckServerBtn">
+                檢查本機伺服器
+              </button>
+            </div>
 
             <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
               手動開台狀態
@@ -4097,8 +4115,8 @@
               <span class="side-title">影片／網站清單</span>
             </div>
             <p class="hint">
-              <strong>一個網址、OBS 一個來源</strong>，清單一個個接播。有 YouTube
-              時用右邊「啟動本機伺服器／啟動並播放」（本機 http，避免 Error 153）。
+              <strong>一個網址、OBS 一個來源</strong>，清單一個個接播。有 YouTube 時請先到上方「共用設定 →
+              本機伺服器代理」啟動（或用右邊「啟動並播放」）；本機 http 可避免 Error 153。
             </p>
             <div class="field" style="align-items: flex-start">
               <label for="mediaList">播放清單（多行＝整份歌單）</label>
@@ -4157,7 +4175,7 @@
             </div>
             <textarea id="mediaUrl" class="url-box" readonly></textarea>
             <p class="hint" id="mediaUrlHint">這一個網址＝整份清單。貼到 OBS 一個瀏覽器來源就會自動接播。</p>
-            <p class="hint" id="mediaServerStatus" hidden></p>
+            <p class="hint local-server-status" id="mediaServerStatus" hidden></p>
             <div class="actions">
               <button type="button" id="startMediaServerBtn">啟動本機伺服器</button>
               <button type="button" id="startMediaServerPlayBtn">啟動並播放</button>
@@ -4415,7 +4433,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.0.3";
+        const APP_VERSION = "v3.0.4";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -8815,13 +8833,15 @@ function syncYtAfterTwUi() {
           return finalUrl.toString();
         }
 
-        function setMediaServerStatus(text, ok) {
-          const statusEl = $("mediaServerStatus");
-          if (!statusEl) return;
-          statusEl.hidden = !text;
-          statusEl.textContent = text || "";
-          statusEl.style.color = ok === false ? "#c44" : ok === true ? "#2a7" : "";
+        function setLocalServerStatus(text, ok) {
+          document.querySelectorAll(".local-server-status").forEach((statusEl) => {
+            statusEl.hidden = !text;
+            statusEl.textContent = text || "";
+            statusEl.style.color = ok === false ? "#c44" : ok === true ? "#2a7" : "";
+          });
         }
+        // 舊名相容
+        const setMediaServerStatus = setLocalServerStatus;
 
         async function pingMediaServer() {
           // file:// 入口打 127.0.0.1 常被 CORS 擋；用 no-cors：連得上就不会 throw
@@ -8834,17 +8854,46 @@ function syncYtAfterTwUi() {
               signal: ctrl.signal,
             });
             clearTimeout(t);
-            setMediaServerStatus(
-              "本機伺服器已開著（http://127.0.0.1:" + MEDIA_LOCAL_PORT + "）",
+            setLocalServerStatus(
+              "本機伺服器已開著（http://127.0.0.1:" +
+                MEDIA_LOCAL_PORT +
+                "）· 可供 YT 人數網頁方式／媒體 YouTube 使用",
               true
             );
             return true;
           } catch (_) {}
-          setMediaServerStatus(
-            "本機伺服器未開：按「啟動本機伺服器」或「啟動並播放」",
+          setLocalServerStatus(
+            "本機伺服器未開：按「啟動本機伺服器」（共用設定／人數／媒體皆可）",
             false
           );
           return false;
+        }
+
+        function ytViewersUsesWebMethod() {
+          const pri = (fields.ytViewersPrimary && fields.ytViewersPrimary.value) || "web";
+          const sec = (fields.ytViewersSecondary && fields.ytViewersSecondary.value) || "api";
+          return pri === "web" || sec === "web";
+        }
+
+        function syncYtViewersServerUi() {
+          const need = ytViewersUsesWebMethod();
+          const actions = [
+            $("ytViewersStartServerBtn"),
+            $("ytViewersCheckServerBtn"),
+          ];
+          actions.forEach((btn) => {
+            if (!btn) return;
+            btn.disabled = !need;
+            btn.style.opacity = need ? "" : "0.55";
+          });
+          const st = $("ytViewersServerStatus");
+          if (!need) {
+            if (st && !st.dataset.keepOffHint) {
+              /* 關掉網頁方式時不強制清共用狀態；只藏人數區多餘提示 */
+            }
+            return;
+          }
+          pingMediaServer();
         }
 
         function getToolRootWinPath() {
@@ -8967,8 +9016,10 @@ function syncYtAfterTwUi() {
               ? "有 YouTube：啟動本機伺服器 → 複製 http://127.0.0.1:8765/… 貼 OBS（OBS 內會有聲自動播）"
               : "這一個網址＝整份清單。貼到 OBS 瀏覽器來源即可有聲自動播。";
           }
-          if (ytIds.length) pingMediaServer();
-          else if ($("mediaServerStatus")) $("mediaServerStatus").hidden = true;
+          if (ytIds.length || ytViewersUsesWebMethod()) pingMediaServer();
+          else if ($("mediaServerStatus") && !ytViewersUsesWebMethod()) {
+            // 媒體本身不需要伺服器時，不硬清共用狀態列
+          }
           if (!frame) return;
           if (ytIds.length) {
             const thumbs = ytIds
@@ -9276,21 +9327,48 @@ function syncYtAfterTwUi() {
             buildUrls();
           });
         }
-        if ($("checkMediaServerBtn")) {
-          $("checkMediaServerBtn").addEventListener("click", () => {
-            pingMediaServer();
+        function bindLocalServerControls() {
+          const checkIds = [
+            "checkLocalServerBtn",
+            "checkMediaServerBtn",
+            "ytViewersCheckServerBtn",
+          ];
+          const startIds = [
+            "startLocalServerBtn",
+            "startMediaServerBtn",
+            "ytViewersStartServerBtn",
+          ];
+          checkIds.forEach((id) => {
+            const btn = $(id);
+            if (!btn || btn.dataset.boundLocalServer === "1") return;
+            btn.dataset.boundLocalServer = "1";
+            btn.addEventListener("click", () => {
+              pingMediaServer();
+            });
+          });
+          startIds.forEach((id) => {
+            const btn = $(id);
+            if (!btn || btn.dataset.boundLocalServer === "1") return;
+            btn.dataset.boundLocalServer = "1";
+            btn.addEventListener("click", () => {
+              startMediaServerAndMaybePlay(false);
+            });
           });
         }
-        if ($("startMediaServerBtn")) {
-          $("startMediaServerBtn").addEventListener("click", () => {
-            startMediaServerAndMaybePlay(false);
-          });
-        }
+        bindLocalServerControls();
         if ($("startMediaServerPlayBtn")) {
           $("startMediaServerPlayBtn").addEventListener("click", () => {
             startMediaServerAndMaybePlay(true);
           });
         }
+        [fields.ytViewersPrimary, fields.ytViewersSecondary].forEach((el) => {
+          if (!el) return;
+          el.addEventListener("change", () => {
+            syncYtViewersServerUi();
+            buildUrls();
+          });
+        });
+        syncYtViewersServerUi();
         if ($("openMedia")) {
           $("openMedia").addEventListener("click", (ev) => {
             const yt = mediaListYoutubeIds(readMediaListLines()).length > 0;

@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.3.1</span>
+          <span class="brand-version" id="brandVersion">v3.3.2</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3689,7 +3689,7 @@
             </div>
             <textarea id="raffleUrl" class="url-box" readonly></textarea>
             <p class="hint">
-              建議約 640×720 透明覆蓋。預覽／OBS「互動」可改收件秒數並按開始／停止。按鈕色固定，不會吃到文字色範例。
+              建議約 640×720 透明覆蓋。預覽與複製都是正式網址（不會帶示範名單）。OBS「互動」可改收件秒數並按開始／停止。
             </p>
             <div class="actions">
               <button type="button" id="copyRaffle">複製抽籤網址</button>
@@ -4598,7 +4598,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.3.1";
+        const APP_VERSION = "v3.3.2";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -9441,10 +9441,10 @@ function syncYtAfterTwUi() {
           if ($("previewWalk")) $("previewWalk").src = walkDemoHref;
 
           const raffleHref = buildRaffleUrl();
-          const raffleDemoHref = buildRaffleUrl({ demo: true });
           if ($("raffleUrl")) $("raffleUrl").value = raffleHref;
-          if ($("openRaffle")) $("openRaffle").href = raffleDemoHref;
-          if ($("previewRaffle")) $("previewRaffle").src = raffleDemoHref;
+          // 預覽／複製都用正式網址，避免開新分頁後還帶 demo=1 出現示範名單
+          if ($("openRaffle")) $("openRaffle").href = raffleHref;
+          if ($("previewRaffle")) $("previewRaffle").src = raffleHref;
 
           localStorage.setItem(
             "my_obs_tools_setup",

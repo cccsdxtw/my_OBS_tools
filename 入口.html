@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.7</span>
+          <span class="brand-version" id="brandVersion">v3.5.8</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3940,9 +3940,15 @@
               <div class="subfold-body">
                 <div class="row">
                   <div>
-                    <label for="raffleFontSize">字級</label>
+                    <label for="raffleFontSize">字級（標題／名單）</label>
                     <input id="raffleFontSize" type="number" min="14" max="64" value="28" />
                   </div>
+                  <div>
+                    <label for="raffleUiFontSize">介面字級（狀態／時間／按鈕）</label>
+                    <input id="raffleUiFontSize" type="number" min="11" max="36" value="14" />
+                  </div>
+                </div>
+                <div class="row">
                   <div>
                     <label for="raffleColor">文字色</label>
                     <div class="color-pair">
@@ -3951,6 +3957,18 @@
                         type="color"
                         data-sync="raffleColor"
                         value="#1a1a1a"
+                        title="快速選色"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label for="raffleAccent">強調色</label>
+                    <div class="color-pair">
+                      <input id="raffleAccent" type="text" value="#f0b429" />
+                      <input
+                        type="color"
+                        data-sync="raffleAccent"
+                        value="#f0b429"
                         title="快速選色"
                       />
                     </div>
@@ -3966,21 +3984,10 @@
                       placeholder="用預設"
                     />
                   </div>
-                  <div>
-                    <label for="raffleAccent">強調色</label>
-                    <div class="color-pair">
-                      <input id="raffleAccent" type="text" value="#f0b429" />
-                      <input
-                        type="color"
-                        data-sync="raffleAccent"
-                        value="#f0b429"
-                        title="快速選色"
-                      />
-                    </div>
-                  </div>
+                  <div></div>
                 </div>
                 <p class="hint">
-                  字形空白＝用最上方預設。文字色預設深色方便預覽；名單在深色框內仍用淺色。強調色會套到標題／外框／瞄準框；字級主要影響標題「抽籤」等外層文字（名單內觀眾名稱維持拉霸列高用的字級）。
+                  字形空白＝用最上方預設。文字色預設深色方便預覽；名單在深色框內仍用淺色。強調色＝標題／外框／瞄準框。<strong>字級</strong>＝「抽籤」標題與拉霸觀眾名稱；<strong>介面字級</strong>＝狀態／名單／倒數／條件、開始結束時間、按鈕。
                 </p>
               </div>
             </div>
@@ -4884,7 +4891,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.7";
+        const APP_VERSION = "v3.5.8";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -7059,6 +7066,7 @@
           raffleHideStatus: $("raffleHideStatus"),
           raffleHideControls: $("raffleHideControls"),
           raffleFontSize: $("raffleFontSize"),
+          raffleUiFontSize: $("raffleUiFontSize"),
           raffleColor: $("raffleColor"),
           raffleFontFamily: $("raffleFontFamily"),
           raffleAccent: $("raffleAccent"),
@@ -9343,6 +9351,10 @@
           }
           if (fields.raffleFontSize && fields.raffleFontSize.value) {
             p.set("fontSize", fields.raffleFontSize.value);
+          }
+          if (fields.raffleUiFontSize && fields.raffleUiFontSize.value) {
+            const ui = parseInt(fields.raffleUiFontSize.value, 10);
+            if (Number.isFinite(ui) && ui !== 14) p.set("uiFontSize", String(ui));
           }
           applyFontFamilyParam(p, fields.raffleFontFamily);
           if (fields.raffleColor && fields.raffleColor.value.trim()) {

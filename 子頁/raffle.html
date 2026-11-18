@@ -26,6 +26,7 @@
         --accent-glow-soft: color-mix(in srgb, var(--accent) 14%, transparent);
         --reel-fg: #fff8e7;
         --size: 28px;
+        --ui-size: 14px;
         --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
           "PingFang TC", sans-serif;
         --font-display: "Staatliches", "IBM Plex Sans TC", sans-serif;
@@ -75,7 +76,7 @@
         flex-wrap: wrap;
         gap: 10px 16px;
         justify-content: center;
-        font-size: 14px;
+        font-size: var(--ui-size);
         color: var(--muted);
       }
       .meta b {
@@ -196,25 +197,26 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        height: 44px;
-        padding: 0 12px;
+        min-height: calc(var(--ui-size) * 2.6);
+        height: auto;
+        padding: 0.45em 12px;
         border-radius: 14px;
         background: rgba(255, 255, 255, 0.92);
         border: 1px solid rgba(26, 26, 26, 0.18);
         color: var(--fg);
-        font: 700 13px/1 var(--font-zh);
+        font: 700 var(--ui-size)/1.2 var(--font-zh);
         box-sizing: border-box;
         flex: 1 1 180px;
         min-width: 0;
       }
       .controls .time-set input[type="number"],
       .controls .time-set input[type="datetime-local"] {
-        height: 28px;
+        height: calc(var(--ui-size) * 1.85);
         margin: 0;
         border: 1px solid rgba(26, 26, 26, 0.16);
         border-radius: 8px;
         padding: 0 8px;
-        font: 700 13px/28px var(--font-zh);
+        font: 700 var(--ui-size)/1.2 var(--font-zh);
         color: #1a1a1a;
         background: #fff;
         box-sizing: border-box;
@@ -230,9 +232,10 @@
         appearance: none;
         border: 0;
         border-radius: 999px;
-        height: 44px;
-        padding: 0 22px;
-        font: 700 15px/1 var(--font-zh);
+        min-height: calc(var(--ui-size) * 2.6);
+        height: auto;
+        padding: 0.55em 22px;
+        font: 700 calc(var(--ui-size) * 1.05)/1.2 var(--font-zh);
         cursor: pointer;
         color: #1a1208;
         background: linear-gradient(180deg, #ffd56a, #f0b429);
@@ -261,7 +264,7 @@
         position: absolute;
         left: 10px;
         top: 8px;
-        font-size: 12px;
+        font-size: calc(var(--ui-size) * 0.9);
         color: var(--muted);
         opacity: 0.85;
       }
@@ -324,10 +327,19 @@
           const n = parseInt(params.get("fontSize") || "28", 10);
           return Number.isFinite(n) ? Math.max(14, Math.min(72, n)) : 28;
         })();
+        const uiFontSize = (() => {
+          const n = parseInt(
+            params.get("uiFontSize") || params.get("metaSize") || "14",
+            10
+          );
+          return Number.isFinite(n) ? Math.max(11, Math.min(36, n)) : 14;
+        })();
         cssVar("--size", `${baseFontSize}px`);
+        cssVar("--ui-size", `${uiFontSize}px`);
         if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
         // 再寫一次，避免字形套用把字級蓋掉
         cssVar("--size", `${baseFontSize}px`);
+        cssVar("--ui-size", `${uiFontSize}px`);
         const fg = (params.get("color") || "").trim() || "#1a1a1a";
         cssVar("--fg", fg);
         // muted 跟著文字色走，避免預覽白底上看不見

@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.1.0</span>
+          <span class="brand-version" id="brandVersion">v3.2.0</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -1607,7 +1607,7 @@
               本機伺服器代理
             </p>
             <p class="hint" style="margin-top: 6px">
-              埠 <code>8765</code>。給兩處共用：① YouTube 人數「網頁方式」② 媒體清單含 YouTube。開一次即可兩邊用。
+              埠 <code>8765</code>。給三處共用：① YouTube 人數「網頁方式」② 媒體清單含 YouTube ③ YT 聊天貼圖「網頁方式」。開一次即可共用。
             </p>
             <p class="hint local-server-status" id="localServerStatus" hidden></p>
             <div class="actions" style="margin-top: 8px">
@@ -2834,6 +2834,27 @@
                   <option value="youtube">只用 YouTube</option>
                 </select>
               </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="ytChatEmotes">YT 聊天貼圖</label>
+                <select id="ytChatEmotes">
+                  <option value="api" selected>API（純文字）</option>
+                  <option value="web">網頁方式（含自訂貼圖）</option>
+                </select>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint" id="ytChatEmotesHint">
+              預設用 Data API（無圖檔）。選「網頁方式」可顯示 YouTube 自訂貼圖／表情，需本機伺服器（埠
+              8765），也套用到彈幕／頭像對話框／走動頭像。
+            </p>
+            <p class="hint local-server-status" id="ytChatServerStatus" hidden></p>
+            <div class="actions" id="ytChatServerActions" style="margin-top: 8px" hidden>
+              <button type="button" id="ytChatStartServerBtn">啟動本機伺服器</button>
+              <button type="button" class="secondary" id="ytChatCheckServerBtn">
+                檢查本機伺服器
+              </button>
             </div>
             <div class="row">
               <div>
@@ -4433,7 +4454,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.1.0";
+        const APP_VERSION = "v3.2.0";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4447,6 +4468,7 @@
           "panel-bg.js",
           "font-style.js",
           "chat-emote.js",
+          "yt-chat-web.js",
           "yt-live-sync.js",
           "stream-live-sync.js",
           "update-files.json",
@@ -6457,6 +6479,7 @@
           chatExtraYt: $("chatExtraYt"),
           chatExtraYtVideo: $("chatExtraYtVideo"),
           chatSource: $("chatSource"),
+          ytChatEmotes: $("ytChatEmotes"),
           chatLayout: $("chatLayout"),
           chatStack: $("chatStack"),
           chatMax: $("chatMax"),
@@ -7414,6 +7437,7 @@
         const CHAT_STYLE_MAX = 24;
         const CHAT_STYLE_FIELD_KEYS = [
           "chatLayout",
+          "ytChatEmotes",
           "chatStack",
           "chatMax",
           "chatTtl",
@@ -8237,6 +8261,7 @@
           if (ytChannels.length) p.set("yt", ytChannels.join(","));
           if (ytVideos.length) p.set("ytVideo", ytVideos.join(","));
           if (ytKey) p.set("ytKey", ytKey);
+          applyYtChatParam(p);
           p.set("chatSource", source);
           if (fields.chatStack.value) p.set("stack", fields.chatStack.value);
           if (fields.chatMax.value) p.set("max", fields.chatMax.value);
@@ -8385,6 +8410,7 @@
           if (ytChannels.length) p.set("yt", ytChannels.join(","));
           if (ytVideos.length) p.set("ytVideo", ytVideos.join(","));
           if (ytKey) p.set("ytKey", ytKey);
+          applyYtChatParam(p);
           p.set("chatSource", fields.dmSource.value || "auto");
           if (fields.dmDir && fields.dmDir.value) p.set("dir", fields.dmDir.value);
           if (fields.dmSpeed.value) p.set("speed", fields.dmSpeed.value);
@@ -8430,6 +8456,7 @@
           if (ytChannels.length) p.set("yt", ytChannels.join(","));
           if (ytVideos.length) p.set("ytVideo", ytVideos.join(","));
           if (ytKey) p.set("ytKey", ytKey);
+          applyYtChatParam(p);
           p.set("chatSource", fields.popSource.value || "auto");
           if (fields.popPos.value) p.set("pos", fields.popPos.value);
           if (fields.popHold.value) p.set("hold", fields.popHold.value);
@@ -8479,6 +8506,7 @@
           if (ytChannels.length) p.set("yt", ytChannels.join(","));
           if (ytVideos.length) p.set("ytVideo", ytVideos.join(","));
           if (ytKey) p.set("ytKey", ytKey);
+          applyYtChatParam(p);
           p.set("chatSource", fields.walkSource.value || "auto");
           if (fields.walkSpeed.value) p.set("speed", fields.walkSpeed.value);
           if (fields.walkHold.value) p.set("hold", fields.walkHold.value);
@@ -8846,6 +8874,7 @@ function syncYtAfterTwUi() {
 
         async function pingMediaServer() {
           // file:// 入口打 127.0.0.1 常被 CORS 擋；用 no-cors：連得上就不会 throw
+          let ok = false;
           try {
             const ctrl = new AbortController();
             const t = setTimeout(() => ctrl.abort(), 1500);
@@ -8858,22 +8887,42 @@ function syncYtAfterTwUi() {
             setLocalServerStatus(
               "本機伺服器已開著（http://127.0.0.1:" +
                 MEDIA_LOCAL_PORT +
-                "）· 可供 YT 人數網頁方式／媒體 YouTube 使用",
+                "）· 可供 YT 人數／YT 聊天貼圖網頁方式／媒體 YouTube 使用",
               true
             );
-            return true;
-          } catch (_) {}
-          setLocalServerStatus(
-            "本機伺服器未開：按「啟動本機伺服器」（共用設定／人數／媒體皆可）",
-            false
-          );
-          return false;
+            ok = true;
+          } catch (_) {
+            setLocalServerStatus(
+              "本機伺服器未開：按「啟動本機伺服器」（共用設定／人數／媒體／聊天貼圖皆可）",
+              false
+            );
+          }
+          // 未選網頁貼圖時不要露出聊天區伺服器狀態
+          const chatSt = $("ytChatServerStatus");
+          const chatAct = $("ytChatServerActions");
+          if (!ytChatUsesWebMethod()) {
+            if (chatSt) chatSt.hidden = true;
+            if (chatAct) chatAct.hidden = true;
+          } else {
+            if (chatSt) chatSt.hidden = false;
+            if (chatAct) chatAct.hidden = false;
+          }
+          return ok;
         }
 
         function ytViewersUsesWebMethod() {
           const pri = (fields.ytViewersPrimary && fields.ytViewersPrimary.value) || "web";
           const sec = (fields.ytViewersSecondary && fields.ytViewersSecondary.value) || "api";
           return pri === "web" || sec === "web";
+        }
+
+        function ytChatUsesWebMethod() {
+          return ((fields.ytChatEmotes && fields.ytChatEmotes.value) || "api") === "web";
+        }
+
+        function applyYtChatParam(p) {
+          if (!p) return;
+          if (ytChatUsesWebMethod()) p.set("ytChat", "web");
         }
 
         function syncYtViewersServerUi() {
@@ -8895,6 +8944,15 @@ function syncYtAfterTwUi() {
             return;
           }
           pingMediaServer();
+        }
+
+        function syncYtChatServerUi() {
+          const need = ytChatUsesWebMethod();
+          const wrap = $("ytChatServerActions");
+          if (wrap) wrap.hidden = !need;
+          const st = $("ytChatServerStatus");
+          if (st) st.hidden = !need;
+          if (need) pingMediaServer();
         }
 
         function getToolRootWinPath() {
@@ -9017,8 +9075,13 @@ function syncYtAfterTwUi() {
               ? "有 YouTube：啟動本機伺服器 → 複製 http://127.0.0.1:8765/… 貼 OBS（OBS 內會有聲自動播）"
               : "這一個網址＝整份清單。貼到 OBS 瀏覽器來源即可有聲自動播。";
           }
-          if (ytIds.length || ytViewersUsesWebMethod()) pingMediaServer();
-          else if ($("mediaServerStatus") && !ytViewersUsesWebMethod()) {
+          if (ytIds.length || ytViewersUsesWebMethod() || ytChatUsesWebMethod())
+            pingMediaServer();
+          else if (
+            $("mediaServerStatus") &&
+            !ytViewersUsesWebMethod() &&
+            !ytChatUsesWebMethod()
+          ) {
             // 媒體本身不需要伺服器時，不硬清共用狀態列
           }
           if (!frame) return;
@@ -9333,11 +9396,13 @@ function syncYtAfterTwUi() {
             "checkLocalServerBtn",
             "checkMediaServerBtn",
             "ytViewersCheckServerBtn",
+            "ytChatCheckServerBtn",
           ];
           const startIds = [
             "startLocalServerBtn",
             "startMediaServerBtn",
             "ytViewersStartServerBtn",
+            "ytChatStartServerBtn",
           ];
           checkIds.forEach((id) => {
             const btn = $(id);
@@ -9370,6 +9435,13 @@ function syncYtAfterTwUi() {
           });
         });
         syncYtViewersServerUi();
+        if (fields.ytChatEmotes) {
+          fields.ytChatEmotes.addEventListener("change", () => {
+            syncYtChatServerUi();
+            buildUrls();
+          });
+        }
+        syncYtChatServerUi();
         if ($("openMedia")) {
           $("openMedia").addEventListener("click", (ev) => {
             const yt = mediaListYoutubeIds(readMediaListLines()).length > 0;

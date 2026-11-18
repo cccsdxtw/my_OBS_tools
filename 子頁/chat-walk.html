@@ -6,6 +6,7 @@
     <title>拉基的OBS工具箱 · 走動頭像</title>
     <script src="../font-style.js"></script>
     <script src="../chat-emote.js"></script>
+    <script src="../yt-chat-web.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -255,12 +256,19 @@
           params.get("youtubeKey") ||
           ""
         ).trim();
+        const ytChatMode = (
+          params.get("ytChat") ||
+          params.get("ytChatEmotes") ||
+          "api"
+        ).toLowerCase();
+        const ytChatWeb = ytChatMode === "web";
         const sources = (params.get("chatSource") || "auto").toLowerCase();
         const wantTw =
           twitchLogins.length > 0 &&
           (sources === "auto" || sources === "twitch" || sources === "both");
         const wantYt =
-          (ytVideoIds.length > 0 || (ytChannels.length > 0 && !!ytKey)) &&
+          (ytVideoIds.length > 0 ||
+            (ytChannels.length > 0 && (ytChatWeb || !!ytKey))) &&
           (sources === "auto" || sources === "youtube" || sources === "both");
         const demoTw =
           demo &&
@@ -392,12 +400,8 @@
           }
           const text = document.createElement("div");
           text.className = "text";
-          if (msg.platform === "tw" && window.ObsChatEmote) {
-            ObsChatEmote.fillTextWithTwitchEmotes(
-              text,
-              msg.text || "",
-              msg.emotes || ""
-            );
+          if (window.ObsChatEmote) {
+            ObsChatEmote.fillMessageText(text, msg);
           } else {
             text.textContent = msg.text || "";
           }
@@ -926,8 +930,72 @@
           tick();
         }
 
+        function pollYoutubeWeb() {
+          if (!wantYt || !window.ObsYtChatWeb) return;
+          const jobs = [];
+          ytVideoIds.forEach((vid, idx) => {
+            jobs.push({
+              key: "vid:" + vid,
+              label: vid,
+              channel: "",
+              getVideoId: async () => {
+                if (idx === 0) {
+                  await refreshSharedLiveOverride();
+                  if (sharedOverrideVideoId) return sharedOverrideVideoId;
+                }
+                return vid;
+              },
+            });
+          });
+          ytChannels.forEach((ch) => {
+            jobs.push({
+              key: "ch:" + ch.toLowerCase(),
+              label: ch,
+              channel: ch,
+              getVideoId: async () => {
+                await refreshSharedLiveOverride();
+                if (sharedOverrideVideoId) return sharedOverrideVideoId;
+                if (ytKey) {
+                  try {
+                    return await resolveLiveVideoId(ch);
+                  } catch (_) {}
+                }
+                return "";
+              },
+            });
+          });
+          const seenJob = new Set();
+          jobs.forEach((job) => {
+            if (seenJob.has(job.key)) return;
+            seenJob.add(job.key);
+            let lastShared = sharedOverrideVideoId;
+            ObsYtChatWeb.startPoll({
+              label: job.label,
+              channel: job.channel,
+              getVideoId: job.getVideoId,
+              shouldReset: () => {
+                if (lastShared !== sharedOverrideVideoId) {
+                  lastShared = sharedOverrideVideoId;
+                  return true;
+                }
+                return false;
+              },
+              addMessage,
+              onStatus: (ok) => {
+                if (ok) ytConnected.add(job.key);
+                else ytConnected.delete(job.key);
+                refreshStatus();
+              },
+            });
+          });
+        }
+
         function pollYoutube() {
           if (!wantYt) return;
+          if (ytChatWeb) {
+            pollYoutubeWeb();
+            return;
+          }
           if (!ytKey && !ytVideoIds.length) return;
           const jobs = [];
           ytVideoIds.forEach((vid, idx) => {

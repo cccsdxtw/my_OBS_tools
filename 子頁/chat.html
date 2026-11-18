@@ -13,6 +13,7 @@
     <script src="../panel-bg.js"></script>
     <script src="../font-style.js"></script>
     <script src="../chat-emote.js"></script>
+    <script src="../yt-chat-web.js"></script>
     <script src="../yt-live-sync.js"></script>
     <style id="base-style">
       :root {
@@ -426,6 +427,13 @@
           splitParamList(params.get("ytVideo") || "").map(extractYoutubeVideoId)
         );
         const ytKey = (params.get("ytKey") || params.get("youtubeKey") || "").trim();
+        // api＝Data API 純文字（預設）；web＝本機 Innertube（含自訂貼圖）
+        const ytChatMode = (
+          params.get("ytChat") ||
+          params.get("ytChatEmotes") ||
+          "api"
+        ).toLowerCase();
+        const ytChatWeb = ytChatMode === "web";
         // auto|twitch|youtube|both（分開兩頁時各傳 twitch / youtube）
         const sources = (params.get("chatSource") || "auto").toLowerCase();
 
@@ -438,7 +446,8 @@
           twitchLogins.length > 0 &&
           (sources === "auto" || sources === "twitch" || sources === "both");
         const wantYt =
-          (ytVideoIds.length > 0 || (ytChannels.length > 0 && !!ytKey)) &&
+          (ytVideoIds.length > 0 ||
+            (ytChannels.length > 0 && (ytChatWeb || !!ytKey))) &&
           (sources === "auto" || sources === "youtube" || sources === "both");
         const multiTw = twitchLogins.length > 1;
         const multiYt = ytChannels.length + ytVideoIds.length > 1;
@@ -549,7 +558,12 @@
           return wrap;
         }
 
-        function addMessage({ platform, user, text, born, channel, emotes }) {
+        function addMessage(msg) {
+          const platform = msg.platform;
+          const user = msg.user;
+          const text = msg.text;
+          const born = msg.born;
+          const channel = msg.channel;
           const row = document.createElement("div");
           row.className = "msg";
           row.dataset.born = String(born || Date.now());
@@ -577,8 +591,8 @@
           u.textContent = user || "anon";
           const t = document.createElement("span");
           t.className = "text";
-          if (platform === "tw" && window.ObsChatEmote) {
-            ObsChatEmote.fillTextWithTwitchEmotes(t, text || "", emotes || "");
+          if (window.ObsChatEmote) {
+            ObsChatEmote.fillMessageText(t, msg);
           } else {
             t.textContent = text || "";
           }
@@ -624,7 +638,19 @@
         function startDemo() {
           const all = [
             { platform: "tw", user: "拉基粉絲A", text: "哈哈哈這招好強" },
-            { platform: "yt", user: "YT觀眾1", text: "剛進來～晚安" },
+            {
+              platform: "yt",
+              user: "YT觀眾1",
+              text: "剛進來～:fire:",
+              parts: [
+                { type: "text", text: "剛進來～" },
+                {
+                  type: "emoji",
+                  text: ":fire:",
+                  url: "https://fonts.gstatic.com/s/e/notoemoji/15.1/1f525/72.png",
+                },
+              ],
+            },
             {
               platform: "tw",
               user: "NightOwl",
@@ -1060,8 +1086,83 @@
           tick();
         }
 
+        function pollYoutubeWeb() {
+          if (!wantYt || !window.ObsYtChatWeb) return;
+          const jobs = [];
+          ytVideoIds.forEach((vid, idx) => {
+            jobs.push({
+              key: "vid:" + vid,
+              label: vid,
+              channel: "",
+              getVideoId: async () => {
+                if (idx === 0) {
+                  await refreshSharedLiveOverride();
+                  if (sharedOverrideVideoId) return sharedOverrideVideoId;
+                }
+                return vid;
+              },
+            });
+          });
+          ytChannels.forEach((ch) => {
+            jobs.push({
+              key: "ch:" + ch.toLowerCase(),
+              label: ch,
+              channel: ch,
+              getVideoId: async () => {
+                await refreshSharedLiveOverride();
+                if (sharedOverrideVideoId) return sharedOverrideVideoId;
+                if (ytKey) {
+                  try {
+                    return await resolveLiveVideoId(ch);
+                  } catch (_) {}
+                }
+                return "";
+              },
+            });
+          });
+          if (!jobs.length && sharedOverrideVideoId) {
+            jobs.push({
+              key: "shared",
+              label: sharedOverrideVideoId,
+              channel: "",
+              getVideoId: async () => {
+                await refreshSharedLiveOverride();
+                return sharedOverrideVideoId || "";
+              },
+            });
+          }
+          const seenJob = new Set();
+          jobs.forEach((job) => {
+            if (seenJob.has(job.key)) return;
+            seenJob.add(job.key);
+            let lastShared = sharedOverrideVideoId;
+            ObsYtChatWeb.startPoll({
+              label: job.label,
+              channel: job.channel,
+              getVideoId: job.getVideoId,
+              shouldReset: () => {
+                if (lastShared !== sharedOverrideVideoId) {
+                  lastShared = sharedOverrideVideoId;
+                  return true;
+                }
+                return false;
+              },
+              addMessage,
+              onStatus: (ok) => {
+                if (ok) ytConnected.add(job.key);
+                else ytConnected.delete(job.key);
+                refreshStatus();
+              },
+            });
+          });
+        }
+
         function pollYoutube() {
           if (!wantYt) return;
+          if (ytChatWeb) {
+            pollYoutubeWeb();
+            return;
+          }
           if (!ytKey && !ytVideoIds.length) return;
 
           // 有明確影片 ID 的各自輪詢；其餘依頻道自動找 live

@@ -2,6 +2,7 @@
  * Twitch IRC 貼圖（emotes tag）→ DOM
  * emotes 格式：id:start-end,start-end/id:start-end
  * 位置以 IRC 字串 UTF-16 代碼單元計（與 JS string 索引一致）。
+ * YouTube：Innertube message.runs → parts[{type,text,url}]
  */
 (function (global) {
   function parseIrcTags(tagStr) {
@@ -90,10 +91,56 @@
     }
   }
 
+  function fillTextWithParts(el, parts, opts) {
+    if (!el) return;
+    el.textContent = "";
+    const list = Array.isArray(parts) ? parts : [];
+    if (!list.length) return;
+    const className = (opts && opts.className) || "emote";
+    list.forEach((part) => {
+      if (!part) return;
+      if (part.type === "emoji" && part.url) {
+        const img = document.createElement("img");
+        img.className = className;
+        img.alt = part.text || "emoji";
+        img.title = part.text || "emoji";
+        img.decoding = "async";
+        img.loading = "lazy";
+        img.referrerPolicy = "no-referrer";
+        img.src = String(part.url);
+        img.onerror = () => {
+          try {
+            img.replaceWith(document.createTextNode(part.text || ""));
+          } catch (_) {}
+        };
+        el.appendChild(img);
+        return;
+      }
+      const t = part.text != null ? String(part.text) : "";
+      if (t) el.appendChild(document.createTextNode(t));
+    });
+  }
+
+  function fillMessageText(el, msg, opts) {
+    if (!el) return;
+    const platform = msg && msg.platform;
+    if (platform === "tw") {
+      fillTextWithTwitchEmotes(el, (msg && msg.text) || "", (msg && msg.emotes) || "", opts);
+      return;
+    }
+    if (platform === "yt" && msg && Array.isArray(msg.parts) && msg.parts.length) {
+      fillTextWithParts(el, msg.parts, opts);
+      return;
+    }
+    el.textContent = (msg && msg.text) || "";
+  }
+
   global.ObsChatEmote = {
     parseIrcTags,
     parseTwitchEmoteRanges,
     twitchEmoteUrl,
     fillTextWithTwitchEmotes,
+    fillTextWithParts,
+    fillMessageText,
   };
 })(window);

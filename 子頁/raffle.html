@@ -921,10 +921,33 @@
         let ytConnected = new Set();
 
         const itemH = () => {
+          // 優先用實際 DOM 高度，避免 CSS 計算與排版不一致導致停輪對不準
+          const el = reel && reel.querySelector(".item");
+          if (el) {
+            const measured = el.getBoundingClientRect().height;
+            if (measured > 0) return measured;
+          }
           const v = getComputedStyle(document.documentElement).getPropertyValue("--size");
           const px = parseFloat(v) || 28;
           return px * 1.55;
         };
+
+        function ensureReelRepeats(list, minRepeats) {
+          const need = Math.max(6, Math.ceil(minRepeats || 0));
+          if (need <= reelRepeats && reel.childElementCount >= (list.length || 1) * reelRepeats) {
+            return;
+          }
+          reelRepeats = need;
+          renderReel(list, reelRepeats);
+        }
+
+        function snapIndexToCenter(indexInFull) {
+          const h = itemH();
+          const shell = document.querySelector(".reel-shell");
+          const mid = (shell?.clientHeight || 420) / 2 - h / 2;
+          offsetY = mid - indexInFull * h;
+          reel.style.transform = `translateY(${offsetY}px)`;
+        }
 
         function entryKey(msg) {
           if (msg.platform === "tw") {
@@ -1277,7 +1300,9 @@
             velocity = dist * step;
             const timedOut = easeStartedAt && ts - easeStartedAt > 2800;
             if (Math.abs(dist) < 1.5 || timedOut) {
-              offsetY = targetY;
+              const land = stopSpin._targetIndex;
+              if (Number.isFinite(land)) snapIndexToCenter(land);
+              else offsetY = targetY;
               animMode = "hold";
               velocity = 0;
               setPhase("win");
@@ -1374,7 +1399,9 @@
           // 用加權後的拉霸名單抽（比重越高出現越多、中獎機率也越高）
           const list = reelList.length ? reelList : buildWeightedShuffledList();
           if (!list.length) return;
-          const idx = Math.floor(Math.random() * list.length);
+          reelList = list;
+          const n = list.length;
+          const idx = Math.floor(Math.random() * n);
           winner = list[idx];
           const h = itemH();
           const shell = document.querySelector(".reel-shell");
@@ -1383,20 +1410,36 @@
           let currentIndex = (mid - offsetY) / h;
           if (!Number.isFinite(currentIndex)) currentIndex = 0;
           // 至少再滾兩圈，並對齊到抽中的那一格（加權複本）
-          let targetIndex = Math.ceil(currentIndex + list.length * 2 + 1);
-          const rem =
-            ((Math.round(targetIndex) % list.length) + list.length) % list.length;
+          let targetIndex = Math.ceil(currentIndex + n * 2 + 1);
+          const rem = ((Math.round(targetIndex) % n) + n) % n;
           let delta = idx - rem;
-          if (delta < 0) delta += list.length;
+          if (delta < 0) delta += n;
           targetIndex = Math.round(targetIndex) + delta;
+          // 目標必須落在已渲染的格子內，否則中間會是空的
+          let minRepeats = Math.ceil((targetIndex + n + 2) / n);
+          ensureReelRepeats(list, minRepeats);
           targetY = mid - targetIndex * h;
           // 確保目標在「繼續往負 offset」方向
-          while (targetY > offsetY - list.length * h) {
-            targetY -= list.length * h;
+          while (targetY > offsetY - n * h) {
+            targetY -= n * h;
+            targetIndex += n;
+            minRepeats = Math.ceil((targetIndex + n + 2) / n);
+            ensureReelRepeats(list, minRepeats);
+          }
+          // 最終再確認一次：對齊 winner 在該 index 的身分
+          const landIdx = ((targetIndex % n) + n) % n;
+          if (list[landIdx] !== winner && list[landIdx]?.key !== winner.key) {
+            // 極少見的浮點偏差：改抓最近的同 key 格
+            targetIndex = targetIndex - landIdx + idx;
+            if (targetIndex <= currentIndex) targetIndex += n;
+            ensureReelRepeats(list, Math.ceil((targetIndex + n + 2) / n));
+            targetY = mid - targetIndex * h;
           }
           easeStartedAt = performance.now();
           animMode = "ease";
           setPhase("stop");
+          // 給 ease 結束時用：若逾時仍偏掉，強制吸到中間
+          stopSpin._targetIndex = targetIndex;
         }
 
         function resetAll() {

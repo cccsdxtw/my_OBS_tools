@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.4.1</span>
+          <span class="brand-version" id="brandVersion">v3.4.2</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3713,8 +3713,12 @@
                 >預覽</a
               >
             </div>
-            <div class="preview-wrap" style="min-height: 320px">
-              <iframe id="previewRaffle" title="raffle preview"></iframe>
+            <div class="preview-wrap" style="min-height: 480px">
+              <iframe
+                id="previewRaffle"
+                title="raffle preview"
+                style="height: 480px"
+              ></iframe>
             </div>
             <div class="subfold is-collapsed" data-subfold="raffle-text">
               <button type="button" class="subfold-toggle" aria-expanded="false">
@@ -4630,7 +4634,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.4.1";
+        const APP_VERSION = "v3.4.2";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

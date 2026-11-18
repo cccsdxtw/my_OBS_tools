@@ -47,9 +47,18 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 24px;
-        gap: 14px;
+        justify-content: flex-start;
+        padding: 16px 16px 20px;
+        gap: 10px;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+      @media (min-height: 720px) {
+        #app {
+          justify-content: center;
+          padding: 24px;
+          gap: 14px;
+        }
       }
       .title {
         font-family: var(--font-display);
@@ -73,8 +82,9 @@
       }
       .reel-shell {
         position: relative;
-        width: min(560px, 92vw);
-        height: min(420px, 58vh);
+        width: min(560px, 100%);
+        height: clamp(160px, 42vh, 420px);
+        flex: 0 0 auto;
         border: 2px solid var(--line);
         border-radius: 18px;
         background: var(--panel);
@@ -165,12 +175,20 @@
         transform: translateY(0);
       }
       .controls {
+        width: min(560px, 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+        pointer-events: auto;
+        flex: 0 0 auto;
+      }
+      .controls-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 8px;
         justify-content: center;
         align-items: center;
-        pointer-events: auto;
       }
       .controls .time-set {
         display: inline-flex;
@@ -184,6 +202,8 @@
         color: var(--fg);
         font: 700 13px/1 var(--font-zh);
         box-sizing: border-box;
+        flex: 1 1 180px;
+        min-width: 0;
       }
       .controls .time-set input[type="number"],
       .controls .time-set input[type="datetime-local"] {
@@ -196,14 +216,13 @@
         color: #1a1a1a;
         background: #fff;
         box-sizing: border-box;
-        vertical-align: middle;
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
       }
       .controls .time-set input[type="number"] {
+        flex: 0 0 72px;
         width: 72px;
-      }
-      .controls .time-set input[type="datetime-local"] {
-        width: min(210px, 46vw);
-        max-width: 210px;
       }
       .controls button {
         appearance: none;
@@ -223,7 +242,7 @@
         box-shadow: 0 2px 0 #b07a12;
       }
       .controls button.secondary {
-        color: var(--fg);
+        color: #1a1a1a;
         background: #fff;
         box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18);
         border: 1px solid rgba(26, 26, 26, 0.18);
@@ -269,22 +288,26 @@
       </div>
       <div class="winner-banner" id="winnerBanner"></div>
       <div class="controls">
-        <label class="time-set" for="startInput"
-          >開始
-          <input id="startInput" type="datetime-local" step="1" />
-        </label>
-        <label class="time-set" for="endInput"
-          >結束
-          <input id="endInput" type="datetime-local" step="1" />
-        </label>
-        <label class="time-set" for="collectInput" title="開始與結束都空白時才用"
-          >備援秒數
-          <input id="collectInput" type="number" min="5" max="600" step="1" />
-        </label>
-        <button type="button" class="secondary" id="btnClose">截止收件</button>
-        <button type="button" id="btnStart" disabled>開始</button>
-        <button type="button" id="btnStop" disabled>停止</button>
-        <button type="button" class="secondary" id="btnReset">重來</button>
+        <div class="controls-row">
+          <label class="time-set" for="startInput"
+            >開始
+            <input id="startInput" type="datetime-local" step="1" />
+          </label>
+          <label class="time-set" for="endInput"
+            >結束
+            <input id="endInput" type="datetime-local" step="1" />
+          </label>
+          <label class="time-set" for="collectInput" title="開始與結束都空白時才用"
+            >備援秒數
+            <input id="collectInput" type="number" min="5" max="600" step="1" />
+          </label>
+        </div>
+        <div class="controls-row">
+          <button type="button" class="secondary" id="btnClose">截止收件</button>
+          <button type="button" id="btnStart" disabled>開始</button>
+          <button type="button" id="btnStop" disabled>停止</button>
+          <button type="button" class="secondary" id="btnReset">重來</button>
+        </div>
       </div>
     </div>
     <script>

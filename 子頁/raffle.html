@@ -396,20 +396,35 @@
         const keyword = (params.get("keyword") || params.get("kw") || "").trim();
         function parseAllowRoles() {
           const raw = (params.get("roles") || "").trim().toLowerCase();
-          const all = { vip: true, mod: true, paid: true, follow: true, other: true };
+          const all = {
+            vip: true,
+            mod: true,
+            paid: true,
+            follow: true,
+            ytsub: true,
+            other: true,
+          };
           if (!raw) {
             // 舊版 vip/mod/sub=yes|no|any → 盡量對應
             const vip = (params.get("vip") || "any").toLowerCase();
             const mod = (params.get("mod") || "any").toLowerCase();
             const sub = (params.get("sub") || "any").toLowerCase();
             if (vip === "any" && mod === "any" && sub === "any") return all;
-            const allow = { vip: false, mod: false, paid: false, follow: false, other: false };
+            const allow = {
+              vip: false,
+              mod: false,
+              paid: false,
+              follow: false,
+              ytsub: false,
+              other: false,
+            };
             if (vip === "yes") allow.vip = true;
             if (mod === "yes") allow.mod = true;
             if (sub === "yes") allow.paid = true;
             if (vip !== "yes" && mod !== "yes" && sub !== "yes") {
               allow.other = true;
               allow.follow = true;
+              allow.ytsub = true;
               if (vip !== "no") allow.vip = true;
               if (mod !== "no") allow.mod = true;
               if (sub !== "no") allow.paid = true;
@@ -420,7 +435,14 @@
             return allow;
           }
           if (raw === "none") {
-            return { vip: false, mod: false, paid: false, follow: false, other: false };
+            return {
+              vip: false,
+              mod: false,
+              paid: false,
+              follow: false,
+              ytsub: false,
+              other: false,
+            };
           }
           const set = new Set(
             raw.split(/[\s,，、]+/).map((s) => s.trim()).filter(Boolean)
@@ -430,6 +452,11 @@
             mod: set.has("mod"),
             paid: set.has("paid") || set.has("sub"),
             follow: set.has("follow") || set.has("follower"),
+            ytsub:
+              set.has("ytsub") ||
+              set.has("ytfree") ||
+              set.has("subscribe") ||
+              set.has("ytfollow"),
             other: set.has("other") || set.has("viewer"),
           };
         }
@@ -582,13 +609,19 @@
         if (allowRoles.mod) roleBits.push("MOD");
         if (allowRoles.paid) roleBits.push("付費訂閱／會員");
         if (allowRoles.follow) roleBits.push("TW追隨");
+        if (allowRoles.ytsub) roleBits.push("YT免費訂閱");
         if (allowRoles.other) roleBits.push("其他觀眾");
-        if (roleBits.length === 5) filterBits.push("身分 全部可抽");
+        if (roleBits.length === 6) filterBits.push("身分 全部可抽");
         else if (!roleBits.length) filterBits.push("身分 全關（沒人可抽）");
         else filterBits.push("身分 " + roleBits.join("／"));
         if (allowRoles.follow) {
           filterBits.push(
             twAccessToken ? "TW追隨已授權" : "TW追隨未授權（聊天抓不到）"
+          );
+        }
+        if (allowRoles.ytsub) {
+          filterBits.push(
+            ytKey ? "YT訂閱盡力查（公開清單）" : "YT訂閱未填 API Key"
           );
         }
         filterLabel.textContent = filterBits.length
@@ -597,6 +630,111 @@
 
         function needTwitchFollowLookup() {
           return allowRoles.follow && !!twAccessToken;
+        }
+
+        function needYtFreeSubLookup() {
+          return allowRoles.ytsub && !!ytKey;
+        }
+
+        const ytTargetChannelIds = [];
+        const ytChannelIdCache = new Map();
+        const ytSubCache = new Map(); // authorId|targetId -> boolean
+        const ytSubPending = new Map();
+
+        async function resolveYtChannelId(raw) {
+          const s = String(raw || "").trim();
+          if (!s || !ytKey) return "";
+          if (/^UC[\w-]{20,}$/i.test(s)) return s;
+          const key = s.toLowerCase();
+          if (ytChannelIdCache.has(key)) return ytChannelIdCache.get(key);
+          try {
+            let channelId = "";
+            if (s.startsWith("@")) {
+              const url = `${YT_API}/channels?part=id&forHandle=${encodeURIComponent(
+                s.slice(1)
+              )}&key=${encodeURIComponent(ytKey)}`;
+              const json = await ytFetchJson(url, "yt handle");
+              channelId = json?.items?.[0]?.id || "";
+            } else {
+              const url = `${YT_API}/search?part=snippet&type=channel&maxResults=1&q=${encodeURIComponent(
+                s
+              )}&key=${encodeURIComponent(ytKey)}`;
+              const json = await ytFetchJson(url, "yt search ch");
+              channelId = json?.items?.[0]?.snippet?.channelId || "";
+            }
+            ytChannelIdCache.set(key, channelId);
+            return channelId;
+          } catch (_) {
+            ytChannelIdCache.set(key, "");
+            return "";
+          }
+        }
+
+        async function ensureYtTargetChannelIds() {
+          if (ytTargetChannelIds.length) return ytTargetChannelIds;
+          const found = [];
+          for (const ch of ytChannels) {
+            const id = await resolveYtChannelId(ch);
+            if (id) found.push(id);
+          }
+          for (const vid of ytVideoIds) {
+            if (!vid || !ytKey) continue;
+            try {
+              const url = `${YT_API}/videos?part=snippet&id=${encodeURIComponent(
+                vid
+              )}&key=${encodeURIComponent(ytKey)}`;
+              const json = await ytFetchJson(url, "yt video ch");
+              const id = json?.items?.[0]?.snippet?.channelId || "";
+              if (id) found.push(id);
+            } catch (_) {}
+          }
+          uniqueKeepOrder(found).forEach((id) => ytTargetChannelIds.push(id));
+          return ytTargetChannelIds;
+        }
+
+        async function checkYtFreeSub(authorChannelId) {
+          const author = String(authorChannelId || "").trim();
+          if (!author || !ytKey) return false;
+          const targets = await ensureYtTargetChannelIds();
+          if (!targets.length) return false;
+          for (const target of targets) {
+            const cacheKey = author + ">" + target;
+            if (ytSubCache.has(cacheKey)) {
+              if (ytSubCache.get(cacheKey)) return true;
+              continue;
+            }
+            if (ytSubPending.has(cacheKey)) {
+              if (await ytSubPending.get(cacheKey)) return true;
+              continue;
+            }
+            const job = (async () => {
+              try {
+                const url =
+                  `${YT_API}/subscriptions?part=id` +
+                  `&channelId=${encodeURIComponent(author)}` +
+                  `&forChannelId=${encodeURIComponent(target)}` +
+                  `&key=${encodeURIComponent(ytKey)}`;
+                const res = await fetch(url);
+                if (!res.ok) {
+                  // 403 常見於訂閱清單未公開
+                  ytSubCache.set(cacheKey, false);
+                  return false;
+                }
+                const json = await res.json();
+                const ok = !!(json.items && json.items.length);
+                ytSubCache.set(cacheKey, ok);
+                return ok;
+              } catch (_) {
+                ytSubCache.set(cacheKey, false);
+                return false;
+              } finally {
+                ytSubPending.delete(cacheKey);
+              }
+            })();
+            ytSubPending.set(cacheKey, job);
+            if (await job) return true;
+          }
+          return false;
         }
 
         async function refreshTwitchAccessToken() {
@@ -736,8 +874,10 @@
           const mod = !!(msg.isMod || msg.isOwner);
           const paid = !!msg.isSub;
           const follow = !!msg.isFollow;
-          const other = !vip && !mod && !paid && !follow;
-          return { vip, mod, paid, follow, other };
+          const ytsub = !!msg.isYtSub;
+          // 互斥：有 VIP／MOD／付費／TW追隨／YT免費訂閱 → 不算「其他觀眾」
+          const other = !vip && !mod && !paid && !follow && !ytsub;
+          return { vip, mod, paid, follow, ytsub, other };
         }
 
         function matchesFilters(msg) {
@@ -752,6 +892,7 @@
             (allowRoles.mod && f.mod) ||
             (allowRoles.paid && f.paid) ||
             (allowRoles.follow && f.follow) ||
+            (allowRoles.ytsub && f.ytsub) ||
             (allowRoles.other && f.other)
           );
         }
@@ -827,6 +968,7 @@
               if (e.isMod) badges.push("MOD");
               if (e.isSub) badges.push(e.platform === "yt" ? "會員" : "付費訂閱");
               if (e.isFollow) badges.push("TW追隨");
+              if (e.isYtSub) badges.push("YT訂閱");
               rows.push(
                 `<div class="item" data-key="${e.key}">` +
                   `<span class="plat">${e.platform === "tw" ? "TW" : "YT"}</span>` +
@@ -942,6 +1084,7 @@
             isMod: !!(prev && prev.isMod) || !!msg.isMod || !!msg.isOwner,
             isSub: !!(prev && prev.isSub) || !!msg.isSub,
             isFollow: !!(prev && prev.isFollow) || !!msg.isFollow,
+            isYtSub: !!(prev && prev.isYtSub) || !!msg.isYtSub,
             isOwner: !!(prev && prev.isOwner) || !!msg.isOwner,
             text: msg.text || "",
           };
@@ -967,6 +1110,16 @@
             msg.isFollow = await checkTwitchFollow(channelLogin, msg.login);
           } else if (msg.isFollow == null) {
             msg.isFollow = false;
+          }
+          if (
+            needYtFreeSubLookup() &&
+            msg.platform === "yt" &&
+            msg.channelId &&
+            msg.isYtSub == null
+          ) {
+            msg.isYtSub = await checkYtFreeSub(msg.channelId);
+          } else if (msg.isYtSub == null) {
+            msg.isYtSub = false;
           }
           addEntry(msg);
         }

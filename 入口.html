@@ -815,7 +815,7 @@
       }
 
       .raffle-role-row.is-disabled .raffle-role-name::after {
-        content: "（需先授權）";
+        content: attr(data-disabled-hint);
         font-weight: 500;
         color: var(--muted);
         margin-left: 0.35em;
@@ -1560,7 +1560,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.2</span>
+          <span class="brand-version" id="brandVersion">v3.5.3</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3745,7 +3745,9 @@
                 >
               </div>
               <div class="raffle-role-row is-disabled" id="raffleFollowRow">
-                <span class="raffle-role-name">追隨（Twitch 限定・免費）</span>
+                <span class="raffle-role-name" data-disabled-hint="（需先授權）"
+                  >追隨（Twitch 限定・免費）</span
+                >
                 <label
                   ><input
                     type="radio"
@@ -3768,6 +3770,32 @@
                   沒有</label
                 >
               </div>
+              <div class="raffle-role-row is-disabled" id="raffleYtSubRow">
+                <span class="raffle-role-name" data-disabled-hint="（需 API Key）"
+                  >免費訂閱（YouTube 盡力）</span
+                >
+                <label
+                  ><input
+                    type="radio"
+                    name="raffleYtSub"
+                    id="raffleAllowYtSub"
+                    value="1"
+                    disabled
+                  />
+                  有</label
+                >
+                <label
+                  ><input
+                    type="radio"
+                    name="raffleYtSub"
+                    id="raffleDenyYtSub"
+                    value="0"
+                    checked
+                    disabled
+                  />
+                  沒有</label
+                >
+              </div>
               <div class="raffle-role-row">
                 <span class="raffle-role-name">其他觀眾</span>
                 <label
@@ -3780,8 +3808,10 @@
               </div>
             </div>
             <p class="hint">
-              「有」＝該身分可以抽；「沒有」＝不行。一人可同時有多種身分，符合任一「有」即可。把「其他觀眾」設成沒有，就會篩掉沒有 VIP／MOD／付費訂閱／會員徽章的人。<br />
-              「追隨（Twitch 限定）」需先授權；YouTube 沒有對應的免費追隨篩選（免費訂閱聊天 API 查不到）。
+              「有」＝該身分可以抽；「沒有」＝不行。一人可同時有多種身分，符合任一「有」即可。<strong>其他觀眾</strong>＝沒有
+              VIP／MOD／付費訂閱／會員／TW追隨／YT免費訂閱的人（MOD 不會被算進其他觀眾）。<br />
+              「追隨（Twitch）」需先授權。「免費訂閱（YouTube 盡力）」需上方已填自己的 YouTube API
+              Key；只查得到<strong>公開訂閱清單</strong>，私人訂閱會當沒訂，小鈴鐺查不到。
             </p>
             <div class="actions" style="margin-top: 10px">
               <button type="button" id="raffleTwAuthBtn">授權 Twitch 追隨查詢</button>
@@ -3820,7 +3850,7 @@
               </div>
             </div>
             <p class="hint">
-              VIP 僅 Twitch；YouTube 的「訂閱」對應頻道會員，MOD 對應聊天室管理員。每人只進名單一次。YT
+              VIP 僅 Twitch；「訂閱／會員（付費）」＝Twitch 付費訂閱／YouTube 頻道會員；MOD＝聊天室管理員（不會算進其他觀眾）。每人只進名單一次。YT
               貼圖模式沿用 B - ① 的「YT 聊天貼圖」設定。
             </p>
           </section>
@@ -4800,7 +4830,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.2";
+        const APP_VERSION = "v3.5.3";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -6963,6 +6993,7 @@
           raffleAllowMod: $("raffleAllowMod"),
           raffleAllowPaid: $("raffleAllowPaid"),
           raffleAllowFollow: $("raffleAllowFollow"),
+          raffleAllowYtSub: $("raffleAllowYtSub"),
           raffleAllowOther: $("raffleAllowOther"),
           raffleTitle: $("raffleTitle"),
           raffleHideStatus: $("raffleHideStatus"),
@@ -8972,10 +9003,10 @@
           return (json.data && json.data[0]) || null;
         }
 
-        function setRaffleFollowControlsEnabled(enabled) {
-          const row = $("raffleFollowRow");
-          const yes = $("raffleAllowFollow");
-          const no = $("raffleDenyFollow");
+        function setRaffleRoleToggleEnabled(rowId, yesId, noId, enabled) {
+          const row = $(rowId);
+          const yes = $(yesId);
+          const no = $(noId);
           if (row) row.classList.toggle("is-disabled", !enabled);
           if (yes) yes.disabled = !enabled;
           if (no) no.disabled = !enabled;
@@ -8983,6 +9014,29 @@
             if (no) no.checked = true;
             if (yes) yes.checked = false;
           }
+        }
+
+        function setRaffleFollowControlsEnabled(enabled) {
+          setRaffleRoleToggleEnabled(
+            "raffleFollowRow",
+            "raffleAllowFollow",
+            "raffleDenyFollow",
+            enabled
+          );
+        }
+
+        function setRaffleYtSubControlsEnabled(enabled) {
+          setRaffleRoleToggleEnabled(
+            "raffleYtSubRow",
+            "raffleAllowYtSub",
+            "raffleDenyYtSub",
+            enabled
+          );
+        }
+
+        function syncRaffleYtSubControlsFromKey() {
+          const hasKey = !!(fields.ytKey && fields.ytKey.value.trim());
+          setRaffleYtSubControlsEnabled(hasKey);
         }
 
         function renderTwitchFollowAuthStatus() {
@@ -9170,7 +9224,10 @@
           const allowPaid = fields.raffleAllowPaid ? !!fields.raffleAllowPaid.checked : true;
           const allowFollow = fields.raffleAllowFollow
             ? !!fields.raffleAllowFollow.checked
-            : true;
+            : false;
+          const allowYtSub = fields.raffleAllowYtSub
+            ? !!fields.raffleAllowYtSub.checked
+            : false;
           const allowOther = fields.raffleAllowOther
             ? !!fields.raffleAllowOther.checked
             : true;
@@ -9179,9 +9236,11 @@
           if (allowMod) roles.push("mod");
           if (allowPaid) roles.push("paid");
           if (allowFollow) roles.push("follow");
+          if (allowYtSub) roles.push("ytsub");
           if (allowOther) roles.push("other");
-          // 全勾＝不特別限制，不塞參數；否則明確列出允許身分
-          if (roles.length && roles.length < 5) p.set("roles", roles.join(","));
+          // 全開＝不特別限制，不塞參數；否則明確列出允許身分
+          const ROLE_TOTAL = 6;
+          if (roles.length && roles.length < ROLE_TOTAL) p.set("roles", roles.join(","));
           if (!roles.length) p.set("roles", "none");
           // Twitch 追隨查詢 token（僅在「追隨＝有」時帶入 OBS 網址）
           if (allowFollow) {
@@ -10321,6 +10380,7 @@ function syncYtAfterTwUi() {
           raffleTwAuthClear.addEventListener("click", () => clearTwitchFollowAuth());
         }
         renderTwitchFollowAuthStatus();
+        syncRaffleYtSubControlsFromKey();
         ensureTwitchFollowAuth().then((auth) => {
           if (auth) buildUrls();
         });
@@ -10540,6 +10600,10 @@ function syncYtAfterTwUi() {
         // @頻道 → UC… 解析快取，讓 OBS 網址用 UC（較穩，且不必每場貼影片）
         [fields.ytChannel, fields.ytKey].forEach((el) => {
           el.addEventListener("input", () => {
+            if (el === fields.ytKey) {
+              syncRaffleYtSubControlsFromKey();
+              buildUrls();
+            }
             clearTimeout(ytResolveTimer);
             ytResolveTimer = setTimeout(() => {
               ensureYtChannelIdResolved();

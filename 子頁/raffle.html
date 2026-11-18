@@ -394,9 +394,46 @@
         let windowStart = parseTimeParam(params.get("start") || params.get("from"));
         let windowEnd = parseTimeParam(params.get("end") || params.get("to"));
         const keyword = (params.get("keyword") || params.get("kw") || "").trim();
-        const vipMode = (params.get("vip") || "any").toLowerCase();
-        const modMode = (params.get("mod") || "any").toLowerCase();
-        const subMode = (params.get("sub") || "any").toLowerCase();
+        function parseAllowRoles() {
+          const raw = (params.get("roles") || "").trim().toLowerCase();
+          const all = { vip: true, mod: true, paid: true, follow: true, other: true };
+          if (!raw) {
+            // 舊版 vip/mod/sub=yes|no|any → 盡量對應
+            const vip = (params.get("vip") || "any").toLowerCase();
+            const mod = (params.get("mod") || "any").toLowerCase();
+            const sub = (params.get("sub") || "any").toLowerCase();
+            if (vip === "any" && mod === "any" && sub === "any") return all;
+            const allow = { vip: false, mod: false, paid: false, follow: false, other: false };
+            if (vip === "yes") allow.vip = true;
+            if (mod === "yes") allow.mod = true;
+            if (sub === "yes") allow.paid = true;
+            if (vip !== "yes" && mod !== "yes" && sub !== "yes") {
+              allow.other = true;
+              allow.follow = true;
+              if (vip !== "no") allow.vip = true;
+              if (mod !== "no") allow.mod = true;
+              if (sub !== "no") allow.paid = true;
+            }
+            if (vip === "no") allow.vip = false;
+            if (mod === "no") allow.mod = false;
+            if (sub === "no") allow.paid = false;
+            return allow;
+          }
+          if (raw === "none") {
+            return { vip: false, mod: false, paid: false, follow: false, other: false };
+          }
+          const set = new Set(
+            raw.split(/[\s,，、]+/).map((s) => s.trim()).filter(Boolean)
+          );
+          return {
+            vip: set.has("vip"),
+            mod: set.has("mod"),
+            paid: set.has("paid") || set.has("sub"),
+            follow: set.has("follow") || set.has("follower"),
+            other: set.has("other") || set.has("viewer"),
+          };
+        }
+        const allowRoles = parseAllowRoles();
         const demo = params.get("demo") === "1";
         const ytChatMode = (params.get("ytChat") || params.get("ytChatEmotes") || "api").toLowerCase();
         const ytChatWeb = ytChatMode === "web";
@@ -532,14 +569,15 @@
 
         const filterBits = [];
         if (keyword) filterBits.push("關鍵字「" + keyword + "」");
-        const needBits = [];
-        if (vipMode === "yes") needBits.push("VIP");
-        if (modMode === "yes") needBits.push("MOD");
-        if (subMode === "yes") needBits.push("訂閱／會員");
-        if (needBits.length) filterBits.push("身分 " + needBits.join("／") + "（任一）");
-        if (vipMode === "no") filterBits.push("排除 VIP");
-        if (modMode === "no") filterBits.push("排除 MOD");
-        if (subMode === "no") filterBits.push("排除訂閱／會員");
+        const roleBits = [];
+        if (allowRoles.vip) roleBits.push("VIP");
+        if (allowRoles.mod) roleBits.push("MOD");
+        if (allowRoles.paid) roleBits.push("付費訂閱／會員");
+        if (allowRoles.follow) roleBits.push("免費追隨／訂閱");
+        if (allowRoles.other) roleBits.push("其他觀眾");
+        if (roleBits.length === 5) filterBits.push("身分 全部可抽");
+        else if (!roleBits.length) filterBits.push("身分 全關（沒人可抽）");
+        else filterBits.push("身分 " + roleBits.join("／"));
         filterLabel.textContent = filterBits.length
           ? "條件 " + filterBits.join(" · ")
           : "條件 全部留言";
@@ -570,21 +608,30 @@
           );
         }
 
+        function roleFlags(msg) {
+          const vip = !!msg.isVip;
+          const mod = !!(msg.isMod || msg.isOwner);
+          const paid = !!msg.isSub;
+          // 聊天 IRC／YT liveChat 抓不到免費追隨／訂閱；保留欄位給之後擴充
+          const follow = !!msg.isFollow;
+          const other = !vip && !mod && !paid && !follow;
+          return { vip, mod, paid, follow, other };
+        }
+
         function matchesFilters(msg) {
           if (!msg || !String(msg.text || "").trim()) return false;
           if (keyword) {
             const hay = String(msg.text || "");
             if (!hay.toLowerCase().includes(keyword.toLowerCase())) return false;
           }
-          const need = [];
-          if (vipMode === "yes") need.push(!!msg.isVip);
-          if (modMode === "yes") need.push(!!(msg.isMod || msg.isOwner));
-          if (subMode === "yes") need.push(!!msg.isSub);
-          if (need.length && !need.some(Boolean)) return false;
-          if (vipMode === "no" && msg.isVip) return false;
-          if (modMode === "no" && (msg.isMod || msg.isOwner)) return false;
-          if (subMode === "no" && msg.isSub) return false;
-          return true;
+          const f = roleFlags(msg);
+          return (
+            (allowRoles.vip && f.vip) ||
+            (allowRoles.mod && f.mod) ||
+            (allowRoles.paid && f.paid) ||
+            (allowRoles.follow && f.follow) ||
+            (allowRoles.other && f.other)
+          );
         }
 
         function parseTwitchBadges(tag) {
@@ -656,7 +703,8 @@
               const badges = [];
               if (e.isVip) badges.push("VIP");
               if (e.isMod) badges.push("MOD");
-              if (e.isSub) badges.push(e.platform === "yt" ? "會員" : "訂閱");
+              if (e.isSub) badges.push(e.platform === "yt" ? "會員" : "付費訂閱");
+              if (e.isFollow) badges.push(e.platform === "yt" ? "訂閱" : "追隨");
               rows.push(
                 `<div class="item" data-key="${e.key}">` +
                   `<span class="plat">${e.platform === "tw" ? "TW" : "YT"}</span>` +
@@ -770,6 +818,7 @@
             isVip: !!(prev && prev.isVip) || !!msg.isVip,
             isMod: !!(prev && prev.isMod) || !!msg.isMod || !!msg.isOwner,
             isSub: !!(prev && prev.isSub) || !!msg.isSub,
+            isFollow: !!(prev && prev.isFollow) || !!msg.isFollow,
             isOwner: !!(prev && prev.isOwner) || !!msg.isOwner,
             text: msg.text || "",
           };

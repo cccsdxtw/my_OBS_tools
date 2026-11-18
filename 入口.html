@@ -778,6 +778,36 @@
         }
       }
 
+      .raffle-role-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .raffle-role-row {
+        display: grid;
+        grid-template-columns: minmax(9.5rem, 1.4fr) auto auto;
+        align-items: center;
+        gap: 10px 14px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        background: var(--input-bg);
+      }
+
+      .raffle-role-name {
+        font-weight: 600;
+        line-height: 1.3;
+      }
+
+      .raffle-role-row label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        white-space: nowrap;
+      }
+
       .row > div {
         display: flex;
         align-items: center;
@@ -1517,7 +1547,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.4.4</span>
+          <span class="brand-version" id="brandVersion">v3.4.5</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3670,34 +3700,67 @@
             <p class="hint">
               時段精度：年／月／日／時／分／秒（本機時區）。空白開始＝開啟頁面就收；空白結束＝不自動截止（可按截止收件）。開始與結束都空白時，改用「備援收件秒數」。
             </p>
-            <div class="row row-3">
-              <div>
-                <label for="raffleVip">VIP</label>
-                <select id="raffleVip">
-                  <option value="any" selected>不限</option>
-                  <option value="yes">要 VIP</option>
-                  <option value="no">排除 VIP</option>
-                </select>
+            <div class="raffle-role-grid" id="raffleRoles">
+              <div class="raffle-role-row">
+                <span class="raffle-role-name">VIP</span>
+                <label
+                  ><input type="radio" name="raffleVip" id="raffleAllowVip" value="1" checked />
+                  有</label
+                >
+                <label
+                  ><input type="radio" name="raffleVip" value="0" /> 沒有</label
+                >
               </div>
-              <div>
-                <label for="raffleMod">MOD</label>
-                <select id="raffleMod">
-                  <option value="any" selected>不限</option>
-                  <option value="yes">要 MOD</option>
-                  <option value="no">排除 MOD</option>
-                </select>
+              <div class="raffle-role-row">
+                <span class="raffle-role-name">MOD</span>
+                <label
+                  ><input type="radio" name="raffleMod" id="raffleAllowMod" value="1" checked />
+                  有</label
+                >
+                <label
+                  ><input type="radio" name="raffleMod" value="0" /> 沒有</label
+                >
               </div>
-              <div>
-                <label for="raffleSub">訂閱／會員</label>
-                <select id="raffleSub">
-                  <option value="any" selected>不限</option>
-                  <option value="yes">要訂閱／會員</option>
-                  <option value="no">排除訂閱／會員</option>
-                </select>
+              <div class="raffle-role-row">
+                <span class="raffle-role-name">訂閱／會員（付費）</span>
+                <label
+                  ><input type="radio" name="rafflePaid" id="raffleAllowPaid" value="1" checked />
+                  有</label
+                >
+                <label
+                  ><input type="radio" name="rafflePaid" value="0" /> 沒有</label
+                >
+              </div>
+              <div class="raffle-role-row">
+                <span class="raffle-role-name">追隨／訂閱（免費）</span>
+                <label
+                  ><input
+                    type="radio"
+                    name="raffleFollow"
+                    id="raffleAllowFollow"
+                    value="1"
+                    checked
+                  />
+                  有</label
+                >
+                <label
+                  ><input type="radio" name="raffleFollow" value="0" /> 沒有</label
+                >
+              </div>
+              <div class="raffle-role-row">
+                <span class="raffle-role-name">其他觀眾</span>
+                <label
+                  ><input type="radio" name="raffleOther" id="raffleAllowOther" value="1" checked />
+                  有</label
+                >
+                <label
+                  ><input type="radio" name="raffleOther" value="0" /> 沒有</label
+                >
               </div>
             </div>
             <p class="hint">
-              「要」＝符合你選的<strong>任一種</strong>身分即可（可多選）；「排除」＝該身分不能抽。三個都「不限」＝不看身分。
+              「有」＝該身分可以抽；「沒有」＝不行。一人可同時有多種身分，符合任一「有」即可。把「其他觀眾」設成沒有，就會篩掉沒有 VIP／MOD／付費訂閱／會員徽章的人。<br />
+              注意：聊天訊息本身<strong>抓不到</strong>免費追隨／訂閱，這類人目前會算在「其他觀眾」；只開「追隨／訂閱（免費）」通常不會進名單。
             </p>
             <div class="row row-3">
               <div>
@@ -4663,7 +4726,39 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.4.4";
+        function isToggleField(el) {
+          return !!el && (el.type === "checkbox" || el.type === "radio");
+        }
+
+        function readFieldValue(el) {
+          if (!el) return "";
+          if (isToggleField(el)) return !!el.checked;
+          return el.value;
+        }
+
+        function writeFieldValue(el, v) {
+          if (!el) return;
+          if (el.type === "checkbox") {
+            el.checked = v === true || v === "true" || v === 1 || v === "1";
+            return;
+          }
+          if (el.type === "radio") {
+            const on = v === true || v === "true" || v === 1 || v === "1";
+            el.checked = on;
+            if (!on && el.name) {
+              const off = document.querySelector(
+                'input[type="radio"][name="' +
+                  el.name.replace(/"/g, '\\"') +
+                  '"][value="0"]'
+              );
+              if (off) off.checked = true;
+            }
+            return;
+          }
+          el.value = v == null ? "" : String(v);
+        }
+
+        const APP_VERSION = "v3.4.5";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -6104,11 +6199,7 @@
           const rawFields = { ...(setup.fields || {}) };
           Object.entries(rawFields).forEach(([k, v]) => {
             if (!fields[k]) return;
-            if (fields[k].type === "checkbox") {
-              fields[k].checked = v === true || v === "true" || v === 1 || v === "1";
-            } else {
-              fields[k].value = v == null ? "" : String(v);
-            }
+            writeFieldValue(fields[k], v);
           });
           document.querySelectorAll("#modules input[type=checkbox][data-key]").forEach((el) => {
             if (
@@ -6822,9 +6913,11 @@
           raffleStart: $("raffleStart"),
           raffleEnd: $("raffleEnd"),
           raffleKeyword: $("raffleKeyword"),
-          raffleVip: $("raffleVip"),
-          raffleMod: $("raffleMod"),
-          raffleSub: $("raffleSub"),
+          raffleAllowVip: $("raffleAllowVip"),
+          raffleAllowMod: $("raffleAllowMod"),
+          raffleAllowPaid: $("raffleAllowPaid"),
+          raffleAllowFollow: $("raffleAllowFollow"),
+          raffleAllowOther: $("raffleAllowOther"),
           raffleTitle: $("raffleTitle"),
           raffleHideStatus: $("raffleHideStatus"),
           raffleHideControls: $("raffleHideControls"),
@@ -7336,11 +7429,7 @@
             }
             Object.entries(rawFields).forEach(([k, v]) => {
               if (!fields[k]) return;
-              if (fields[k].type === "checkbox") {
-                fields[k].checked = v === true || v === "true" || v === 1 || v === "1";
-              } else {
-                fields[k].value = v;
-              }
+              writeFieldValue(fields[k], v);
             });
             document.querySelectorAll("#modules input[type=checkbox][data-key]").forEach((el) => {
               if (data.modules && Object.prototype.hasOwnProperty.call(data.modules, el.dataset.key)) {
@@ -8802,12 +8891,24 @@
           if (collect && collect >= 5) p.set("collect", String(collect));
           const kw = (fields.raffleKeyword && fields.raffleKeyword.value.trim()) || "";
           if (kw) p.set("keyword", kw);
-          const vip = (fields.raffleVip && fields.raffleVip.value) || "any";
-          const mod = (fields.raffleMod && fields.raffleMod.value) || "any";
-          const sub = (fields.raffleSub && fields.raffleSub.value) || "any";
-          if (vip !== "any") p.set("vip", vip);
-          if (mod !== "any") p.set("mod", mod);
-          if (sub !== "any") p.set("sub", sub);
+          const allowVip = fields.raffleAllowVip ? !!fields.raffleAllowVip.checked : true;
+          const allowMod = fields.raffleAllowMod ? !!fields.raffleAllowMod.checked : true;
+          const allowPaid = fields.raffleAllowPaid ? !!fields.raffleAllowPaid.checked : true;
+          const allowFollow = fields.raffleAllowFollow
+            ? !!fields.raffleAllowFollow.checked
+            : true;
+          const allowOther = fields.raffleAllowOther
+            ? !!fields.raffleAllowOther.checked
+            : true;
+          const roles = [];
+          if (allowVip) roles.push("vip");
+          if (allowMod) roles.push("mod");
+          if (allowPaid) roles.push("paid");
+          if (allowFollow) roles.push("follow");
+          if (allowOther) roles.push("other");
+          // 全勾＝不特別限制，不塞參數；否則明確列出允許身分
+          if (roles.length && roles.length < 5) p.set("roles", roles.join(","));
+          if (!roles.length) p.set("roles", "none");
           const title = (fields.raffleTitle && fields.raffleTitle.value.trim()) || "";
           if (title && title !== "抽籤") p.set("title", title);
           if (fields.raffleHideStatus && fields.raffleHideStatus.checked) {
@@ -9526,10 +9627,7 @@ function syncYtAfterTwUi() {
             "my_obs_tools_setup",
             JSON.stringify({
               fields: Object.fromEntries(
-                Object.entries(fields).map(([k, el]) => [
-                  k,
-                  el.type === "checkbox" ? el.checked : el.value,
-                ])
+                Object.entries(fields).map(([k, el]) => [k, readFieldValue(el)])
               ),
               modules: mods,
               moduleOrder,
@@ -9919,9 +10017,14 @@ function syncYtAfterTwUi() {
           }, 1000);
         });
 
+        const raffleRolesBox = $("raffleRoles");
+        if (raffleRolesBox) {
+          raffleRolesBox.addEventListener("change", () => buildUrls());
+        }
+
         Object.values(fields).forEach((el) => {
           if (!el || !el.addEventListener) return;
-          el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
+          el.addEventListener(isToggleField(el) ? "change" : "input", () => {
             if (
               el === fields.defaultShowBg ||
               el === fields.defaultShowPanelImg ||

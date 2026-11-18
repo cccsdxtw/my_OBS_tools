@@ -787,12 +787,27 @@
 
       .raffle-role-row {
         display: grid;
-        grid-template-columns: minmax(9.5rem, 1.4fr) auto auto;
+        grid-template-columns: minmax(8.5rem, 1.3fr) auto auto minmax(5.5rem, auto);
         align-items: center;
-        gap: 10px 14px;
+        gap: 8px 12px;
         padding: 8px 10px;
         border: 1px solid var(--line);
         background: var(--input-bg);
+      }
+
+      .raffle-role-weight {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        justify-self: end;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .raffle-role-weight input[type="number"] {
+        width: 3.4rem;
+        min-width: 0;
+        padding: 4px 6px;
       }
 
       .raffle-role-name {
@@ -1560,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.3</span>
+          <span class="brand-version" id="brandVersion">v3.5.4</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3723,6 +3738,10 @@
                 <label
                   ><input type="radio" name="raffleVip" value="0" /> 沒有</label
                 >
+                <label class="raffle-role-weight" for="raffleWeightVip"
+                  >比重
+                  <input id="raffleWeightVip" type="number" min="1" max="20" value="1"
+                /></label>
               </div>
               <div class="raffle-role-row">
                 <span class="raffle-role-name">MOD</span>
@@ -3733,6 +3752,10 @@
                 <label
                   ><input type="radio" name="raffleMod" value="0" /> 沒有</label
                 >
+                <label class="raffle-role-weight" for="raffleWeightMod"
+                  >比重
+                  <input id="raffleWeightMod" type="number" min="1" max="20" value="1"
+                /></label>
               </div>
               <div class="raffle-role-row">
                 <span class="raffle-role-name">訂閱／會員（付費）</span>
@@ -3743,6 +3766,10 @@
                 <label
                   ><input type="radio" name="rafflePaid" value="0" /> 沒有</label
                 >
+                <label class="raffle-role-weight" for="raffleWeightPaid"
+                  >比重
+                  <input id="raffleWeightPaid" type="number" min="1" max="20" value="1"
+                /></label>
               </div>
               <div class="raffle-role-row is-disabled" id="raffleFollowRow">
                 <span class="raffle-role-name" data-disabled-hint="（需先授權）"
@@ -3769,6 +3796,16 @@
                   />
                   沒有</label
                 >
+                <label class="raffle-role-weight" for="raffleWeightFollow"
+                  >比重
+                  <input
+                    id="raffleWeightFollow"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value="1"
+                    disabled
+                /></label>
               </div>
               <div class="raffle-role-row is-disabled" id="raffleYtSubRow">
                 <span class="raffle-role-name" data-disabled-hint="（需 API Key）"
@@ -3795,6 +3832,16 @@
                   />
                   沒有</label
                 >
+                <label class="raffle-role-weight" for="raffleWeightYtSub"
+                  >比重
+                  <input
+                    id="raffleWeightYtSub"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value="1"
+                    disabled
+                /></label>
               </div>
               <div class="raffle-role-row">
                 <span class="raffle-role-name">其他觀眾</span>
@@ -3805,11 +3852,16 @@
                 <label
                   ><input type="radio" name="raffleOther" value="0" /> 沒有</label
                 >
+                <label class="raffle-role-weight" for="raffleWeightOther"
+                  >比重
+                  <input id="raffleWeightOther" type="number" min="1" max="20" value="1"
+                /></label>
               </div>
             </div>
             <p class="hint">
               「有」＝該身分可以抽；「沒有」＝不行。一人可同時有多種身分，符合任一「有」即可。<strong>其他觀眾</strong>＝沒有
               VIP／MOD／付費訂閱／會員／TW追隨／YT免費訂閱的人（MOD 不會被算進其他觀眾）。<br />
+              <strong>比重</strong>＝進拉霸名單的份數（例如 VIP＝3 就放 3 個名字），抽獎機率也依此提高；名單會隨機打散，不會整排同一身分。<br />
               「追隨（Twitch）」需先授權。「免費訂閱（YouTube 盡力）」需上方已填自己的 YouTube API
               Key；只查得到<strong>公開訂閱清單</strong>，私人訂閱會當沒訂，小鈴鐺查不到。
             </p>
@@ -4830,7 +4882,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.3";
+        const APP_VERSION = "v3.5.4";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -6995,6 +7047,12 @@
           raffleAllowFollow: $("raffleAllowFollow"),
           raffleAllowYtSub: $("raffleAllowYtSub"),
           raffleAllowOther: $("raffleAllowOther"),
+          raffleWeightVip: $("raffleWeightVip"),
+          raffleWeightMod: $("raffleWeightMod"),
+          raffleWeightPaid: $("raffleWeightPaid"),
+          raffleWeightFollow: $("raffleWeightFollow"),
+          raffleWeightYtSub: $("raffleWeightYtSub"),
+          raffleWeightOther: $("raffleWeightOther"),
           raffleTitle: $("raffleTitle"),
           raffleHideStatus: $("raffleHideStatus"),
           raffleHideControls: $("raffleHideControls"),
@@ -9003,13 +9061,15 @@
           return (json.data && json.data[0]) || null;
         }
 
-        function setRaffleRoleToggleEnabled(rowId, yesId, noId, enabled) {
+        function setRaffleRoleToggleEnabled(rowId, yesId, noId, enabled, weightId) {
           const row = $(rowId);
           const yes = $(yesId);
           const no = $(noId);
+          const weight = weightId ? $(weightId) : null;
           if (row) row.classList.toggle("is-disabled", !enabled);
           if (yes) yes.disabled = !enabled;
           if (no) no.disabled = !enabled;
+          if (weight) weight.disabled = !enabled;
           if (!enabled) {
             if (no) no.checked = true;
             if (yes) yes.checked = false;
@@ -9021,7 +9081,8 @@
             "raffleFollowRow",
             "raffleAllowFollow",
             "raffleDenyFollow",
-            enabled
+            enabled,
+            "raffleWeightFollow"
           );
         }
 
@@ -9030,8 +9091,15 @@
             "raffleYtSubRow",
             "raffleAllowYtSub",
             "raffleDenyYtSub",
-            enabled
+            enabled,
+            "raffleWeightYtSub"
           );
+        }
+
+        function readRaffleWeight(el, fallback) {
+          const n = parseInt(el && el.value, 10);
+          if (!Number.isFinite(n)) return fallback;
+          return Math.max(1, Math.min(20, n));
         }
 
         function syncRaffleYtSubControlsFromKey() {
@@ -9242,6 +9310,18 @@
           const ROLE_TOTAL = 6;
           if (roles.length && roles.length < ROLE_TOTAL) p.set("roles", roles.join(","));
           if (!roles.length) p.set("roles", "none");
+          const wVip = readRaffleWeight(fields.raffleWeightVip, 1);
+          const wMod = readRaffleWeight(fields.raffleWeightMod, 1);
+          const wPaid = readRaffleWeight(fields.raffleWeightPaid, 1);
+          const wFollow = readRaffleWeight(fields.raffleWeightFollow, 1);
+          const wYtSub = readRaffleWeight(fields.raffleWeightYtSub, 1);
+          const wOther = readRaffleWeight(fields.raffleWeightOther, 1);
+          if (wVip !== 1) p.set("wVip", String(wVip));
+          if (wMod !== 1) p.set("wMod", String(wMod));
+          if (wPaid !== 1) p.set("wPaid", String(wPaid));
+          if (wFollow !== 1) p.set("wFollow", String(wFollow));
+          if (wYtSub !== 1) p.set("wYtSub", String(wYtSub));
+          if (wOther !== 1) p.set("wOther", String(wOther));
           // Twitch 追隨查詢 token（僅在「追隨＝有」時帶入 OBS 網址）
           if (allowFollow) {
             const auth = readTwitchFollowAuth();

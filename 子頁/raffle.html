@@ -461,6 +461,23 @@
           };
         }
         const allowRoles = parseAllowRoles();
+        function readWeightParam(keys, fallback) {
+          for (const k of keys) {
+            const raw = params.get(k);
+            if (raw == null || raw === "") continue;
+            const n = parseInt(raw, 10);
+            if (Number.isFinite(n)) return Math.max(1, Math.min(20, n));
+          }
+          return fallback;
+        }
+        const roleWeights = {
+          vip: readWeightParam(["wVip", "weightVip", "vipW"], 1),
+          mod: readWeightParam(["wMod", "weightMod", "modW"], 1),
+          paid: readWeightParam(["wPaid", "weightPaid", "paidW", "wSub"], 1),
+          follow: readWeightParam(["wFollow", "weightFollow", "followW"], 1),
+          ytsub: readWeightParam(["wYtSub", "weightYtSub", "ytSubW"], 1),
+          other: readWeightParam(["wOther", "weightOther", "otherW"], 1),
+        };
         const demo = params.get("demo") === "1";
         const ytChatMode = (params.get("ytChat") || params.get("ytChatEmotes") || "api").toLowerCase();
         const ytChatWeb = ytChatMode === "web";
@@ -624,6 +641,14 @@
             ytKey ? "YT訂閱盡力查（公開清單）" : "YT訂閱未填 API Key"
           );
         }
+        const weightBits = [];
+        if (roleWeights.vip !== 1) weightBits.push("VIP×" + roleWeights.vip);
+        if (roleWeights.mod !== 1) weightBits.push("MOD×" + roleWeights.mod);
+        if (roleWeights.paid !== 1) weightBits.push("付費×" + roleWeights.paid);
+        if (roleWeights.follow !== 1) weightBits.push("TW追隨×" + roleWeights.follow);
+        if (roleWeights.ytsub !== 1) weightBits.push("YT訂閱×" + roleWeights.ytsub);
+        if (roleWeights.other !== 1) weightBits.push("其他×" + roleWeights.other);
+        if (weightBits.length) filterBits.push("比重 " + weightBits.join(" "));
         filterLabel.textContent = filterBits.length
           ? "條件 " + filterBits.join(" · ")
           : "條件 全部留言";
@@ -880,6 +905,43 @@
           return { vip, mod, paid, follow, ytsub, other };
         }
 
+        /** 多重身分時取優先桶決定比重：VIP > MOD > 付費 > TW追隨 > YT訂閱 > 其他 */
+        function primaryRoleKey(msg) {
+          const f = roleFlags(msg);
+          if (f.vip) return "vip";
+          if (f.mod) return "mod";
+          if (f.paid) return "paid";
+          if (f.follow) return "follow";
+          if (f.ytsub) return "ytsub";
+          return "other";
+        }
+
+        function weightForEntry(msg) {
+          const key = primaryRoleKey(msg);
+          const w = roleWeights[key];
+          return Math.max(1, Math.min(20, Number(w) || 1));
+        }
+
+        function shuffleInPlace(arr) {
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
+          }
+          return arr;
+        }
+
+        function buildWeightedShuffledList() {
+          const people = listEntries();
+          const out = [];
+          people.forEach((e) => {
+            const w = weightForEntry(e);
+            for (let i = 0; i < w; i++) out.push(e);
+          });
+          return shuffleInPlace(out);
+        }
+
         function matchesFilters(msg) {
           if (!msg || !String(msg.text || "").trim()) return false;
           if (keyword) {
@@ -1008,8 +1070,9 @@
         }
 
         function rebuildReelVisual() {
-          reelList = listEntries();
-          countLabel.textContent = String(reelList.length);
+          const uniqueCount = entries.size;
+          countLabel.textContent = String(uniqueCount);
+          reelList = buildWeightedShuffledList();
           const reps = Math.max(6, Math.ceil(40 / Math.max(1, reelList.length)));
           reelRepeats = reps;
           renderReel(reelList, reps);
@@ -1145,20 +1208,18 @@
 
         function stopSpin() {
           if (phase !== "spin") return;
-          const list = listEntries();
+          // 用加權後的拉霸名單抽（比重越高出現越多、中獎機率也越高）
+          const list = reelList.length ? reelList : buildWeightedShuffledList();
           if (!list.length) return;
-          winner = list[Math.floor(Math.random() * list.length)];
+          const idx = Math.floor(Math.random() * list.length);
+          winner = list[idx];
           const h = itemH();
-          const idx = Math.max(
-            0,
-            list.findIndex((e) => e.key === winner.key)
-          );
           const shell = document.querySelector(".reel-shell");
           const mid = (shell?.clientHeight || 420) / 2 - h / 2;
           // offsetY = mid - index*h  → 目前大約停在哪個 index
           let currentIndex = (mid - offsetY) / h;
           if (!Number.isFinite(currentIndex)) currentIndex = 0;
-          // 至少再滾兩圈，並對齊到 winner 的 index
+          // 至少再滾兩圈，並對齊到抽中的那一格（加權複本）
           let targetIndex = Math.ceil(currentIndex + list.length * 2 + 1);
           const rem =
             ((Math.round(targetIndex) % list.length) + list.length) % list.length;

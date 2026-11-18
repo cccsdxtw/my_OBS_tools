@@ -808,6 +808,19 @@
         white-space: nowrap;
       }
 
+      .raffle-role-row.is-disabled {
+        opacity: 0.45;
+        filter: grayscale(0.35);
+        pointer-events: none;
+      }
+
+      .raffle-role-row.is-disabled .raffle-role-name::after {
+        content: "（需先授權）";
+        font-weight: 500;
+        color: var(--muted);
+        margin-left: 0.35em;
+      }
+
       .row > div {
         display: flex;
         align-items: center;
@@ -1547,7 +1560,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.0</span>
+          <span class="brand-version" id="brandVersion">v3.5.1</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3731,7 +3744,7 @@
                   ><input type="radio" name="rafflePaid" value="0" /> 沒有</label
                 >
               </div>
-              <div class="raffle-role-row">
+              <div class="raffle-role-row is-disabled" id="raffleFollowRow">
                 <span class="raffle-role-name">追隨／訂閱（免費）</span>
                 <label
                   ><input
@@ -3739,12 +3752,20 @@
                     name="raffleFollow"
                     id="raffleAllowFollow"
                     value="1"
-                    checked
+                    disabled
                   />
                   有</label
                 >
                 <label
-                  ><input type="radio" name="raffleFollow" value="0" /> 沒有</label
+                  ><input
+                    type="radio"
+                    name="raffleFollow"
+                    id="raffleDenyFollow"
+                    value="0"
+                    checked
+                    disabled
+                  />
+                  沒有</label
                 >
               </div>
               <div class="raffle-role-row">
@@ -4779,7 +4800,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.0";
+        const APP_VERSION = "v3.5.1";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -8951,24 +8972,43 @@
           return (json.data && json.data[0]) || null;
         }
 
+        function setRaffleFollowControlsEnabled(enabled) {
+          const row = $("raffleFollowRow");
+          const yes = $("raffleAllowFollow");
+          const no = $("raffleDenyFollow");
+          if (row) row.classList.toggle("is-disabled", !enabled);
+          if (yes) yes.disabled = !enabled;
+          if (no) no.disabled = !enabled;
+          if (!enabled) {
+            if (no) no.checked = true;
+            if (yes) yes.checked = false;
+          }
+        }
+
         function renderTwitchFollowAuthStatus() {
           const statusEl = $("raffleTwAuthStatus");
           const clearBtn = $("raffleTwAuthClear");
           const authBtn = $("raffleTwAuthBtn");
           const panel = $("raffleTwAuthPanel");
           const auth = readTwitchFollowAuth();
+          const authed = !!(auth && auth.access_token);
+          setRaffleFollowControlsEnabled(authed);
           if (!statusEl) return;
-          if (auth && auth.login) {
+          if (authed && auth.login) {
             const exp = auth.expires_at
               ? new Date(auth.expires_at).toLocaleString()
               : "—";
             statusEl.textContent =
-              "已授權 @" + auth.login + "（token 約到期 " + exp + "；會自動刷新）";
+              "已授權 @" +
+              auth.login +
+              "（token 約到期 " +
+              exp +
+              "；會自動刷新）。上方「追隨／訂閱（免費）」已可設定。";
             if (clearBtn) clearBtn.hidden = false;
             if (authBtn) authBtn.textContent = "重新授權 Twitch 追隨";
           } else {
             statusEl.textContent =
-              "尚未授權 Twitch 追隨查詢。請用該台主播或模組帳號授權。";
+              "尚未授權：上方「追隨／訂閱（免費）」已停用。請用該台主播或模組帳號授權後才能篩 Twitch 追隨。";
             if (clearBtn) clearBtn.hidden = true;
             if (authBtn) authBtn.textContent = "授權 Twitch 追隨查詢";
           }

@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.11</span>
+          <span class="brand-version" id="brandVersion">v3.5.12</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3925,7 +3925,7 @@
             </div>
             <textarea id="raffleUrl" class="url-box" readonly></textarea>
             <p class="hint">
-              建議約 640×720 透明覆蓋。框內展示可顯示示範假名（一按按鈕或有真人進名單就會清掉）；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。OBS「互動」可改開始／結束時間並按開始／停止。<br />
+              建議約 640×720 透明覆蓋。框內展示會隨時間陸續加入示範假名（可按「截止收件」再「開始」真的抽一次）；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。OBS「互動」可改開始／結束時間並按開始／停止。<br />
               若已授權且「追隨（Twitch 限定）＝有」，複製的網址會帶 token（勿外流）；過期會用 refresh 自動續。
             </p>
             <div class="actions">
@@ -4912,7 +4912,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.11";
+        const APP_VERSION = "v3.5.12";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -10087,7 +10087,7 @@ function syncYtAfterTwUi() {
           const raffleHref = buildRaffleUrl();
           const raffleSampleHref = buildRaffleUrl({ sample: true });
           if ($("raffleUrl")) $("raffleUrl").value = raffleHref;
-          // iframe＝示範假名；「預覽」／複製＝OBS 實際畫面（無假資料）
+          // iframe＝示範假名隨時間進名單（可真的抽）；「預覽」／複製＝OBS 實際畫面（無假資料）
           if ($("openRaffle")) $("openRaffle").href = raffleHref;
           if ($("previewRaffle")) $("previewRaffle").src = raffleSampleHref;
 

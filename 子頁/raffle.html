@@ -521,7 +521,8 @@
         };
         const demo = params.get("demo") === "1";
         const sampleMode = params.get("sample") === "1";
-        let sampleDismissed = false;
+        let sampleFeederTimer = null;
+        let sampleFeederStopped = false;
         const ytChatMode = (params.get("ytChat") || params.get("ytChatEmotes") || "api").toLowerCase();
         const ytChatWeb = ytChatMode === "web";
         const TWITCH_FOLLOW_CLIENT_ID =
@@ -1166,6 +1167,17 @@
             key: "sample:yt1",
             platform: "yt",
             user: "小白",
+          },
+          {
+            key: "sample:ytmem",
+            platform: "yt",
+            user: "會員阿明",
+            isSub: true,
+          },
+          {
+            key: "sample:ytsub",
+            platform: "yt",
+            user: "訂閱粉圓",
             isYtSub: true,
           },
           {
@@ -1183,25 +1195,46 @@
           },
         ];
 
-        function showingSamples() {
-          return sampleMode && !sampleDismissed && entries.size === 0;
+        function stopSampleFeeder() {
+          sampleFeederStopped = true;
+          if (sampleFeederTimer) {
+            clearTimeout(sampleFeederTimer);
+            sampleFeederTimer = null;
+          }
         }
 
-        function dismissSample() {
-          if (!sampleMode || sampleDismissed) return;
-          sampleDismissed = true;
-          rebuildReelVisual();
+        function startSampleFeeder() {
+          if (!sampleMode) return;
+          stopSampleFeeder();
+          sampleFeederStopped = false;
+          const pool = shuffleInPlace(
+            SAMPLE_ENTRIES.map((e) => ({
+              ...e,
+              text: (keyword ? keyword + " " : "") + (e.user || "參加"),
+            }))
+          );
+          let i = 0;
+          const pushNext = () => {
+            if (sampleFeederStopped) return;
+            if (phase === "wait") {
+              sampleFeederTimer = setTimeout(pushNext, 300);
+              return;
+            }
+            if (phase !== "collect") return;
+            if (i >= pool.length) return;
+            addEntry(pool[i]);
+            i += 1;
+            if (i >= pool.length) return;
+            const delay = i < 3 ? 420 : 650 + Math.floor(Math.random() * 550);
+            sampleFeederTimer = setTimeout(pushNext, delay);
+          };
+          sampleFeederTimer = setTimeout(pushNext, 280);
         }
 
         function rebuildReelVisual() {
           const uniqueCount = entries.size;
           countLabel.textContent = String(uniqueCount);
-          if (showingSamples()) {
-            // 示範名單：不進正式 entries，只給預覽捲動看
-            reelList = shuffleInPlace(SAMPLE_ENTRIES.map((e) => ({ ...e })));
-          } else {
-            reelList = buildWeightedShuffledList();
-          }
+          reelList = buildWeightedShuffledList();
           const reps = Math.max(6, Math.ceil(40 / Math.max(1, reelList.length)));
           reelRepeats = reps;
           renderReel(reelList, reps);
@@ -1264,9 +1297,6 @@
           if (!matchesFilters(msg)) return;
           const key = entryKey(msg);
           if (!key || key.endsWith(":")) return;
-          if (sampleMode && !sampleDismissed) {
-            sampleDismissed = true;
-          }
           const prev = entries.get(key);
           const next = {
             key,
@@ -1321,6 +1351,7 @@
 
         function closeCollect() {
           if (phase !== "collect" && phase !== "wait") return;
+          stopSampleFeeder();
           setPhase("ready");
           timerLabel.textContent = "0";
           rebuildReelVisual();
@@ -1369,6 +1400,7 @@
         }
 
         function resetAll() {
+          stopSampleFeeder();
           entries.clear();
           winner = null;
           winnerBanner.classList.remove("show");
@@ -1378,29 +1410,20 @@
           offsetY = 0;
           syncScheduleFromInputs({ forcePhase: true });
           rebuildReelVisual();
+          if (sampleMode) startSampleFeeder();
         }
 
         btnClose.addEventListener("click", () => {
-          dismissSample();
           closeCollect();
         });
         btnStart.addEventListener("click", () => {
-          dismissSample();
           startSpin();
         });
         btnStop.addEventListener("click", () => {
-          dismissSample();
           stopSpin();
         });
         btnReset.addEventListener("click", () => {
-          dismissSample();
           resetAll();
-        });
-        // 點時間／備援也清掉示範
-        [startInput, endInput, collectInput].forEach((el) => {
-          if (!el) return;
-          el.addEventListener("focus", dismissSample);
-          el.addEventListener("pointerdown", dismissSample);
         });
         [startInput, endInput, collectInput].forEach((el) => {
           if (!el) return;
@@ -1743,7 +1766,10 @@
 
         refreshStatus();
         if (demo) startDemo();
-        else {
+        else if (sampleMode) {
+          // 入口右側 iframe：假名隨時間進正式名單，可截止／開始真的抽
+          startSampleFeeder();
+        } else {
           connectTwitch();
           pollYoutube();
         }

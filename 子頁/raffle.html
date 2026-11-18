@@ -21,7 +21,9 @@
         --accent: #f0b429;
         --accent-2: #ff6b35;
         --panel: rgba(12, 14, 18, 0.72);
-        --line: rgba(240, 180, 41, 0.45);
+        --line: color-mix(in srgb, var(--accent) 45%, transparent);
+        --accent-glow: color-mix(in srgb, var(--accent) 28%, transparent);
+        --accent-glow-soft: color-mix(in srgb, var(--accent) 14%, transparent);
         --reel-fg: #fff8e7;
         --size: 28px;
         --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
@@ -122,8 +124,8 @@
         transform: translateY(-50%);
         border: 2px solid var(--accent);
         border-radius: 12px;
-        box-shadow: 0 0 0 1px rgba(240, 180, 41, 0.25),
-          inset 0 0 18px rgba(240, 180, 41, 0.12);
+        box-shadow: 0 0 0 1px var(--accent-glow),
+          inset 0 0 18px var(--accent-glow-soft);
         z-index: 3;
         pointer-events: none;
       }
@@ -318,8 +320,14 @@
         function cssVar(name, value) {
           if (value) document.documentElement.style.setProperty(name, value);
         }
-        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        const baseFontSize = (() => {
+          const n = parseInt(params.get("fontSize") || "28", 10);
+          return Number.isFinite(n) ? Math.max(14, Math.min(72, n)) : 28;
+        })();
+        cssVar("--size", `${baseFontSize}px`);
         if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
+        // 再寫一次，避免字形套用把字級蓋掉
+        cssVar("--size", `${baseFontSize}px`);
         const fg = (params.get("color") || "").trim() || "#1a1a1a";
         cssVar("--fg", fg);
         // muted 跟著文字色走，避免預覽白底上看不見
@@ -339,7 +347,27 @@
             cssVar("--muted", `rgba(${r}, ${g}, ${b}, 0.72)`);
           }
         } catch (_) {}
-        cssVar("--accent", params.get("accent") || "");
+        const accent = (params.get("accent") || "").trim() || "#f0b429";
+        cssVar("--accent", accent);
+        // 外框／瞄準框光暈都跟強調色
+        try {
+          const hex = accent.replace("#", "");
+          const full =
+            hex.length === 3
+              ? hex
+                  .split("")
+                  .map((c) => c + c)
+                  .join("")
+              : hex;
+          if (/^[0-9a-fA-F]{6}$/.test(full)) {
+            const r = parseInt(full.slice(0, 2), 16);
+            const g = parseInt(full.slice(2, 4), 16);
+            const b = parseInt(full.slice(4, 6), 16);
+            cssVar("--line", `rgba(${r}, ${g}, ${b}, 0.45)`);
+            cssVar("--accent-glow", `rgba(${r}, ${g}, ${b}, 0.28)`);
+            cssVar("--accent-glow-soft", `rgba(${r}, ${g}, ${b}, 0.14)`);
+          }
+        } catch (_) {}
         const css = (params.get("css") || "").trim();
         if (css) {
           try {
@@ -918,6 +946,13 @@
           return Math.max(1, Math.min(20, w));
         }
 
+        /** 列高固定跟基礎字級；字本身依比重略放大（上限約 1.28 倍） */
+        function fontSizeForEntry(msg) {
+          const w = weightForEntry(msg);
+          const scaled = baseFontSize * (0.92 + 0.08 * w);
+          return Math.round(Math.max(baseFontSize, Math.min(baseFontSize * 1.28, scaled)));
+        }
+
         function shuffleInPlace(arr) {
           for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -1027,8 +1062,9 @@
               if (e.isSub) badges.push(e.platform === "yt" ? "會員" : "付費訂閱");
               if (e.isFollow) badges.push("TW追隨");
               if (e.isYtSub) badges.push("YT訂閱");
+              const fs = fontSizeForEntry(e);
               rows.push(
-                `<div class="item" data-key="${e.key}">` +
+                `<div class="item" data-key="${e.key}" style="font-size:${fs}px">` +
                   `<span class="plat">${e.platform === "tw" ? "TW" : "YT"}</span>` +
                   `<span class="name"></span>` +
                   (badges.length
@@ -1038,7 +1074,9 @@
               );
             });
           }
-          reel.innerHTML = rows.join("") || `<div class="item"><span class="name">等待符合條件的人…</span></div>`;
+          reel.innerHTML =
+            rows.join("") ||
+            `<div class="item" style="font-size:${baseFontSize}px"><span class="name">等待符合條件的人…</span></div>`;
           Array.from(reel.querySelectorAll(".item")).forEach((el, i) => {
             const nameEl = el.querySelector(".name");
             if (!nameEl) return;

@@ -1547,7 +1547,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.4.5</span>
+          <span class="brand-version" id="brandVersion">v3.5.0</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3760,8 +3760,28 @@
             </div>
             <p class="hint">
               「有」＝該身分可以抽；「沒有」＝不行。一人可同時有多種身分，符合任一「有」即可。把「其他觀眾」設成沒有，就會篩掉沒有 VIP／MOD／付費訂閱／會員徽章的人。<br />
-              注意：聊天訊息本身<strong>抓不到</strong>免費追隨／訂閱，這類人目前會算在「其他觀眾」；只開「追隨／訂閱（免費）」通常不會進名單。
+              Twitch「追隨」要先授權才能查（聊天訊息本身不帶）。YouTube 免費訂閱仍無法從聊天辨識，會算在「其他觀眾」。
             </p>
+            <div class="actions" style="margin-top: 10px">
+              <button type="button" id="raffleTwAuthBtn">授權 Twitch 追隨查詢</button>
+              <button type="button" class="secondary" id="raffleTwAuthClear" hidden>
+                解除授權
+              </button>
+            </div>
+            <p class="hint" id="raffleTwAuthStatus">尚未授權 Twitch 追隨查詢。</p>
+            <div id="raffleTwAuthPanel" class="note" hidden style="margin-top: 10px">
+              <p style="margin: 0 0 8px">
+                請用<strong>該台主播或模組帳號</strong>開啟
+                <a id="raffleTwAuthLink" href="https://www.twitch.tv/activate" target="_blank" rel="noopener"
+                  >twitch.tv/activate</a
+                >
+                ，輸入代碼：
+              </p>
+              <p style="margin: 0; font-size: 1.35rem; letter-spacing: 0.12em">
+                <strong id="raffleTwUserCode">————</strong>
+              </p>
+              <p class="hint" style="margin-top: 8px">授權成功後這裡會自動更新；代碼約 30 分鐘內有效。</p>
+            </div>
             <div class="row row-3">
               <div>
                 <label for="raffleTitle">標題</label>
@@ -3793,7 +3813,8 @@
             </div>
             <textarea id="raffleUrl" class="url-box" readonly></textarea>
             <p class="hint">
-              建議約 640×720 透明覆蓋。預覽與複製都是正式網址（不會帶示範名單）。OBS「互動」可改開始／結束時間並按開始／停止。
+              建議約 640×720 透明覆蓋。預覽與複製都是正式網址（不會帶示範名單）。OBS「互動」可改開始／結束時間並按開始／停止。<br />
+              若已授權 Twitch 追隨且「追隨＝有」，複製的網址會帶 token（勿外流）；過期會用 refresh 自動續。
             </p>
             <div class="actions">
               <button type="button" id="copyRaffle">複製抽籤網址</button>
@@ -4758,7 +4779,11 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.4.5";
+        const APP_VERSION = "v3.5.0";
+        // Twitch Public Client ID（Device Code；勿放 Client Secret）
+        const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
+        const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
+        const TWITCH_FOLLOW_SCOPES = "moderator:read:followers";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -8847,6 +8872,215 @@
           return url.toString();
         }
 
+        function readTwitchFollowAuth() {
+          try {
+            const raw = localStorage.getItem(TWITCH_FOLLOW_AUTH_KEY);
+            if (!raw) return null;
+            const data = JSON.parse(raw);
+            if (!data || !data.access_token) return null;
+            return data;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function writeTwitchFollowAuth(data) {
+          if (!data) {
+            localStorage.removeItem(TWITCH_FOLLOW_AUTH_KEY);
+            return;
+          }
+          localStorage.setItem(TWITCH_FOLLOW_AUTH_KEY, JSON.stringify(data));
+        }
+
+        function clearTwitchFollowAuth() {
+          writeTwitchFollowAuth(null);
+          renderTwitchFollowAuthStatus();
+          buildUrls();
+        }
+
+        async function refreshTwitchFollowAuth(auth) {
+          if (!auth || !auth.refresh_token) return null;
+          const body = new URLSearchParams({
+            client_id: TWITCH_FOLLOW_CLIENT_ID,
+            grant_type: "refresh_token",
+            refresh_token: auth.refresh_token,
+          });
+          const res = await fetch("https://id.twitch.tv/oauth2/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body,
+          });
+          if (!res.ok) throw new Error("twitch refresh " + res.status);
+          const json = await res.json();
+          const next = {
+            ...auth,
+            access_token: json.access_token,
+            refresh_token: json.refresh_token || auth.refresh_token,
+            expires_at: Date.now() + Number(json.expires_in || 3600) * 1000,
+            scope: json.scope || auth.scope,
+          };
+          writeTwitchFollowAuth(next);
+          return next;
+        }
+
+        async function ensureTwitchFollowAuth() {
+          let auth = readTwitchFollowAuth();
+          if (!auth) return null;
+          const skew = 60 * 1000;
+          if (auth.expires_at && auth.expires_at > Date.now() + skew) return auth;
+          try {
+            auth = await refreshTwitchFollowAuth(auth);
+            renderTwitchFollowAuthStatus();
+            return auth;
+          } catch (_) {
+            writeTwitchFollowAuth(null);
+            renderTwitchFollowAuthStatus();
+            return null;
+          }
+        }
+
+        async function fetchTwitchAuthUser(accessToken) {
+          const res = await fetch("https://api.twitch.tv/helix/users", {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+              "Client-Id": TWITCH_FOLLOW_CLIENT_ID,
+            },
+          });
+          if (!res.ok) throw new Error("twitch user " + res.status);
+          const json = await res.json();
+          return (json.data && json.data[0]) || null;
+        }
+
+        function renderTwitchFollowAuthStatus() {
+          const statusEl = $("raffleTwAuthStatus");
+          const clearBtn = $("raffleTwAuthClear");
+          const authBtn = $("raffleTwAuthBtn");
+          const panel = $("raffleTwAuthPanel");
+          const auth = readTwitchFollowAuth();
+          if (!statusEl) return;
+          if (auth && auth.login) {
+            const exp = auth.expires_at
+              ? new Date(auth.expires_at).toLocaleString()
+              : "—";
+            statusEl.textContent =
+              "已授權 @" + auth.login + "（token 約到期 " + exp + "；會自動刷新）";
+            if (clearBtn) clearBtn.hidden = false;
+            if (authBtn) authBtn.textContent = "重新授權 Twitch 追隨";
+          } else {
+            statusEl.textContent =
+              "尚未授權 Twitch 追隨查詢。請用該台主播或模組帳號授權。";
+            if (clearBtn) clearBtn.hidden = true;
+            if (authBtn) authBtn.textContent = "授權 Twitch 追隨查詢";
+          }
+          if (panel && !panel.dataset.polling) panel.hidden = true;
+        }
+
+        let twitchFollowPollTimer = null;
+        function stopTwitchFollowDevicePoll() {
+          if (twitchFollowPollTimer) {
+            clearTimeout(twitchFollowPollTimer);
+            twitchFollowPollTimer = null;
+          }
+          const panel = $("raffleTwAuthPanel");
+          if (panel) delete panel.dataset.polling;
+        }
+
+        async function startTwitchFollowDeviceAuth() {
+          const statusEl = $("raffleTwAuthStatus");
+          const panel = $("raffleTwAuthPanel");
+          const codeEl = $("raffleTwUserCode");
+          const linkEl = $("raffleTwAuthLink");
+          stopTwitchFollowDevicePoll();
+          if (statusEl) statusEl.textContent = "正在向 Twitch 索取授權碼…";
+          const body = new URLSearchParams({
+            client_id: TWITCH_FOLLOW_CLIENT_ID,
+            scopes: TWITCH_FOLLOW_SCOPES,
+          });
+          const res = await fetch("https://id.twitch.tv/oauth2/device", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body,
+          });
+          if (!res.ok) {
+            const errText = await res.text().catch(() => "");
+            throw new Error("device " + res.status + " " + errText);
+          }
+          const device = await res.json();
+          if (codeEl) codeEl.textContent = device.user_code || "————";
+          if (linkEl) {
+            linkEl.href =
+              device.verification_uri || "https://www.twitch.tv/activate";
+            linkEl.textContent = device.verification_uri
+              ? "開啟授權頁"
+              : "twitch.tv/activate";
+          }
+          if (panel) {
+            panel.hidden = false;
+            panel.dataset.polling = "1";
+          }
+          if (statusEl) {
+            statusEl.textContent =
+              "請到 Twitch 輸入代碼完成授權（用該台主播或模組帳號）。";
+          }
+          const started = Date.now();
+          const expiresIn = Number(device.expires_in || 1800) * 1000;
+          let interval = Math.max(5, Number(device.interval || 5)) * 1000;
+
+          const poll = async () => {
+            if (Date.now() - started > expiresIn) {
+              stopTwitchFollowDevicePoll();
+              if (panel) panel.hidden = true;
+              if (statusEl) statusEl.textContent = "授權碼已過期，請再按一次授權。";
+              return;
+            }
+            try {
+              const tokenBody = new URLSearchParams({
+                client_id: TWITCH_FOLLOW_CLIENT_ID,
+                device_code: device.device_code,
+                grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+              });
+              const tokenRes = await fetch("https://id.twitch.tv/oauth2/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: tokenBody,
+              });
+              const tokenJson = await tokenRes.json().catch(() => ({}));
+              if (tokenRes.ok && tokenJson.access_token) {
+                const user = await fetchTwitchAuthUser(tokenJson.access_token);
+                writeTwitchFollowAuth({
+                  access_token: tokenJson.access_token,
+                  refresh_token: tokenJson.refresh_token || "",
+                  expires_at:
+                    Date.now() + Number(tokenJson.expires_in || 3600) * 1000,
+                  scope: tokenJson.scope || TWITCH_FOLLOW_SCOPES,
+                  login: (user && user.login) || "",
+                  user_id: (user && user.id) || "",
+                });
+                stopTwitchFollowDevicePoll();
+                if (panel) panel.hidden = true;
+                renderTwitchFollowAuthStatus();
+                buildUrls();
+                return;
+              }
+              const err = String(tokenJson.message || tokenJson.status || "");
+              if (/slow.?down/i.test(err)) interval += 2000;
+              if (/pending|authorization_pending/i.test(err) || tokenRes.status === 400) {
+                twitchFollowPollTimer = setTimeout(poll, interval);
+                return;
+              }
+              stopTwitchFollowDevicePoll();
+              if (panel) panel.hidden = true;
+              if (statusEl) {
+                statusEl.textContent =
+                  "授權失敗：" + (err || tokenRes.status || "unknown");
+              }
+            } catch (err) {
+              twitchFollowPollTimer = setTimeout(poll, interval);
+            }
+          };
+          twitchFollowPollTimer = setTimeout(poll, interval);
+        }
+
         function buildRaffleUrl(opts = {}) {
           const url = pageUrl("raffle.html");
           const p = url.searchParams;
@@ -8909,6 +9143,15 @@
           // 全勾＝不特別限制，不塞參數；否則明確列出允許身分
           if (roles.length && roles.length < 5) p.set("roles", roles.join(","));
           if (!roles.length) p.set("roles", "none");
+          // Twitch 追隨查詢 token（僅在「追隨＝有」時帶入 OBS 網址）
+          if (allowFollow) {
+            const auth = readTwitchFollowAuth();
+            if (auth && auth.access_token) {
+              p.set("twClientId", TWITCH_FOLLOW_CLIENT_ID);
+              p.set("twToken", auth.access_token);
+              if (auth.refresh_token) p.set("twRefresh", auth.refresh_token);
+            }
+          }
           const title = (fields.raffleTitle && fields.raffleTitle.value.trim()) || "";
           if (title && title !== "抽籤") p.set("title", title);
           if (fields.raffleHideStatus && fields.raffleHideStatus.checked) {
@@ -10021,6 +10264,26 @@ function syncYtAfterTwUi() {
         if (raffleRolesBox) {
           raffleRolesBox.addEventListener("change", () => buildUrls());
         }
+        const raffleTwAuthBtn = $("raffleTwAuthBtn");
+        if (raffleTwAuthBtn) {
+          raffleTwAuthBtn.addEventListener("click", () => {
+            startTwitchFollowDeviceAuth().catch((err) => {
+              const statusEl = $("raffleTwAuthStatus");
+              if (statusEl) {
+                statusEl.textContent =
+                  "無法開始授權：" + (err && err.message ? err.message : err);
+              }
+            });
+          });
+        }
+        const raffleTwAuthClear = $("raffleTwAuthClear");
+        if (raffleTwAuthClear) {
+          raffleTwAuthClear.addEventListener("click", () => clearTwitchFollowAuth());
+        }
+        renderTwitchFollowAuthStatus();
+        ensureTwitchFollowAuth().then((auth) => {
+          if (auth) buildUrls();
+        });
 
         Object.values(fields).forEach((el) => {
           if (!el || !el.addEventListener) return;

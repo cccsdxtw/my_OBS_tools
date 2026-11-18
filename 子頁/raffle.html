@@ -437,6 +437,14 @@
         const demo = params.get("demo") === "1";
         const ytChatMode = (params.get("ytChat") || params.get("ytChatEmotes") || "api").toLowerCase();
         const ytChatWeb = ytChatMode === "web";
+        const TWITCH_FOLLOW_CLIENT_ID =
+          params.get("twClientId") || "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
+        let twAccessToken = (params.get("twToken") || params.get("twAccess") || "").trim();
+        let twRefreshToken = (params.get("twRefresh") || "").trim();
+        let twTokenExpiresAt = 0;
+        const twUserIdCache = new Map(); // login -> id | ""
+        const twFollowCache = new Map(); // `${broadcasterId}:${userId}` -> boolean
+        const twFollowPending = new Map(); // same key -> Promise<boolean>
 
         function splitParamList(raw) {
           return String(raw || "")
@@ -578,9 +586,124 @@
         if (roleBits.length === 5) filterBits.push("身分 全部可抽");
         else if (!roleBits.length) filterBits.push("身分 全關（沒人可抽）");
         else filterBits.push("身分 " + roleBits.join("／"));
+        if (allowRoles.follow) {
+          filterBits.push(
+            twAccessToken ? "TW追隨已授權" : "TW追隨未授權（聊天抓不到）"
+          );
+        }
         filterLabel.textContent = filterBits.length
           ? "條件 " + filterBits.join(" · ")
           : "條件 全部留言";
+
+        function needTwitchFollowLookup() {
+          return allowRoles.follow && !!twAccessToken;
+        }
+
+        async function refreshTwitchAccessToken() {
+          if (!twRefreshToken) return false;
+          const body = new URLSearchParams({
+            client_id: TWITCH_FOLLOW_CLIENT_ID,
+            grant_type: "refresh_token",
+            refresh_token: twRefreshToken,
+          });
+          const res = await fetch("https://id.twitch.tv/oauth2/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body,
+          });
+          if (!res.ok) return false;
+          const json = await res.json();
+          if (!json.access_token) return false;
+          twAccessToken = json.access_token;
+          if (json.refresh_token) twRefreshToken = json.refresh_token;
+          twTokenExpiresAt = Date.now() + Number(json.expires_in || 3600) * 1000;
+          return true;
+        }
+
+        async function ensureTwitchAccessToken() {
+          if (!twAccessToken) return "";
+          if (twTokenExpiresAt && Date.now() > twTokenExpiresAt - 60 * 1000) {
+            const ok = await refreshTwitchAccessToken();
+            if (!ok) return twAccessToken;
+          }
+          return twAccessToken;
+        }
+
+        async function helixGet(pathAndQuery) {
+          const token = await ensureTwitchAccessToken();
+          if (!token) throw new Error("no tw token");
+          const res = await fetch("https://api.twitch.tv/helix/" + pathAndQuery, {
+            headers: {
+              Authorization: "Bearer " + token,
+              "Client-Id": TWITCH_FOLLOW_CLIENT_ID,
+            },
+          });
+          if (res.status === 401) {
+            const ok = await refreshTwitchAccessToken();
+            if (!ok) throw new Error("twitch 401");
+            return helixGet(pathAndQuery);
+          }
+          if (!res.ok) throw new Error("helix " + res.status);
+          return res.json();
+        }
+
+        async function resolveTwitchUserId(login) {
+          const key = String(login || "")
+            .trim()
+            .toLowerCase();
+          if (!key) return "";
+          if (twUserIdCache.has(key)) return twUserIdCache.get(key);
+          try {
+            const json = await helixGet("users?login=" + encodeURIComponent(key));
+            const id = (json.data && json.data[0] && json.data[0].id) || "";
+            twUserIdCache.set(key, id);
+            return id;
+          } catch (_) {
+            twUserIdCache.set(key, "");
+            return "";
+          }
+        }
+
+        async function checkTwitchFollow(broadcasterLogin, userLogin) {
+          const bLogin = String(broadcasterLogin || "")
+            .trim()
+            .toLowerCase();
+          const uLogin = String(userLogin || "")
+            .trim()
+            .toLowerCase();
+          if (!bLogin || !uLogin) return false;
+          const cacheKey = bLogin + ">" + uLogin;
+          if (twFollowCache.has(cacheKey)) return twFollowCache.get(cacheKey);
+          if (twFollowPending.has(cacheKey)) return twFollowPending.get(cacheKey);
+          const job = (async () => {
+            try {
+              const [broadcasterId, userId] = await Promise.all([
+                resolveTwitchUserId(bLogin),
+                resolveTwitchUserId(uLogin),
+              ]);
+              if (!broadcasterId || !userId) {
+                twFollowCache.set(cacheKey, false);
+                return false;
+              }
+              const json = await helixGet(
+                "channels/followers?broadcaster_id=" +
+                  encodeURIComponent(broadcasterId) +
+                  "&user_id=" +
+                  encodeURIComponent(userId)
+              );
+              const ok = !!(json.data && json.data.length);
+              twFollowCache.set(cacheKey, ok);
+              return ok;
+            } catch (_) {
+              twFollowCache.set(cacheKey, false);
+              return false;
+            } finally {
+              twFollowPending.delete(cacheKey);
+            }
+          })();
+          twFollowPending.set(cacheKey, job);
+          return job;
+        }
 
         /** @type {Map<string, object>} */
         const entries = new Map();
@@ -612,7 +735,6 @@
           const vip = !!msg.isVip;
           const mod = !!(msg.isMod || msg.isOwner);
           const paid = !!msg.isSub;
-          // 聊天 IRC／YT liveChat 抓不到免費追隨／訂閱；保留欄位給之後擴充
           const follow = !!msg.isFollow;
           const other = !vip && !mod && !paid && !follow;
           return { vip, mod, paid, follow, other };
@@ -815,6 +937,7 @@
             user: msg.user || msg.login || "anon",
             login: msg.login || "",
             channelId: msg.channelId || "",
+            channelLogin: msg.channelLogin || (prev && prev.channelLogin) || "",
             isVip: !!(prev && prev.isVip) || !!msg.isVip,
             isMod: !!(prev && prev.isMod) || !!msg.isMod || !!msg.isOwner,
             isSub: !!(prev && prev.isSub) || !!msg.isSub,
@@ -826,6 +949,26 @@
           entries.set(key, next);
           if (isNew) rebuildReelVisual();
           else countLabel.textContent = String(entries.size);
+        }
+
+        async function ingestChatMessage(msg) {
+          if (phase !== "collect") return;
+          if (!msg || !String(msg.text || "").trim()) return;
+          if (
+            needTwitchFollowLookup() &&
+            msg.platform === "tw" &&
+            msg.login &&
+            msg.isFollow == null
+          ) {
+            const channelLogin =
+              msg.channelLogin ||
+              (twitchLogins && twitchLogins[0]) ||
+              "";
+            msg.isFollow = await checkTwitchFollow(channelLogin, msg.login);
+          } else if (msg.isFollow == null) {
+            msg.isFollow = false;
+          }
+          addEntry(msg);
         }
 
         function closeCollect() {
@@ -990,10 +1133,14 @@
                     ) ||
                     login ||
                     "twitch";
-                  addEntry({
+                  const channelLogin = String(m[3] || "")
+                    .replace(/^#/, "")
+                    .toLowerCase();
+                  ingestChatMessage({
                     platform: "tw",
                     user,
                     login,
+                    channelLogin,
                     text: m[4],
                     isVip: badges.isVip,
                     isMod: badges.isMod,
@@ -1109,7 +1256,7 @@
                   item.snippet?.textMessageDetails?.messageText ||
                   "";
                 const user = item.authorDetails?.displayName || "youtube";
-                addEntry({
+                ingestChatMessage({
                   platform: "yt",
                   user,
                   channelId: item.authorDetails?.channelId || "",
@@ -1118,6 +1265,7 @@
                   isSub: !!item.authorDetails?.isChatSponsor,
                   isOwner: !!item.authorDetails?.isChatOwner,
                   isVip: false,
+                  isFollow: false,
                 });
               });
               setTimeout(tick, wait);
@@ -1173,7 +1321,7 @@
                 label: job.label,
                 channel: job.channel,
                 getVideoId: job.getVideoId,
-                addMessage: addEntry,
+                addMessage: ingestChatMessage,
                 onStatus: (ok) => {
                   if (ok) ytConnected.add(job.key);
                   else ytConnected.delete(job.key);
@@ -1222,7 +1370,7 @@
           let i = 0;
           const push = () => {
             if (phase !== "collect") return;
-            addEntry(pool[i % pool.length]);
+            ingestChatMessage(pool[i % pool.length]);
             i += 1;
           };
           for (let n = 0; n < 4; n++) setTimeout(push, n * 400);

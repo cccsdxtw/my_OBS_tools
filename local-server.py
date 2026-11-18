@@ -184,6 +184,33 @@ def parse_message_runs(runs):
     return text, parts
 
 
+def parse_author_badges(badges):
+    is_mod = False
+    is_sub = False
+    is_owner = False
+    for b in badges or []:
+        r = (b or {}).get("liveChatAuthorBadgeRenderer") or {}
+        tip = str(
+            r.get("tooltip")
+            or ((r.get("accessibility") or {}).get("accessibilityData") or {}).get("label")
+            or ""
+        ).lower()
+        icon = str(((r.get("icon") or {}).get("iconType")) or "").upper()
+        if icon == "MODERATOR" or "moderator" in tip or "管理員" in tip or "版主" in tip:
+            is_mod = True
+        if icon == "OWNER" or "owner" in tip or "擁有者" in tip or "creator" in tip:
+            is_owner = True
+            is_mod = True
+        if (
+            r.get("customThumbnail")
+            or "member" in tip
+            or "會員" in tip
+            or "sponsor" in tip
+        ):
+            is_sub = True
+    return {"isMod": is_mod, "isSub": is_sub, "isOwner": is_owner, "isVip": False}
+
+
 def parse_chat_actions(payload):
     actions = (
         ((payload or {}).get("continuationContents") or {})
@@ -210,6 +237,7 @@ def parse_chat_actions(payload):
             continue
         thumbs = ((renderer.get("authorPhoto") or {}).get("thumbnails")) or []
         avatar = (thumbs[-1].get("url") if thumbs else "") or ""
+        flags = parse_author_badges(renderer.get("authorBadges") or [])
         messages.append(
             {
                 "id": renderer.get("id"),
@@ -217,6 +245,10 @@ def parse_chat_actions(payload):
                 "text": text,
                 "parts": parts,
                 "avatar": avatar,
+                "isMod": flags["isMod"],
+                "isSub": flags["isSub"],
+                "isVip": False,
+                "isOwner": flags["isOwner"],
             }
         )
     return messages

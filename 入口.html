@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.2.0</span>
+          <span class="brand-version" id="brandVersion">v3.3.0</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -1534,7 +1534,7 @@
           </a>
           <a href="#group-chat">
             <span class="jump-label"><span class="jump-mark">B</span> 聊天</span>
-            <span class="jump-items">B - ① 聊天室 B - ② 回覆 B - ③ 彈幕 B - ⑤ 頭像對話框 B - ⑥ 走動頭像</span>
+            <span class="jump-items">B - ① 聊天室 B - ② 回覆 B - ③ 彈幕 B - ⑤ 頭像對話框 B - ⑥ 走動頭像 B - ⑦ 抽籤</span>
           </a>
           <a href="#group-local">
             <span class="jump-label"><span class="jump-mark">C</span> 免帳號</span>
@@ -2773,7 +2773,7 @@
           <div class="band-group-mark" aria-hidden="true">B</div>
           <div class="band-group-text">
             <h2 class="band-group-title">聊天</h2>
-            <p class="band-group-desc">B - ① 聊天室 B - ② 回覆 B - ③ 彈幕 B - ⑤ 頭像對話框 B - ⑥ 走動頭像</p>
+            <p class="band-group-desc">B - ① 聊天室 B - ② 回覆 B - ③ 彈幕 B - ⑤ 頭像對話框 B - ⑥ 走動頭像 B - ⑦ 抽籤</p>
           </div>
         </div>
 
@@ -3586,6 +3586,148 @@
                     />
                   </div>
                   <div></div>
+                </div>
+                <p class="hint">字形空白＝用最上方預設。</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+</div>
+
+<div class="tool-block" data-tool="raffle" data-group="chat">
+<!-- B - ⑦ 抽籤 -->
+
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>B - ⑦ 抽籤</h2>
+              <span class="side-title">獨立來源</span>
+            </div>
+            <p class="hint">
+              從聊天室收符合條件的人（可設時間、關鍵字、VIP／MOD／訂閱），名單慢慢滾；按開始像拉霸機狂轉，按停止停在抽中的人。OBS
+              請對瀏覽器來源用「互動」按按鈕。
+            </p>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="raffleUseChatExtra" checked />
+                沿用 B - ① 聊天室的額外 TW／YT 台</label
+              >
+            </div>
+            <div class="row">
+              <div>
+                <label for="raffleSource">來源</label>
+                <select id="raffleSource">
+                  <option value="auto" selected>自動（有填就接）</option>
+                  <option value="both">TW + YT</option>
+                  <option value="twitch">只 Twitch</option>
+                  <option value="youtube">只 YouTube</option>
+                </select>
+              </div>
+              <div>
+                <label for="raffleCollect">收件秒數</label>
+                <input id="raffleCollect" type="number" min="5" max="600" value="60" />
+              </div>
+              <div>
+                <label for="raffleKeyword">關鍵字（可空）</label>
+                <input id="raffleKeyword" type="text" placeholder="例如 抽獎 / !join" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="raffleVip">VIP</label>
+                <select id="raffleVip">
+                  <option value="any" selected>不限</option>
+                  <option value="yes">只要 VIP</option>
+                  <option value="no">排除 VIP</option>
+                </select>
+              </div>
+              <div>
+                <label for="raffleMod">MOD</label>
+                <select id="raffleMod">
+                  <option value="any" selected>不限</option>
+                  <option value="yes">只要 MOD</option>
+                  <option value="no">排除 MOD</option>
+                </select>
+              </div>
+              <div>
+                <label for="raffleSub">訂閱／會員</label>
+                <select id="raffleSub">
+                  <option value="any" selected>不限</option>
+                  <option value="yes">只要訂閱／會員</option>
+                  <option value="no">排除訂閱／會員</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="raffleTitle">標題</label>
+                <input id="raffleTitle" type="text" value="抽籤" />
+              </div>
+              <div>
+                <label
+                  ><input type="checkbox" id="raffleHideStatus" checked /> 隱藏連線狀態</label
+                >
+              </div>
+              <div>
+                <label
+                  ><input type="checkbox" id="raffleHideControls" /> 隱藏按鈕（進階）</label
+                >
+              </div>
+            </div>
+            <p class="hint">
+              VIP 僅 Twitch；YouTube 的「訂閱」對應頻道會員，MOD 對應聊天室管理員。每人只進名單一次。YT
+              貼圖模式沿用 B - ① 的「YT 聊天貼圖」設定。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>B - ⑦ 抽籤網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="raffleUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議約 640×720 透明覆蓋。預覽可直接按開始／停止；OBS 內請開「互動」。</p>
+            <div class="actions">
+              <button type="button" id="copyRaffle">複製抽籤網址</button>
+              <a class="btn secondary" id="openRaffle" href="#" target="_blank" rel="noopener"
+                >預覽</a
+              >
+            </div>
+            <div class="preview-wrap" style="min-height: 320px">
+              <iframe id="previewRaffle" title="raffle preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="raffle-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="raffleFontSize">字級</label>
+                    <input id="raffleFontSize" type="number" min="14" max="64" value="28" />
+                  </div>
+                  <div>
+                    <label for="raffleColor">文字色</label>
+                    <input id="raffleColor" type="text" value="#fff8e7" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="raffleFontFamily">字形</label>
+                    <input
+                      id="raffleFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div>
+                    <label for="raffleAccent">強調色</label>
+                    <input id="raffleAccent" type="text" value="#f0b429" />
+                  </div>
                 </div>
                 <p class="hint">字形空白＝用最上方預設。</p>
               </div>
@@ -4454,7 +4596,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.2.0";
+        const APP_VERSION = "v3.3.0";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -4483,6 +4625,7 @@
           "子頁/danmaku.html",
           "子頁/chat-pop.html",
           "子頁/chat-walk.html",
+          "子頁/raffle.html",
           "子頁/sponsor.html",
           "子頁/counter.html",
           "子頁/media.html",
@@ -4712,10 +4855,13 @@
             "子頁/danmaku.html",
             "子頁/chat-pop.html",
             "子頁/chat-walk.html",
+            "子頁/raffle.html",
             "子頁/yt-bridge.html",
             "啟動本機伺服器.bat",
             "local-server.js",
             "local-server.py",
+            "chat-emote.js",
+            "yt-chat-web.js",
             "update-files.json",
           ].forEach((n) => merged.add(n));
           return Array.from(merged);
@@ -4917,6 +5063,7 @@
           "danmaku",
           "chat-pop",
           "chat-walk",
+          "raffle",
           "countdown",
           "days",
           "game",
@@ -6602,6 +6749,20 @@
           walkShowUser: $("walkShowUser"),
           walkShowSource: $("walkShowSource"),
           walkHideStatus: $("walkHideStatus"),
+          raffleUseChatExtra: $("raffleUseChatExtra"),
+          raffleSource: $("raffleSource"),
+          raffleCollect: $("raffleCollect"),
+          raffleKeyword: $("raffleKeyword"),
+          raffleVip: $("raffleVip"),
+          raffleMod: $("raffleMod"),
+          raffleSub: $("raffleSub"),
+          raffleTitle: $("raffleTitle"),
+          raffleHideStatus: $("raffleHideStatus"),
+          raffleHideControls: $("raffleHideControls"),
+          raffleFontSize: $("raffleFontSize"),
+          raffleColor: $("raffleColor"),
+          raffleFontFamily: $("raffleFontFamily"),
+          raffleAccent: $("raffleAccent"),
         };
 
         /** @type {Array<{id:string,name:string,goal:string,keywords:string}>} */
@@ -7338,6 +7499,7 @@
             fields.dmFontFamily,
             fields.popFontFamily,
             fields.walkFontFamily,
+            fields.raffleFontFamily,
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = `預設 ${ff}`;
@@ -8527,6 +8689,69 @@
           return url.toString();
         }
 
+        function buildRaffleUrl(opts = {}) {
+          const url = pageUrl("raffle.html");
+          const p = url.searchParams;
+          const channel = fields.channel.value.trim();
+          const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
+          const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
+          const ytKey = fields.ytKey.value.trim();
+          const useExtra =
+            !fields.raffleUseChatExtra || fields.raffleUseChatExtra.checked;
+          const extraTw = useExtra ? splitList(fields.chatExtraTw.value) : [];
+          const extraYt = useExtra
+            ? splitList(fields.chatExtraYt.value).map(resolveYtChannelForUrl)
+            : [];
+          const extraYtVideo = useExtra
+            ? splitList(fields.chatExtraYtVideo.value).map(extractYoutubeVideoId)
+            : [];
+          const twLogins = uniqueKeepOrder(
+            [channel, ...extraTw].map((s) => s.toLowerCase()).filter(Boolean)
+          );
+          const ytChannels = uniqueKeepOrder(
+            [ytChannel, ...extraYt].filter(Boolean)
+          );
+          const ytVideos = uniqueKeepOrder(
+            [ytVideo, ...extraYtVideo].filter(Boolean)
+          );
+          if (twLogins.length) p.set("login", twLogins.join(","));
+          if (ytChannels.length) p.set("yt", ytChannels.join(","));
+          if (ytVideos.length) p.set("ytVideo", ytVideos.join(","));
+          if (ytKey) p.set("ytKey", ytKey);
+          applyYtChatParam(p);
+          p.set("chatSource", (fields.raffleSource && fields.raffleSource.value) || "auto");
+          const collect = parseInt(fields.raffleCollect && fields.raffleCollect.value, 10);
+          if (collect && collect >= 5) p.set("collect", String(collect));
+          const kw = (fields.raffleKeyword && fields.raffleKeyword.value.trim()) || "";
+          if (kw) p.set("keyword", kw);
+          const vip = (fields.raffleVip && fields.raffleVip.value) || "any";
+          const mod = (fields.raffleMod && fields.raffleMod.value) || "any";
+          const sub = (fields.raffleSub && fields.raffleSub.value) || "any";
+          if (vip !== "any") p.set("vip", vip);
+          if (mod !== "any") p.set("mod", mod);
+          if (sub !== "any") p.set("sub", sub);
+          const title = (fields.raffleTitle && fields.raffleTitle.value.trim()) || "";
+          if (title && title !== "抽籤") p.set("title", title);
+          if (fields.raffleHideStatus && fields.raffleHideStatus.checked) {
+            p.set("hideStatus", "1");
+          }
+          if (fields.raffleHideControls && fields.raffleHideControls.checked) {
+            p.set("hideControls", "1");
+          }
+          if (fields.raffleFontSize && fields.raffleFontSize.value) {
+            p.set("fontSize", fields.raffleFontSize.value);
+          }
+          applyFontFamilyParam(p, fields.raffleFontFamily);
+          if (fields.raffleColor && fields.raffleColor.value.trim()) {
+            p.set("color", fields.raffleColor.value.trim());
+          }
+          if (fields.raffleAccent && fields.raffleAccent.value.trim()) {
+            p.set("accent", fields.raffleAccent.value.trim());
+          }
+          if (opts.demo) p.set("demo", "1");
+          return url.toString();
+        }
+
 function syncYtAfterTwUi() {
           const gated = !!(fields.ytAfterTw && fields.ytAfterTw.checked);
           ["ytPollLiveSec", "ytPollOffSec"].forEach((k) => {
@@ -9213,6 +9438,12 @@ function syncYtAfterTwUi() {
           if ($("openWalk")) $("openWalk").href = walkDemoHref;
           if ($("previewWalk")) $("previewWalk").src = walkDemoHref;
 
+          const raffleHref = buildRaffleUrl();
+          const raffleDemoHref = buildRaffleUrl({ demo: true });
+          if ($("raffleUrl")) $("raffleUrl").value = raffleHref;
+          if ($("openRaffle")) $("openRaffle").href = raffleDemoHref;
+          if ($("previewRaffle")) $("previewRaffle").src = raffleDemoHref;
+
           localStorage.setItem(
             "my_obs_tools_setup",
             JSON.stringify({
@@ -9246,6 +9477,7 @@ function syncYtAfterTwUi() {
             dmHref,
             popHref,
             walkHref,
+            raffleHref,
           };
         }
 
@@ -9350,6 +9582,14 @@ function syncYtAfterTwUi() {
             const { walkHref } = buildUrls();
             if ($("walkUrl")) $("walkUrl").select();
             await copyText(walkHref, copyWalkBtn, "複製走動頭像網址");
+          });
+        }
+        const copyRaffleBtn = $("copyRaffle");
+        if (copyRaffleBtn) {
+          copyRaffleBtn.addEventListener("click", async () => {
+            const { raffleHref } = buildUrls();
+            if ($("raffleUrl")) $("raffleUrl").select();
+            await copyText(raffleHref, copyRaffleBtn, "複製抽籤網址");
           });
         }
         $("copyChatTw").addEventListener("click", async () => {
@@ -9602,6 +9842,7 @@ function syncYtAfterTwUi() {
         });
 
         Object.values(fields).forEach((el) => {
+          if (!el || !el.addEventListener) return;
           el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
             if (
               el === fields.defaultShowBg ||

@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>拉基的OBS工具箱 · 抽籤</title>
+    <script src="../font-style.js"></script>
+    <script src="../chat-emote.js"></script>
+    <script src="../yt-chat-web.js"></script>
+    <script src="../yt-live-sync.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@500;600;700&family=Staatliches&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --fg: #fff8e7;
+        --muted: rgba(255, 248, 231, 0.72);
+        --accent: #f0b429;
+        --accent-2: #ff6b35;
+        --panel: rgba(12, 14, 18, 0.72);
+        --line: rgba(240, 180, 41, 0.45);
+        --size: 28px;
+        --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
+          "PingFang TC", sans-serif;
+        --font-display: "Staatliches", "IBM Plex Sans TC", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+        color: var(--fg);
+        font-family: var(--font-zh);
+      }
+      #app {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        gap: 14px;
+      }
+      .title {
+        font-family: var(--font-display);
+        font-size: clamp(28px, 5vw, 52px);
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+        margin: 0;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        justify-content: center;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .meta b {
+        color: var(--fg);
+        font-weight: 700;
+      }
+      .reel-shell {
+        position: relative;
+        width: min(560px, 92vw);
+        height: min(420px, 58vh);
+        border: 2px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+      }
+      .reel-shell::before,
+      .reel-shell::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 28%;
+        z-index: 2;
+        pointer-events: none;
+      }
+      .reel-shell::before {
+        top: 0;
+        background: linear-gradient(
+          to bottom,
+          rgba(8, 10, 14, 0.92),
+          transparent
+        );
+      }
+      .reel-shell::after {
+        bottom: 0;
+        background: linear-gradient(to top, rgba(8, 10, 14, 0.92), transparent);
+      }
+      .pointer {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        top: 50%;
+        height: calc(var(--size) * 1.55);
+        transform: translateY(-50%);
+        border: 2px solid var(--accent);
+        border-radius: 12px;
+        box-shadow: 0 0 0 1px rgba(240, 180, 41, 0.25),
+          inset 0 0 18px rgba(240, 180, 41, 0.12);
+        z-index: 3;
+        pointer-events: none;
+      }
+      #reel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        will-change: transform;
+      }
+      .item {
+        height: calc(var(--size) * 1.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45em;
+        padding: 0 18px;
+        font-size: var(--size);
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .item .plat {
+        font-size: 0.55em;
+        opacity: 0.75;
+        min-width: 1.6em;
+      }
+      .item .badges {
+        font-size: 0.45em;
+        letter-spacing: 0.04em;
+        color: var(--accent);
+        opacity: 0.9;
+      }
+      .winner-banner {
+        min-height: 1.4em;
+        font-family: var(--font-display);
+        font-size: clamp(22px, 3.6vw, 36px);
+        letter-spacing: 0.06em;
+        color: var(--accent-2);
+        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 0.35s ease, transform 0.35s ease;
+      }
+      .winner-banner.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        pointer-events: auto;
+      }
+      .controls button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 22px;
+        font: 700 15px/1 var(--font-zh);
+        cursor: pointer;
+        color: #1a1208;
+        background: linear-gradient(180deg, #ffd56a, #f0b429);
+        box-shadow: 0 4px 0 #b07a12;
+      }
+      .controls button:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #b07a12;
+      }
+      .controls button.secondary {
+        color: var(--fg);
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+      }
+      .controls button:disabled {
+        opacity: 0.4;
+        cursor: default;
+        transform: none;
+      }
+      #status {
+        position: absolute;
+        left: 10px;
+        top: 8px;
+        font-size: 12px;
+        color: var(--muted);
+        opacity: 0.85;
+      }
+      body.hide-status #status {
+        display: none;
+      }
+      body.hide-controls .controls {
+        display: none;
+      }
+    </style>
+    <style id="custom-style"></style>
+  </head>
+  <body>
+    <div id="status">connecting…</div>
+    <div id="app">
+      <h1 class="title" id="heading">抽籤</h1>
+      <div class="meta">
+        <span>狀態 <b id="phaseLabel">收件中</b></span>
+        <span>名單 <b id="countLabel">0</b></span>
+        <span id="timerWrap">倒數 <b id="timerLabel">—</b></span>
+        <span id="filterLabel"></span>
+      </div>
+      <div class="reel-shell" aria-live="polite">
+        <div class="pointer" aria-hidden="true"></div>
+        <div id="reel"></div>
+      </div>
+      <div class="winner-banner" id="winnerBanner"></div>
+      <div class="controls">
+        <button type="button" class="secondary" id="btnClose">截止收件</button>
+        <button type="button" id="btnStart" disabled>開始</button>
+        <button type="button" id="btnStop" disabled>停止</button>
+        <button type="button" class="secondary" id="btnReset">重來</button>
+      </div>
+    </div>
+    <script>
+      (() => {
+        const YT_API = "https://www.googleapis.com/youtube/v3";
+        const params = new URLSearchParams(location.search);
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
+        cssVar("--fg", params.get("color"));
+        cssVar("--accent", params.get("accent") || "");
+        const css = (params.get("css") || "").trim();
+        if (css) {
+          try {
+            document.getElementById("custom-style").textContent = decodeURIComponent(css);
+          } catch (_) {
+            document.getElementById("custom-style").textContent = css;
+          }
+        }
+        if (params.get("hideStatus") === "1") document.body.classList.add("hide-status");
+        if (params.get("hideControls") === "1") document.body.classList.add("hide-controls");
+
+        const heading = document.getElementById("heading");
+        const title = (params.get("title") || "抽籤").trim();
+        heading.textContent = title || "抽籤";
+
+        const collectSec = Math.max(
+          5,
+          Math.min(600, parseInt(params.get("collect") || params.get("secs") || "60", 10) || 60)
+        );
+        const keyword = (params.get("keyword") || params.get("kw") || "").trim();
+        const vipMode = (params.get("vip") || "any").toLowerCase();
+        const modMode = (params.get("mod") || "any").toLowerCase();
+        const subMode = (params.get("sub") || "any").toLowerCase();
+        const demo = params.get("demo") === "1";
+        const ytChatMode = (params.get("ytChat") || params.get("ytChatEmotes") || "api").toLowerCase();
+        const ytChatWeb = ytChatMode === "web";
+
+        function splitParamList(raw) {
+          return String(raw || "")
+            .split(/[\s,，、]+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+        function uniqueKeepOrder(arr) {
+          const seen = new Set();
+          const out = [];
+          arr.forEach((x) => {
+            const k = String(x || "").toLowerCase();
+            if (!k || seen.has(k)) return;
+            seen.add(k);
+            out.push(x);
+          });
+          return out;
+        }
+        function extractYoutubeVideoId(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return "";
+          if (/^[\w-]{11}$/.test(s)) return s;
+          try {
+            const u = new URL(s);
+            const host = u.hostname.replace(/^www\./, "");
+            if (host === "youtu.be") return u.pathname.slice(1, 12);
+            if (
+              host === "youtube.com" ||
+              host === "m.youtube.com" ||
+              host === "music.youtube.com"
+            ) {
+              return u.searchParams.get("v") || "";
+            }
+          } catch (_) {}
+          const m = s.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([\w-]{11})/);
+          return m ? m[1] : s;
+        }
+
+        const twitchLogins = uniqueKeepOrder(
+          splitParamList(params.get("login") || params.get("twitch") || "").map((s) =>
+            s.toLowerCase()
+          )
+        );
+        const ytChannels = uniqueKeepOrder(
+          splitParamList(params.get("yt") || params.get("youtube") || params.get("ytChannel") || "")
+        );
+        const ytVideoIds = uniqueKeepOrder(
+          splitParamList(params.get("ytVideo") || "").map(extractYoutubeVideoId)
+        );
+        const ytKey = (params.get("ytKey") || params.get("youtubeKey") || "").trim();
+        const sources = (params.get("chatSource") || "auto").toLowerCase();
+        const wantTw =
+          twitchLogins.length > 0 &&
+          (sources === "auto" || sources === "twitch" || sources === "both");
+        const wantYt =
+          (ytVideoIds.length > 0 ||
+            (ytChannels.length > 0 && (ytChatWeb || !!ytKey))) &&
+          (sources === "auto" || sources === "youtube" || sources === "both");
+
+        const statusEl = document.getElementById("status");
+        const phaseLabel = document.getElementById("phaseLabel");
+        const countLabel = document.getElementById("countLabel");
+        const timerLabel = document.getElementById("timerLabel");
+        const filterLabel = document.getElementById("filterLabel");
+        const reel = document.getElementById("reel");
+        const winnerBanner = document.getElementById("winnerBanner");
+        const btnClose = document.getElementById("btnClose");
+        const btnStart = document.getElementById("btnStart");
+        const btnStop = document.getElementById("btnStop");
+        const btnReset = document.getElementById("btnReset");
+
+        const filterBits = [];
+        if (keyword) filterBits.push("關鍵字「" + keyword + "」");
+        if (vipMode === "yes") filterBits.push("要 VIP");
+        if (vipMode === "no") filterBits.push("不要 VIP");
+        if (modMode === "yes") filterBits.push("要 MOD");
+        if (modMode === "no") filterBits.push("不要 MOD");
+        if (subMode === "yes") filterBits.push("要訂閱／會員");
+        if (subMode === "no") filterBits.push("不要訂閱／會員");
+        filterLabel.textContent = filterBits.length
+          ? "條件 " + filterBits.join(" · ")
+          : "條件 全部留言";
+
+        /** @type {Map<string, object>} */
+        const entries = new Map();
+        let phase = "collect"; // collect | ready | spin | stop | win
+        let collectEndsAt = Date.now() + collectSec * 1000;
+        let sharedOverrideVideoId = "";
+        let twConnected = new Set();
+        let ytConnected = new Set();
+
+        const itemH = () => {
+          const v = getComputedStyle(document.documentElement).getPropertyValue("--size");
+          const px = parseFloat(v) || 28;
+          return px * 1.55;
+        };
+
+        function entryKey(msg) {
+          if (msg.platform === "tw") {
+            return "tw:" + String(msg.login || msg.user || "").toLowerCase();
+          }
+          return (
+            "yt:" +
+            String(msg.channelId || msg.login || msg.user || "")
+              .toLowerCase()
+              .trim()
+          );
+        }
+
+        function passFlag(mode, value) {
+          if (mode === "yes") return !!value;
+          if (mode === "no") return !value;
+          return true;
+        }
+
+        function matchesFilters(msg) {
+          if (!msg || !String(msg.text || "").trim()) return false;
+          if (keyword) {
+            const hay = String(msg.text || "");
+            if (!hay.toLowerCase().includes(keyword.toLowerCase())) return false;
+          }
+          if (!passFlag(vipMode, msg.isVip)) return false;
+          if (!passFlag(modMode, msg.isMod || msg.isOwner)) return false;
+          if (!passFlag(subMode, msg.isSub)) return false;
+          return true;
+        }
+
+        function parseTwitchBadges(tag) {
+          const out = { isVip: false, isMod: false, isSub: false, isOwner: false };
+          String(tag || "")
+            .split(",")
+            .forEach((part) => {
+              const id = part.split("/")[0];
+              if (id === "vip") out.isVip = true;
+              if (id === "moderator") out.isMod = true;
+              if (id === "broadcaster") {
+                out.isOwner = true;
+                out.isMod = true;
+              }
+              if (id === "subscriber" || id === "founder") out.isSub = true;
+            });
+          return out;
+        }
+
+        function refreshStatus() {
+          if (demo) {
+            statusEl.textContent = "DEMO";
+            return;
+          }
+          const parts = [];
+          if (wantTw) {
+            parts.push(
+              twConnected.size
+                ? `TW ${twConnected.size}/${twitchLogins.length}●`
+                : `TW 0/${twitchLogins.length}○`
+            );
+          }
+          if (wantYt) {
+            const n = Math.max(1, ytChannels.length + ytVideoIds.length);
+            parts.push(
+              ytConnected.size ? `YT ${ytConnected.size}/${n}●` : `YT 0/${n}○`
+            );
+          }
+          statusEl.textContent = parts.length ? parts.join(" ") : "NO SRC";
+        }
+
+        function setPhase(next) {
+          phase = next;
+          const map = {
+            collect: "收件中",
+            ready: "就緒",
+            spin: "拉霸中",
+            stop: "減速中",
+            win: "抽中",
+          };
+          phaseLabel.textContent = map[next] || next;
+          btnClose.disabled = next !== "collect";
+          btnStart.disabled = !(next === "ready" || next === "win") || entries.size < 1;
+          btnStop.disabled = next !== "spin";
+          if (next === "win") btnStart.textContent = "再抽一次";
+          else btnStart.textContent = "開始";
+        }
+
+        function listEntries() {
+          return Array.from(entries.values());
+        }
+
+        function renderReel(list, repeats) {
+          const rows = [];
+          const times = Math.max(1, repeats || 1);
+          for (let r = 0; r < times; r++) {
+            list.forEach((e) => {
+              const badges = [];
+              if (e.isVip) badges.push("VIP");
+              if (e.isMod) badges.push("MOD");
+              if (e.isSub) badges.push(e.platform === "yt" ? "會員" : "訂閱");
+              rows.push(
+                `<div class="item" data-key="${e.key}">` +
+                  `<span class="plat">${e.platform === "tw" ? "TW" : "YT"}</span>` +
+                  `<span class="name"></span>` +
+                  (badges.length
+                    ? `<span class="badges">${badges.join(" ")}</span>`
+                    : "") +
+                  `</div>`
+              );
+            });
+          }
+          reel.innerHTML = rows.join("") || `<div class="item"><span class="name">等待符合條件的人…</span></div>`;
+          Array.from(reel.querySelectorAll(".item")).forEach((el, i) => {
+            const nameEl = el.querySelector(".name");
+            if (!nameEl) return;
+            if (!list.length) return;
+            const e = list[i % list.length];
+            nameEl.textContent = e.user || e.login || "anon";
+          });
+        }
+
+        let offsetY = 0;
+        let velocity = 0; // px per ms
+        let animMode = "idle"; // idle | spin | ease | hold
+        let targetY = 0;
+        let easeStartedAt = 0;
+        let winner = null;
+        let lastTs = 0;
+        let reelList = [];
+        let reelRepeats = 8;
+
+        function centerOffsetForIndex(indexInFull) {
+          const h = itemH();
+          const shell = document.querySelector(".reel-shell");
+          const mid = (shell?.clientHeight || 420) / 2 - h / 2;
+          return mid - indexInFull * h;
+        }
+
+        function rebuildReelVisual() {
+          reelList = listEntries();
+          countLabel.textContent = String(reelList.length);
+          const reps = Math.max(6, Math.ceil(40 / Math.max(1, reelList.length)));
+          reelRepeats = reps;
+          renderReel(reelList, reps);
+          if (!reelList.length) {
+            offsetY = 0;
+            reel.style.transform = `translateY(0px)`;
+            return;
+          }
+          // keep offset roughly in middle copy
+          const h = itemH();
+          const cycle = reelList.length * h;
+          if (cycle > 0) {
+            while (offsetY > 0) offsetY -= cycle;
+            while (offsetY < -cycle * (reps - 2)) offsetY += cycle;
+          }
+          reel.style.transform = `translateY(${offsetY}px)`;
+        }
+
+        function tickAnim(ts) {
+          if (!lastTs) lastTs = ts;
+          const dt = Math.min(48, ts - lastTs);
+          lastTs = ts;
+          const h = itemH();
+          const list = reelList;
+          const cycle = Math.max(h, (list.length || 1) * h);
+
+          if (animMode === "idle") {
+            velocity = list.length ? 0.035 : 0; // slow px/ms
+            offsetY -= velocity * dt;
+            if (offsetY < -cycle * (reelRepeats - 2)) offsetY += cycle;
+          } else if (animMode === "spin") {
+            velocity = Math.min(2.4, velocity + 0.004 * dt);
+            offsetY -= velocity * dt;
+            if (offsetY < -cycle * (reelRepeats - 2)) offsetY += cycle;
+          } else if (animMode === "ease") {
+            const dist = targetY - offsetY;
+            // 目標應在更上方（offset 更負）；用平滑插值 + 逾時鎖死
+            const step = Math.max(0.08, Math.min(0.22, 0.12 + Math.abs(dist) / 8000));
+            offsetY += dist * step;
+            velocity = dist * step;
+            const timedOut = easeStartedAt && ts - easeStartedAt > 2800;
+            if (Math.abs(dist) < 1.5 || timedOut) {
+              offsetY = targetY;
+              animMode = "hold";
+              velocity = 0;
+              setPhase("win");
+              if (winner) {
+                winnerBanner.textContent = "抽中　" + (winner.user || winner.login);
+                winnerBanner.classList.add("show");
+              }
+            }
+          }
+          reel.style.transform = `translateY(${offsetY}px)`;
+          requestAnimationFrame(tickAnim);
+        }
+        requestAnimationFrame(tickAnim);
+
+        function addEntry(msg) {
+          if (phase !== "collect" && phase !== "ready") return;
+          if (!matchesFilters(msg)) return;
+          const key = entryKey(msg);
+          if (!key || key.endsWith(":")) return;
+          const prev = entries.get(key);
+          const next = {
+            key,
+            platform: msg.platform,
+            user: msg.user || msg.login || "anon",
+            login: msg.login || "",
+            channelId: msg.channelId || "",
+            isVip: !!(prev && prev.isVip) || !!msg.isVip,
+            isMod: !!(prev && prev.isMod) || !!msg.isMod || !!msg.isOwner,
+            isSub: !!(prev && prev.isSub) || !!msg.isSub,
+            isOwner: !!(prev && prev.isOwner) || !!msg.isOwner,
+            text: msg.text || "",
+          };
+          const isNew = !prev;
+          entries.set(key, next);
+          if (isNew) rebuildReelVisual();
+          else countLabel.textContent = String(entries.size);
+        }
+
+        function closeCollect() {
+          if (phase !== "collect") return;
+          setPhase("ready");
+          timerLabel.textContent = "0";
+          rebuildReelVisual();
+        }
+
+        function startSpin() {
+          if (entries.size < 1) return;
+          if (phase !== "ready" && phase !== "win") return;
+          winnerBanner.classList.remove("show");
+          winnerBanner.textContent = "";
+          winner = null;
+          rebuildReelVisual();
+          animMode = "spin";
+          velocity = 0.8;
+          setPhase("spin");
+        }
+
+        function stopSpin() {
+          if (phase !== "spin") return;
+          const list = listEntries();
+          if (!list.length) return;
+          winner = list[Math.floor(Math.random() * list.length)];
+          const h = itemH();
+          const idx = Math.max(
+            0,
+            list.findIndex((e) => e.key === winner.key)
+          );
+          const shell = document.querySelector(".reel-shell");
+          const mid = (shell?.clientHeight || 420) / 2 - h / 2;
+          // offsetY = mid - index*h  → 目前大約停在哪個 index
+          let currentIndex = (mid - offsetY) / h;
+          if (!Number.isFinite(currentIndex)) currentIndex = 0;
+          // 至少再滾兩圈，並對齊到 winner 的 index
+          let targetIndex = Math.ceil(currentIndex + list.length * 2 + 1);
+          const rem =
+            ((Math.round(targetIndex) % list.length) + list.length) % list.length;
+          let delta = idx - rem;
+          if (delta < 0) delta += list.length;
+          targetIndex = Math.round(targetIndex) + delta;
+          targetY = mid - targetIndex * h;
+          // 確保目標在「繼續往負 offset」方向
+          while (targetY > offsetY - list.length * h) {
+            targetY -= list.length * h;
+          }
+          easeStartedAt = performance.now();
+          animMode = "ease";
+          setPhase("stop");
+        }
+
+        function resetAll() {
+          entries.clear();
+          winner = null;
+          winnerBanner.classList.remove("show");
+          winnerBanner.textContent = "";
+          animMode = "idle";
+          velocity = 0;
+          offsetY = 0;
+          collectEndsAt = Date.now() + collectSec * 1000;
+          setPhase("collect");
+          rebuildReelVisual();
+        }
+
+        btnClose.addEventListener("click", closeCollect);
+        btnStart.addEventListener("click", startSpin);
+        btnStop.addEventListener("click", stopSpin);
+        btnReset.addEventListener("click", resetAll);
+
+        function timerTick() {
+          if (phase !== "collect") return;
+          const left = Math.max(0, Math.ceil((collectEndsAt - Date.now()) / 1000));
+          timerLabel.textContent = String(left);
+          if (left <= 0) closeCollect();
+        }
+        setInterval(timerTick, 200);
+        timerTick();
+        setPhase("collect");
+        rebuildReelVisual();
+
+        async function refreshSharedLiveOverride() {
+          if (!window.MyObsYtLiveSync) return;
+          try {
+            const cur = await MyObsYtLiveSync.fetchSharedYtLive();
+            const id = cur && cur.videoId;
+            if (id && /^[\w-]{11}$/.test(id)) sharedOverrideVideoId = id;
+          } catch (_) {}
+        }
+
+        function connectTwitch() {
+          if (!wantTw || !twitchLogins.length) return;
+          const nick = `justinfan${Math.floor(10000 + Math.random() * 80000)}`;
+          let ws;
+          let retry = 0;
+          function connect() {
+            ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
+            ws.addEventListener("open", () => {
+              ws.send("PASS SCHMOOPIIE");
+              ws.send(`NICK ${nick}`);
+              ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands");
+              twitchLogins.forEach((login) => ws.send(`JOIN #${login}`));
+            });
+            ws.addEventListener("message", (ev) => {
+              String(ev.data || "")
+                .split("\r\n")
+                .forEach((line) => {
+                  if (!line) return;
+                  if (line.startsWith("PING")) {
+                    ws.send("PONG :tmi.twitch.tv");
+                    return;
+                  }
+                  const joinM = line.match(/ JOIN #([^\s]+)/i);
+                  if (joinM) {
+                    twConnected.add(joinM[1].toLowerCase());
+                    refreshStatus();
+                  }
+                  const m = line.match(
+                    /^(?:@([^ ]+) )?(?::([^ ]+) )?PRIVMSG #([^ ]+) :(.*)$/
+                  );
+                  if (!m) return;
+                  const tags =
+                    window.ObsChatEmote && ObsChatEmote.parseIrcTags
+                      ? ObsChatEmote.parseIrcTags(m[1] || "")
+                      : {};
+                  const badges = parseTwitchBadges(tags.badges || "");
+                  const login = (
+                    tags.login ||
+                    (m[2] || "").split("!")[0] ||
+                    ""
+                  ).toLowerCase();
+                  const user =
+                    decodeURIComponent(
+                      (tags["display-name"] || "").replace(/\\s/g, " ")
+                    ) ||
+                    login ||
+                    "twitch";
+                  addEntry({
+                    platform: "tw",
+                    user,
+                    login,
+                    text: m[4],
+                    isVip: badges.isVip,
+                    isMod: badges.isMod,
+                    isSub: badges.isSub,
+                    isOwner: badges.isOwner,
+                  });
+                });
+            });
+            ws.addEventListener("close", () => {
+              twConnected.clear();
+              refreshStatus();
+              retry = Math.min(retry + 1, 6);
+              setTimeout(connect, 1000 * retry);
+            });
+            ws.addEventListener("error", () => {
+              try {
+                ws.close();
+              } catch (_) {}
+            });
+          }
+          connect();
+        }
+
+        async function ytFetchJson(url, label) {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error((label || "yt") + " " + res.status);
+          return res.json();
+        }
+
+        async function resolveLiveVideoId(channelRaw) {
+          await refreshSharedLiveOverride();
+          if (sharedOverrideVideoId) return sharedOverrideVideoId;
+          const raw = String(channelRaw || "").trim();
+          if (!raw || !ytKey) return "";
+          let channelId = raw;
+          if (!/^UC[\w-]{20,}$/i.test(raw)) {
+            if (raw.startsWith("@")) {
+              const url = `${YT_API}/channels?part=id&forHandle=${encodeURIComponent(
+                raw.slice(1)
+              )}&key=${encodeURIComponent(ytKey)}`;
+              const json = await ytFetchJson(url, "yt handle");
+              channelId = json?.items?.[0]?.id || "";
+            } else {
+              const url = `${YT_API}/search?part=snippet&type=channel&maxResults=1&q=${encodeURIComponent(
+                raw
+              )}&key=${encodeURIComponent(ytKey)}`;
+              const json = await ytFetchJson(url, "yt search ch");
+              channelId = json?.items?.[0]?.snippet?.channelId || "";
+            }
+          }
+          if (!channelId) return "";
+          const liveUrl = `${YT_API}/search?part=snippet&channelId=${encodeURIComponent(
+            channelId
+          )}&eventType=live&type=video&maxResults=1&key=${encodeURIComponent(ytKey)}`;
+          const liveJson = await ytFetchJson(liveUrl, "yt live");
+          return liveJson?.items?.[0]?.id?.videoId || "";
+        }
+
+        async function resolveLiveChatId(videoId) {
+          const url = `${YT_API}/videos?part=liveStreamingDetails&id=${encodeURIComponent(
+            videoId
+          )}&key=${encodeURIComponent(ytKey)}`;
+          const json = await ytFetchJson(url, "yt videos");
+          const details = json?.items?.[0]?.liveStreamingDetails;
+          if (!details || details.actualEndTime) return null;
+          return details.activeLiveChatId || null;
+        }
+
+        function pollOneYoutubeApi(job) {
+          let videoId = null;
+          let chatId = null;
+          let pageToken = "";
+          let seen = new Set();
+          let fail = 0;
+          async function ensureChat() {
+            videoId = await job.getVideoId();
+            if (!videoId) throw new Error("yt offline");
+            chatId = await resolveLiveChatId(videoId);
+            if (!chatId) throw new Error("yt no live chat");
+            ytConnected.add(job.key);
+            refreshStatus();
+            fail = 0;
+          }
+          async function tick() {
+            try {
+              if (!chatId) await ensureChat();
+              const url = new URL(`${YT_API}/liveChat/messages`);
+              url.searchParams.set("liveChatId", chatId);
+              url.searchParams.set("part", "snippet,authorDetails");
+              url.searchParams.set("maxResults", "40");
+              url.searchParams.set("key", ytKey);
+              if (pageToken) url.searchParams.set("pageToken", pageToken);
+              const res = await fetch(url);
+              if (!res.ok) {
+                if (res.status === 403 || res.status === 404) {
+                  chatId = null;
+                  pageToken = "";
+                  ytConnected.delete(job.key);
+                  refreshStatus();
+                }
+                throw new Error("yt chat " + res.status);
+              }
+              const json = await res.json();
+              pageToken = json.nextPageToken || pageToken;
+              const wait = Math.max(2500, Number(json.pollingIntervalMillis || 5000));
+              (json.items || []).forEach((item) => {
+                const id = item.id;
+                if (!id || seen.has(id)) return;
+                seen.add(id);
+                if (seen.size > 800) seen = new Set(Array.from(seen).slice(-300));
+                const text =
+                  item.snippet?.displayMessage ||
+                  item.snippet?.textMessageDetails?.messageText ||
+                  "";
+                const user = item.authorDetails?.displayName || "youtube";
+                addEntry({
+                  platform: "yt",
+                  user,
+                  channelId: item.authorDetails?.channelId || "",
+                  text,
+                  isMod: !!item.authorDetails?.isChatModerator,
+                  isSub: !!item.authorDetails?.isChatSponsor,
+                  isOwner: !!item.authorDetails?.isChatOwner,
+                  isVip: false,
+                });
+              });
+              setTimeout(tick, wait);
+            } catch (err) {
+              console.warn(err);
+              ytConnected.delete(job.key);
+              refreshStatus();
+              fail += 1;
+              chatId = fail >= 3 ? null : chatId;
+              setTimeout(tick, Math.min(15000, 3000 * fail));
+            }
+          }
+          tick();
+        }
+
+        function pollYoutube() {
+          if (!wantYt) return;
+          if (ytChatWeb && window.ObsYtChatWeb) {
+            const jobs = [];
+            ytVideoIds.forEach((vid, idx) => {
+              jobs.push({
+                key: "vid:" + vid,
+                label: vid,
+                channel: "",
+                getVideoId: async () => {
+                  if (idx === 0) {
+                    await refreshSharedLiveOverride();
+                    if (sharedOverrideVideoId) return sharedOverrideVideoId;
+                  }
+                  return vid;
+                },
+              });
+            });
+            ytChannels.forEach((ch) => {
+              jobs.push({
+                key: "ch:" + ch.toLowerCase(),
+                label: ch,
+                channel: ch,
+                getVideoId: async () => {
+                  await refreshSharedLiveOverride();
+                  if (sharedOverrideVideoId) return sharedOverrideVideoId;
+                  if (ytKey) {
+                    try {
+                      return await resolveLiveVideoId(ch);
+                    } catch (_) {}
+                  }
+                  return "";
+                },
+              });
+            });
+            jobs.forEach((job) => {
+              ObsYtChatWeb.startPoll({
+                label: job.label,
+                channel: job.channel,
+                getVideoId: job.getVideoId,
+                addMessage: addEntry,
+                onStatus: (ok) => {
+                  if (ok) ytConnected.add(job.key);
+                  else ytConnected.delete(job.key);
+                  refreshStatus();
+                },
+              });
+            });
+            return;
+          }
+          if (!ytKey && !ytVideoIds.length) return;
+          const jobs = [];
+          ytVideoIds.forEach((vid, idx) => {
+            jobs.push({
+              key: "vid:" + vid,
+              getVideoId: async () => {
+                if (idx === 0) {
+                  await refreshSharedLiveOverride();
+                  if (sharedOverrideVideoId) return sharedOverrideVideoId;
+                }
+                return vid;
+              },
+            });
+          });
+          ytChannels.forEach((ch) => {
+            jobs.push({
+              key: "ch:" + ch.toLowerCase(),
+              getVideoId: async () => resolveLiveVideoId(ch),
+            });
+          });
+          jobs.forEach(pollOneYoutubeApi);
+        }
+
+        function startDemo() {
+          const pool = [
+            { platform: "tw", user: "NightOwl", login: "nightowl", text: "抽我 " + (keyword || "參加"), isVip: true, isSub: true },
+            { platform: "tw", user: "Tea", login: "tea", text: "我要抽 " + (keyword || "!join"), isSub: true },
+            { platform: "tw", user: "BoxBox", login: "boxbox", text: keyword || "參加抽籤", isMod: true },
+            { platform: "yt", user: "貓奴", text: keyword || "抽獎", isSub: true },
+            { platform: "yt", user: "小白", text: "我 " + (keyword || "in") },
+            { platform: "tw", user: "拉基粉絲A", login: "fan_a", text: keyword || "＋１", isVip: true },
+            { platform: "tw", user: "StreamerFan", login: "sfan", text: keyword || "here", isSub: true },
+            { platform: "yt", user: "YT觀眾1", text: keyword || "抽" },
+            { platform: "tw", user: "LuckySeven", login: "lucky7", text: keyword || "go", isSub: true, isVip: true },
+            { platform: "tw", user: "ModChi", login: "modchi", text: keyword || "ok", isMod: true, isSub: true },
+          ];
+          let i = 0;
+          const push = () => {
+            if (phase !== "collect") return;
+            addEntry(pool[i % pool.length]);
+            i += 1;
+          };
+          for (let n = 0; n < 4; n++) setTimeout(push, n * 400);
+          setInterval(push, 900);
+        }
+
+        refreshStatus();
+        if (demo) startDemo();
+        else {
+          connectTwitch();
+          pollYoutube();
+        }
+      })();
+    </script>
+  </body>
+</html>

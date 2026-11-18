@@ -101,6 +101,10 @@
             parts: m.parts || [],
             avatar: m.avatar || "",
             channel: label,
+            isMod: !!m.isMod,
+            isSub: !!m.isSub,
+            isVip: !!m.isVip,
+            isOwner: !!m.isOwner,
           });
         });
         fail = 0;

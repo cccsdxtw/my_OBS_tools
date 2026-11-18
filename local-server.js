@@ -321,6 +321,46 @@ function parseMessageRuns(runs) {
   return { text, parts };
 }
 
+function parseAuthorBadges(badges) {
+  let isMod = false;
+  let isSub = false;
+  let isOwner = false;
+  (badges || []).forEach((b) => {
+    const r = (b && b.liveChatAuthorBadgeRenderer) || {};
+    const tip = String(r.tooltip || r.accessibility?.accessibilityData?.label || "").toLowerCase();
+    const icon = String((r.icon && r.icon.iconType) || "").toUpperCase();
+    if (
+      icon === "MODERATOR" ||
+      tip.includes("moderator") ||
+      tip.includes("管理員") ||
+      tip.includes("版主")
+    ) {
+      isMod = true;
+    }
+    if (
+      icon === "OWNER" ||
+      tip.includes("owner") ||
+      tip.includes("擁有者") ||
+      tip.includes("creator")
+    ) {
+      isOwner = true;
+      isMod = true;
+    }
+    if (
+      tip.includes("member") ||
+      tip.includes("會員") ||
+      tip.includes("sponsor") ||
+      !!r.customThumbnail
+    ) {
+      // 自訂會員徽章常只有 thumbnail
+      if (r.customThumbnail || tip.includes("member") || tip.includes("會員")) {
+        isSub = true;
+      }
+    }
+  });
+  return { isMod, isSub, isOwner, isVip: false };
+}
+
 function parseChatActions(payload) {
   const actions =
     (payload &&
@@ -352,6 +392,7 @@ function parseChatActions(payload) {
     const thumbs =
       (renderer.authorPhoto && renderer.authorPhoto.thumbnails) || [];
     const avatar = thumbs.length ? thumbs[thumbs.length - 1].url || "" : "";
+    const flags = parseAuthorBadges(renderer.authorBadges);
     messages.push({
       id: renderer.id,
       user:
@@ -359,6 +400,10 @@ function parseChatActions(payload) {
       text: parsed.text,
       parts: parsed.parts,
       avatar: avatar,
+      isMod: flags.isMod,
+      isSub: flags.isSub,
+      isVip: false,
+      isOwner: flags.isOwner,
     });
   });
   return messages;

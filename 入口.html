@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.10</span>
+          <span class="brand-version" id="brandVersion">v3.5.11</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -2007,7 +2007,9 @@
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="vcUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 220–420、高度 40–60。跟資訊條分開放。</p>
+            <p class="hint">
+              建議寬度 220–420、高度 40–60。跟資訊條分開放。框內展示用預覽數字；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。
+            </p>
             <div class="actions">
               <button type="button" id="copyVc">複製人數網址</button>
               <a class="btn secondary" id="openVc" href="#" target="_blank" rel="noopener">預覽</a>
@@ -2539,14 +2541,13 @@
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="spUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議寬度 700–1100；基金愈多高度愈高（約 70 + 每條 36）。預覽含示範。</p>
+            <p class="hint">
+              建議寬度 700–1100；基金愈多高度愈高（約 70 + 每條 36）。框內展示會跳動（示範）；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。
+            </p>
             <div class="actions">
               <button type="button" id="copySp">複製贊助條網址</button>
               <a class="btn secondary" id="openSp" href="#" target="_blank" rel="noopener">預覽</a>
             </div>
-            <p class="hint">
-              框內展示會跳動（示範）。「複製」「預覽」兩個按鈕都是<strong>正式網址</strong>（不會自己跳），可安心複製到 OBS。
-            </p>
             <div class="preview-wrap" style="min-height: 100px">
               <iframe id="previewSp" title="sponsor preview" style="height: 100px"></iframe>
             </div>
@@ -3047,7 +3048,9 @@
 
             <div id="chatMergePanel">
               <textarea id="chatUrl" class="url-box" readonly></textarea>
-              <p class="hint">合併：一個來源。建議 360–480 × 500–720。預覽含示範留言。</p>
+              <p class="hint">
+                合併：一個來源。建議 360–480 × 500–720。框內展示會播示範留言；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。
+              </p>
               <div class="actions">
                 <button type="button" id="copyChat">複製聊天室網址</button>
                 <a class="btn secondary" id="openChat" href="#" target="_blank" rel="noopener">預覽</a>
@@ -3368,7 +3371,9 @@
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="dmUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋（寬×高跟畫布一樣）。可與 B - ① 同時使用。</p>
+            <p class="hint">
+              建議全螢幕透明覆蓋（寬×高跟畫布一樣）。可與 B - ① 同時使用。框內展示會播示範；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。
+            </p>
             <div class="actions">
               <button type="button" id="copyDm">複製彈幕網址</button>
               <a class="btn secondary" id="openDm" href="#" target="_blank" rel="noopener"
@@ -3495,7 +3500,9 @@
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="popUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋。可與 B - ①／B - ③ 同時加來源。</p>
+            <p class="hint">
+              建議全螢幕透明覆蓋。可與 B - ①／B - ③ 同時加來源。框內展示會播示範；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。
+            </p>
             <div class="actions">
               <button type="button" id="copyPop">複製頭像對話框網址</button>
               <a class="btn secondary" id="openPop" href="#" target="_blank" rel="noopener"
@@ -3625,7 +3632,9 @@
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="walkUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議全螢幕透明覆蓋。可與 B - ①／B - ③／B - ⑤ 同時加來源。</p>
+            <p class="hint">
+              建議全螢幕透明覆蓋。可與 B - ①／B - ③／B - ⑤ 同時加來源。框內展示會播示範；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。
+            </p>
             <div class="actions">
               <button type="button" id="copyWalk">複製走動頭像網址</button>
               <a class="btn secondary" id="openWalk" href="#" target="_blank" rel="noopener"
@@ -3916,8 +3925,8 @@
             </div>
             <textarea id="raffleUrl" class="url-box" readonly></textarea>
             <p class="hint">
-              建議約 640×720 透明覆蓋。預覽與複製都是正式網址（不會帶示範名單）。OBS「互動」可改開始／結束時間並按開始／停止。<br />
-              若已授權且「追隨（Twitch 限定）＝有」，複製的網址會帶 token（勿外流）；過期會用 refresh 自動續。右側預覽可顯示示範假名；一按按鈕或有真人進名單就會清掉。複製給 OBS 的網址不含示範。
+              建議約 640×720 透明覆蓋。框內展示可顯示示範假名（一按按鈕或有真人進名單就會清掉）；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。OBS「互動」可改開始／結束時間並按開始／停止。<br />
+              若已授權且「追隨（Twitch 限定）＝有」，複製的網址會帶 token（勿外流）；過期會用 refresh 自動續。
             </p>
             <div class="actions">
               <button type="button" id="copyRaffle">複製抽籤網址</button>
@@ -4903,7 +4912,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.10";
+        const APP_VERSION = "v3.5.11";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -10017,15 +10026,16 @@ function syncYtAfterTwUi() {
           syncChatPanels();
 
           $("chatUrl").value = chatHref;
-          $("openChat").href = chatDemoHref;
+          // 外面 iframe＝示範動態；「預覽」按鈕＝OBS 實際會看到的（無假資料）
+          $("openChat").href = chatHref;
           $("previewChat").src = chatDemoHref;
 
           $("chatUrlTw").value = chatHrefTw;
-          $("openChatTw").href = chatDemoTw;
+          $("openChatTw").href = chatHrefTw;
           $("previewChatTw").src = chatDemoTw;
 
           $("chatUrlYt").value = chatHrefYt;
-          $("openChatYt").href = chatDemoYt;
+          $("openChatYt").href = chatHrefYt;
           $("previewChatYt").src = chatDemoYt;
 
           const chatReplyHref = buildChatReplyUrl();
@@ -10059,25 +10069,25 @@ function syncYtAfterTwUi() {
           const dmHref = buildDanmakuUrl();
           const dmDemoHref = buildDanmakuUrl({ demo: true });
           if ($("dmUrl")) $("dmUrl").value = dmHref;
-          if ($("openDm")) $("openDm").href = dmDemoHref;
+          if ($("openDm")) $("openDm").href = dmHref;
           if ($("previewDm")) $("previewDm").src = dmDemoHref;
 
           const popHref = buildChatPopUrl();
           const popDemoHref = buildChatPopUrl({ demo: true });
           if ($("popUrl")) $("popUrl").value = popHref;
-          if ($("openPop")) $("openPop").href = popDemoHref;
+          if ($("openPop")) $("openPop").href = popHref;
           if ($("previewPop")) $("previewPop").src = popDemoHref;
 
           const walkHref = buildChatWalkUrl();
           const walkDemoHref = buildChatWalkUrl({ demo: true });
           if ($("walkUrl")) $("walkUrl").value = walkHref;
-          if ($("openWalk")) $("openWalk").href = walkDemoHref;
+          if ($("openWalk")) $("openWalk").href = walkHref;
           if ($("previewWalk")) $("previewWalk").src = walkDemoHref;
 
           const raffleHref = buildRaffleUrl();
           const raffleSampleHref = buildRaffleUrl({ sample: true });
           if ($("raffleUrl")) $("raffleUrl").value = raffleHref;
-          // 複製／開新分頁用正式網址；右側 iframe 用 sample 示範假名（按按鈕會清掉）
+          // iframe＝示範假名；「預覽」／複製＝OBS 實際畫面（無假資料）
           if ($("openRaffle")) $("openRaffle").href = raffleHref;
           if ($("previewRaffle")) $("previewRaffle").src = raffleSampleHref;
 

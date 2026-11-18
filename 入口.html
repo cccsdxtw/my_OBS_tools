@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.8</span>
+          <span class="brand-version" id="brandVersion">v3.5.9</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3941,11 +3941,23 @@
                 <div class="row">
                   <div>
                     <label for="raffleFontSize">字級（標題／名單）</label>
-                    <input id="raffleFontSize" type="number" min="14" max="64" value="28" />
+                    <input
+                      id="raffleFontSize"
+                      type="number"
+                      min="14"
+                      max="64"
+                      placeholder="用預設"
+                    />
                   </div>
                   <div>
                     <label for="raffleUiFontSize">介面字級（狀態／時間／按鈕）</label>
-                    <input id="raffleUiFontSize" type="number" min="11" max="36" value="14" />
+                    <input
+                      id="raffleUiFontSize"
+                      type="number"
+                      min="11"
+                      max="36"
+                      placeholder="自動＝字級−5"
+                    />
                   </div>
                 </div>
                 <div class="row">
@@ -3987,7 +3999,7 @@
                   <div></div>
                 </div>
                 <p class="hint">
-                  字形空白＝用最上方預設。文字色預設深色方便預覽；名單在深色框內仍用淺色。強調色＝標題／外框／瞄準框。<strong>字級</strong>＝「抽籤」標題與拉霸觀眾名稱；<strong>介面字級</strong>＝狀態／名單／倒數／條件、開始結束時間、按鈕。
+                  字形／字級空白＝用最上方預設。介面字級空白＝自動用「字級 − 5」。文字色預設深色方便預覽；名單在深色框內仍用淺色。強調色＝標題／外框／瞄準框。<strong>字級</strong>＝標題與拉霸名稱；<strong>介面字級</strong>＝狀態／倒數／條件／時間／按鈕。
                 </p>
               </div>
             </div>
@@ -4891,7 +4903,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.8";
+        const APP_VERSION = "v3.5.9";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -9349,12 +9361,20 @@
           if (fields.raffleHideControls && fields.raffleHideControls.checked) {
             p.set("hideControls", "1");
           }
-          if (fields.raffleFontSize && fields.raffleFontSize.value) {
-            p.set("fontSize", fields.raffleFontSize.value);
-          }
-          if (fields.raffleUiFontSize && fields.raffleUiFontSize.value) {
-            const ui = parseInt(fields.raffleUiFontSize.value, 10);
-            if (Number.isFinite(ui) && ui !== 14) p.set("uiFontSize", String(ui));
+          const raffleFs = resolveStyle(
+            fields.raffleFontSize || { value: "" },
+            fields.defaultFontSize || { value: "22" }
+          );
+          if (raffleFs) p.set("fontSize", raffleFs);
+          const raffleFsNum = parseInt(raffleFs || "22", 10);
+          const uiOverride = (fields.raffleUiFontSize && fields.raffleUiFontSize.value
+            ? fields.raffleUiFontSize.value
+            : ""
+          ).trim();
+          if (uiOverride) {
+            p.set("uiFontSize", uiOverride);
+          } else if (Number.isFinite(raffleFsNum)) {
+            p.set("uiFontSize", String(Math.max(11, raffleFsNum - 5)));
           }
           applyFontFamilyParam(p, fields.raffleFontFamily);
           if (fields.raffleColor && fields.raffleColor.value.trim()) {

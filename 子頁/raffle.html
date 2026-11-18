@@ -324,15 +324,16 @@
           if (value) document.documentElement.style.setProperty(name, value);
         }
         const baseFontSize = (() => {
-          const n = parseInt(params.get("fontSize") || "28", 10);
-          return Number.isFinite(n) ? Math.max(14, Math.min(72, n)) : 28;
+          const n = parseInt(params.get("fontSize") || "22", 10);
+          return Number.isFinite(n) ? Math.max(14, Math.min(72, n)) : 22;
         })();
         const uiFontSize = (() => {
-          const n = parseInt(
-            params.get("uiFontSize") || params.get("metaSize") || "14",
-            10
-          );
-          return Number.isFinite(n) ? Math.max(11, Math.min(36, n)) : 14;
+          const raw = params.get("uiFontSize") || params.get("metaSize") || "";
+          if (raw !== "") {
+            const n = parseInt(raw, 10);
+            if (Number.isFinite(n)) return Math.max(11, Math.min(36, n));
+          }
+          return Math.max(11, Math.min(36, baseFontSize - 5));
         })();
         cssVar("--size", `${baseFontSize}px`);
         cssVar("--ui-size", `${uiFontSize}px`);

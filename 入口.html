@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.9</span>
+          <span class="brand-version" id="brandVersion">v3.5.10</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3917,7 +3917,7 @@
             <textarea id="raffleUrl" class="url-box" readonly></textarea>
             <p class="hint">
               建議約 640×720 透明覆蓋。預覽與複製都是正式網址（不會帶示範名單）。OBS「互動」可改開始／結束時間並按開始／停止。<br />
-              若已授權且「追隨（Twitch 限定）＝有」，複製的網址會帶 token（勿外流）；過期會用 refresh 自動續。
+              若已授權且「追隨（Twitch 限定）＝有」，複製的網址會帶 token（勿外流）；過期會用 refresh 自動續。右側預覽可顯示示範假名；一按按鈕或有真人進名單就會清掉。複製給 OBS 的網址不含示範。
             </p>
             <div class="actions">
               <button type="button" id="copyRaffle">複製抽籤網址</button>
@@ -4903,7 +4903,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.9";
+        const APP_VERSION = "v3.5.10";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -9384,6 +9384,7 @@
             p.set("accent", fields.raffleAccent.value.trim());
           }
           if (opts.demo) p.set("demo", "1");
+          if (opts.sample) p.set("sample", "1");
           return url.toString();
         }
 
@@ -10074,10 +10075,11 @@ function syncYtAfterTwUi() {
           if ($("previewWalk")) $("previewWalk").src = walkDemoHref;
 
           const raffleHref = buildRaffleUrl();
+          const raffleSampleHref = buildRaffleUrl({ sample: true });
           if ($("raffleUrl")) $("raffleUrl").value = raffleHref;
-          // 預覽／複製都用正式網址，避免開新分頁後還帶 demo=1 出現示範名單
+          // 複製／開新分頁用正式網址；右側 iframe 用 sample 示範假名（按按鈕會清掉）
           if ($("openRaffle")) $("openRaffle").href = raffleHref;
-          if ($("previewRaffle")) $("previewRaffle").src = raffleHref;
+          if ($("previewRaffle")) $("previewRaffle").src = raffleSampleHref;
 
           localStorage.setItem(
             "my_obs_tools_setup",

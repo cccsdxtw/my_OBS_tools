@@ -520,6 +520,8 @@
           other: readWeightParam(["wOther", "weightOther", "otherW"], 1),
         };
         const demo = params.get("demo") === "1";
+        const sampleMode = params.get("sample") === "1";
+        let sampleDismissed = false;
         const ytChatMode = (params.get("ytChat") || params.get("ytChatEmotes") || "api").toLowerCase();
         const ytChatWeb = ytChatMode === "web";
         const TWITCH_FOLLOW_CLIENT_ID =
@@ -1108,10 +1110,98 @@
           return mid - indexInFull * h;
         }
 
+        const SAMPLE_ENTRIES = [
+          {
+            key: "sample:modchi",
+            platform: "tw",
+            user: "ModChi",
+            login: "modchi",
+            isMod: true,
+            isSub: true,
+          },
+          {
+            key: "sample:nightowl",
+            platform: "tw",
+            user: "NightOwl",
+            login: "nightowl",
+            isVip: true,
+            isSub: true,
+          },
+          {
+            key: "sample:tea",
+            platform: "tw",
+            user: "Tea",
+            login: "tea",
+            isSub: true,
+          },
+          {
+            key: "sample:cat",
+            platform: "yt",
+            user: "貓奴",
+            isSub: true,
+          },
+          {
+            key: "sample:boxbox",
+            platform: "tw",
+            user: "BoxBox",
+            login: "boxbox",
+            isMod: true,
+          },
+          {
+            key: "sample:fan",
+            platform: "tw",
+            user: "拉基粉絲A",
+            login: "fan_a",
+            isVip: true,
+          },
+          {
+            key: "sample:sfan",
+            platform: "tw",
+            user: "StreamerFan",
+            login: "sfan",
+            isSub: true,
+            isFollow: true,
+          },
+          {
+            key: "sample:yt1",
+            platform: "yt",
+            user: "小白",
+            isYtSub: true,
+          },
+          {
+            key: "sample:lucky",
+            platform: "tw",
+            user: "LuckySeven",
+            login: "lucky7",
+            isVip: true,
+            isSub: true,
+          },
+          {
+            key: "sample:viewer",
+            platform: "yt",
+            user: "路過觀眾",
+          },
+        ];
+
+        function showingSamples() {
+          return sampleMode && !sampleDismissed && entries.size === 0;
+        }
+
+        function dismissSample() {
+          if (!sampleMode || sampleDismissed) return;
+          sampleDismissed = true;
+          rebuildReelVisual();
+        }
+
         function rebuildReelVisual() {
           const uniqueCount = entries.size;
           countLabel.textContent = String(uniqueCount);
-          reelList = buildWeightedShuffledList();
+          if (showingSamples()) {
+            // 示範名單：不進正式 entries，只給預覽捲動看
+            reelList = shuffleInPlace(SAMPLE_ENTRIES.map((e) => ({ ...e })));
+          } else {
+            reelList = buildWeightedShuffledList();
+          }
           const reps = Math.max(6, Math.ceil(40 / Math.max(1, reelList.length)));
           reelRepeats = reps;
           renderReel(reelList, reps);
@@ -1174,6 +1264,9 @@
           if (!matchesFilters(msg)) return;
           const key = entryKey(msg);
           if (!key || key.endsWith(":")) return;
+          if (sampleMode && !sampleDismissed) {
+            sampleDismissed = true;
+          }
           const prev = entries.get(key);
           const next = {
             key,
@@ -1287,10 +1380,28 @@
           rebuildReelVisual();
         }
 
-        btnClose.addEventListener("click", closeCollect);
-        btnStart.addEventListener("click", startSpin);
-        btnStop.addEventListener("click", stopSpin);
-        btnReset.addEventListener("click", resetAll);
+        btnClose.addEventListener("click", () => {
+          dismissSample();
+          closeCollect();
+        });
+        btnStart.addEventListener("click", () => {
+          dismissSample();
+          startSpin();
+        });
+        btnStop.addEventListener("click", () => {
+          dismissSample();
+          stopSpin();
+        });
+        btnReset.addEventListener("click", () => {
+          dismissSample();
+          resetAll();
+        });
+        // 點時間／備援也清掉示範
+        [startInput, endInput, collectInput].forEach((el) => {
+          if (!el) return;
+          el.addEventListener("focus", dismissSample);
+          el.addEventListener("pointerdown", dismissSample);
+        });
         [startInput, endInput, collectInput].forEach((el) => {
           if (!el) return;
           el.addEventListener("change", () => {

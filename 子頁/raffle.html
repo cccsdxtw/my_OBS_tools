@@ -532,12 +532,14 @@
 
         const filterBits = [];
         if (keyword) filterBits.push("關鍵字「" + keyword + "」");
-        if (vipMode === "yes") filterBits.push("要 VIP");
-        if (vipMode === "no") filterBits.push("不要 VIP");
-        if (modMode === "yes") filterBits.push("要 MOD");
-        if (modMode === "no") filterBits.push("不要 MOD");
-        if (subMode === "yes") filterBits.push("要訂閱／會員");
-        if (subMode === "no") filterBits.push("不要訂閱／會員");
+        const needBits = [];
+        if (vipMode === "yes") needBits.push("VIP");
+        if (modMode === "yes") needBits.push("MOD");
+        if (subMode === "yes") needBits.push("訂閱／會員");
+        if (needBits.length) filterBits.push("身分 " + needBits.join("／") + "（任一）");
+        if (vipMode === "no") filterBits.push("排除 VIP");
+        if (modMode === "no") filterBits.push("排除 MOD");
+        if (subMode === "no") filterBits.push("排除訂閱／會員");
         filterLabel.textContent = filterBits.length
           ? "條件 " + filterBits.join(" · ")
           : "條件 全部留言";
@@ -568,21 +570,20 @@
           );
         }
 
-        function passFlag(mode, value) {
-          if (mode === "yes") return !!value;
-          if (mode === "no") return !value;
-          return true;
-        }
-
         function matchesFilters(msg) {
           if (!msg || !String(msg.text || "").trim()) return false;
           if (keyword) {
             const hay = String(msg.text || "");
             if (!hay.toLowerCase().includes(keyword.toLowerCase())) return false;
           }
-          if (!passFlag(vipMode, msg.isVip)) return false;
-          if (!passFlag(modMode, msg.isMod || msg.isOwner)) return false;
-          if (!passFlag(subMode, msg.isSub)) return false;
+          const need = [];
+          if (vipMode === "yes") need.push(!!msg.isVip);
+          if (modMode === "yes") need.push(!!(msg.isMod || msg.isOwner));
+          if (subMode === "yes") need.push(!!msg.isSub);
+          if (need.length && !need.some(Boolean)) return false;
+          if (vipMode === "no" && msg.isVip) return false;
+          if (modMode === "no" && (msg.isMod || msg.isOwner)) return false;
+          if (subMode === "no" && msg.isSub) return false;
           return true;
         }
 

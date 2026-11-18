@@ -768,6 +768,16 @@
         margin-top: 12px;
       }
 
+      .row.row-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+
+      @media (max-width: 720px) {
+        .row.row-3 {
+          grid-template-columns: 1fr;
+        }
+      }
+
       .row > div {
         display: flex;
         align-items: center;
@@ -1507,7 +1517,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.4.3</span>
+          <span class="brand-version" id="brandVersion">v3.4.4</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3660,12 +3670,12 @@
             <p class="hint">
               時段精度：年／月／日／時／分／秒（本機時區）。空白開始＝開啟頁面就收；空白結束＝不自動截止（可按截止收件）。開始與結束都空白時，改用「備援收件秒數」。
             </p>
-            <div class="row">
+            <div class="row row-3">
               <div>
                 <label for="raffleVip">VIP</label>
                 <select id="raffleVip">
                   <option value="any" selected>不限</option>
-                  <option value="yes">只要 VIP</option>
+                  <option value="yes">要 VIP</option>
                   <option value="no">排除 VIP</option>
                 </select>
               </div>
@@ -3673,7 +3683,7 @@
                 <label for="raffleMod">MOD</label>
                 <select id="raffleMod">
                   <option value="any" selected>不限</option>
-                  <option value="yes">只要 MOD</option>
+                  <option value="yes">要 MOD</option>
                   <option value="no">排除 MOD</option>
                 </select>
               </div>
@@ -3681,12 +3691,15 @@
                 <label for="raffleSub">訂閱／會員</label>
                 <select id="raffleSub">
                   <option value="any" selected>不限</option>
-                  <option value="yes">只要訂閱／會員</option>
+                  <option value="yes">要訂閱／會員</option>
                   <option value="no">排除訂閱／會員</option>
                 </select>
               </div>
             </div>
-            <div class="row">
+            <p class="hint">
+              「要」＝符合你選的<strong>任一種</strong>身分即可（可多選）；「排除」＝該身分不能抽。三個都「不限」＝不看身分。
+            </p>
+            <div class="row row-3">
               <div>
                 <label for="raffleTitle">標題</label>
                 <input id="raffleTitle" type="text" value="抽籤" />
@@ -4650,7 +4663,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.4.3";
+        const APP_VERSION = "v3.4.4";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

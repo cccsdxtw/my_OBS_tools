@@ -1560,7 +1560,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.1</span>
+          <span class="brand-version" id="brandVersion">v3.5.2</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3745,7 +3745,7 @@
                 >
               </div>
               <div class="raffle-role-row is-disabled" id="raffleFollowRow">
-                <span class="raffle-role-name">追隨／訂閱（免費）</span>
+                <span class="raffle-role-name">追隨（Twitch 限定・免費）</span>
                 <label
                   ><input
                     type="radio"
@@ -3781,7 +3781,7 @@
             </div>
             <p class="hint">
               「有」＝該身分可以抽；「沒有」＝不行。一人可同時有多種身分，符合任一「有」即可。把「其他觀眾」設成沒有，就會篩掉沒有 VIP／MOD／付費訂閱／會員徽章的人。<br />
-              Twitch「追隨」要先授權才能查（聊天訊息本身不帶）。YouTube 免費訂閱仍無法從聊天辨識，會算在「其他觀眾」。
+              「追隨（Twitch 限定）」需先授權；YouTube 沒有對應的免費追隨篩選（免費訂閱聊天 API 查不到）。
             </p>
             <div class="actions" style="margin-top: 10px">
               <button type="button" id="raffleTwAuthBtn">授權 Twitch 追隨查詢</button>
@@ -3835,7 +3835,7 @@
             <textarea id="raffleUrl" class="url-box" readonly></textarea>
             <p class="hint">
               建議約 640×720 透明覆蓋。預覽與複製都是正式網址（不會帶示範名單）。OBS「互動」可改開始／結束時間並按開始／停止。<br />
-              若已授權 Twitch 追隨且「追隨＝有」，複製的網址會帶 token（勿外流）；過期會用 refresh 自動續。
+              若已授權且「追隨（Twitch 限定）＝有」，複製的網址會帶 token（勿外流）；過期會用 refresh 自動續。
             </p>
             <div class="actions">
               <button type="button" id="copyRaffle">複製抽籤網址</button>
@@ -4800,7 +4800,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.1";
+        const APP_VERSION = "v3.5.2";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -9003,12 +9003,12 @@
               auth.login +
               "（token 約到期 " +
               exp +
-              "；會自動刷新）。上方「追隨／訂閱（免費）」已可設定。";
+              "；會自動刷新）。上方「追隨（Twitch 限定）」已可設定。";
             if (clearBtn) clearBtn.hidden = false;
             if (authBtn) authBtn.textContent = "重新授權 Twitch 追隨";
           } else {
             statusEl.textContent =
-              "尚未授權：上方「追隨／訂閱（免費）」已停用。請用該台主播或模組帳號授權後才能篩 Twitch 追隨。";
+              "尚未授權：上方「追隨（Twitch 限定）」已停用。請用該台主播或模組帳號授權後才能篩。";
             if (clearBtn) clearBtn.hidden = true;
             if (authBtn) authBtn.textContent = "授權 Twitch 追隨查詢";
           }

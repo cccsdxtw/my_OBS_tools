@@ -581,7 +581,7 @@
         if (allowRoles.vip) roleBits.push("VIP");
         if (allowRoles.mod) roleBits.push("MOD");
         if (allowRoles.paid) roleBits.push("付費訂閱／會員");
-        if (allowRoles.follow) roleBits.push("免費追隨／訂閱");
+        if (allowRoles.follow) roleBits.push("TW追隨");
         if (allowRoles.other) roleBits.push("其他觀眾");
         if (roleBits.length === 5) filterBits.push("身分 全部可抽");
         else if (!roleBits.length) filterBits.push("身分 全關（沒人可抽）");
@@ -826,7 +826,7 @@
               if (e.isVip) badges.push("VIP");
               if (e.isMod) badges.push("MOD");
               if (e.isSub) badges.push(e.platform === "yt" ? "會員" : "付費訂閱");
-              if (e.isFollow) badges.push(e.platform === "yt" ? "訂閱" : "追隨");
+              if (e.isFollow) badges.push("TW追隨");
               rows.push(
                 `<div class="item" data-key="${e.key}">` +
                   `<span class="plat">${e.platform === "tw" ? "TW" : "YT"}</span>` +

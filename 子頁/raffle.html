@@ -622,8 +622,8 @@
         const filterBits = [];
         if (keyword) filterBits.push("關鍵字「" + keyword + "」");
         const roleBits = [];
-        if (allowRoles.vip) roleBits.push("VIP");
         if (allowRoles.mod) roleBits.push("MOD");
+        if (allowRoles.vip) roleBits.push("VIP");
         if (allowRoles.paid) roleBits.push("付費訂閱／會員");
         if (allowRoles.follow) roleBits.push("TW追隨");
         if (allowRoles.ytsub) roleBits.push("YT免費訂閱");
@@ -642,8 +642,8 @@
           );
         }
         const weightBits = [];
-        if (roleWeights.vip !== 1) weightBits.push("VIP×" + roleWeights.vip);
         if (roleWeights.mod !== 1) weightBits.push("MOD×" + roleWeights.mod);
+        if (roleWeights.vip !== 1) weightBits.push("VIP×" + roleWeights.vip);
         if (roleWeights.paid !== 1) weightBits.push("付費×" + roleWeights.paid);
         if (roleWeights.follow !== 1) weightBits.push("TW追隨×" + roleWeights.follow);
         if (roleWeights.ytsub !== 1) weightBits.push("YT訂閱×" + roleWeights.ytsub);
@@ -905,21 +905,17 @@
           return { vip, mod, paid, follow, ytsub, other };
         }
 
-        /** 多重身分時取優先桶決定比重：VIP > MOD > 付費 > TW追隨 > YT訂閱 > 其他 */
-        function primaryRoleKey(msg) {
-          const f = roleFlags(msg);
-          if (f.vip) return "vip";
-          if (f.mod) return "mod";
-          if (f.paid) return "paid";
-          if (f.follow) return "follow";
-          if (f.ytsub) return "ytsub";
-          return "other";
-        }
-
+        /** 多重身分：在他擁有的身分裡取比重最高的（例如 VIP×3、付費×2 → 用 3） */
         function weightForEntry(msg) {
-          const key = primaryRoleKey(msg);
-          const w = roleWeights[key];
-          return Math.max(1, Math.min(20, Number(w) || 1));
+          const f = roleFlags(msg);
+          let w = 1;
+          if (f.mod) w = Math.max(w, Number(roleWeights.mod) || 1);
+          if (f.vip) w = Math.max(w, Number(roleWeights.vip) || 1);
+          if (f.paid) w = Math.max(w, Number(roleWeights.paid) || 1);
+          if (f.follow) w = Math.max(w, Number(roleWeights.follow) || 1);
+          if (f.ytsub) w = Math.max(w, Number(roleWeights.ytsub) || 1);
+          if (f.other) w = Math.max(w, Number(roleWeights.other) || 1);
+          return Math.max(1, Math.min(20, w));
         }
 
         function shuffleInPlace(arr) {

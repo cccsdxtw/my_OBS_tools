@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.4.2</span>
+          <span class="brand-version" id="brandVersion">v3.4.3</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3308,7 +3308,11 @@
               >
             </div>
             <div class="preview-wrap" style="min-height: 220px">
-              <iframe id="previewDm" title="danmaku preview"></iframe>
+              <iframe
+                id="previewDm"
+                title="danmaku preview"
+                style="height: 220px"
+              ></iframe>
             </div>
             <div class="subfold is-collapsed" data-subfold="dm-text">
               <button type="button" class="subfold-toggle" aria-expanded="false">
@@ -3431,7 +3435,11 @@
               >
             </div>
             <div class="preview-wrap" style="min-height: 260px">
-              <iframe id="previewPop" title="avatar bubble preview"></iframe>
+              <iframe
+                id="previewPop"
+                title="avatar bubble preview"
+                style="height: 260px"
+              ></iframe>
             </div>
             <div class="subfold is-collapsed" data-subfold="pop-text">
               <button type="button" class="subfold-toggle" aria-expanded="false">
@@ -3557,7 +3565,11 @@
               >
             </div>
             <div class="preview-wrap" style="min-height: 260px">
-              <iframe id="previewWalk" title="walking avatar preview"></iframe>
+              <iframe
+                id="previewWalk"
+                title="walking avatar preview"
+                style="height: 260px"
+              ></iframe>
             </div>
             <div class="subfold is-collapsed" data-subfold="walk-text">
               <button type="button" class="subfold-toggle" aria-expanded="false">
@@ -4389,7 +4401,11 @@
               </button>
             </div>
             <div class="preview-wrap" style="min-height: 180px">
-              <iframe id="previewMedia" title="media playlist preview"></iframe>
+              <iframe
+                id="previewMedia"
+                title="media playlist preview"
+                style="height: 180px"
+              ></iframe>
             </div>
           </aside>
         </div>
@@ -4634,7 +4650,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.4.2";
+        const APP_VERSION = "v3.4.3";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

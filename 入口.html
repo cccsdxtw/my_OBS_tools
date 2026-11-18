@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.6</span>
+          <span class="brand-version" id="brandVersion">v3.5.7</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3861,7 +3861,7 @@
             <p class="hint">
               「有」＝該身分可以抽；「沒有」＝不行。一人可同時有多種身分，符合任一「有」即可。<strong>其他觀眾</strong>＝沒有
               VIP／MOD／付費訂閱／會員／TW追隨／YT免費訂閱的人（MOD 不會被算進其他觀眾）。<br />
-              <strong>比重</strong>＝進拉霸名單的份數（例如 VIP＝3 就放 3 個名字），抽獎機率也依此提高；名單會隨機打散。一人有多重身分時，<strong>只取他擁有身分裡比重最高的那個</strong>（例如同時 VIP×3、付費×2 → 用 3）。拉霸字級以右側「字級」為基準，比重越高字略大。<br />
+              <strong>比重</strong>＝進拉霸名單的份數（例如 VIP＝3 就放 3 個名字），抽獎機率也依此提高；名單會隨機打散。一人有多重身分時，<strong>只取他擁有身分裡比重最高的那個</strong>（例如同時 VIP×3、付費×2 → 用 3）。<br />
               「追隨（Twitch）」需先授權。「免費訂閱（YouTube 盡力）」需上方已填自己的 YouTube API
               Key；只查得到<strong>公開訂閱清單</strong>，私人訂閱會當沒訂，小鈴鐺查不到。
             </p>
@@ -3980,7 +3980,7 @@
                   </div>
                 </div>
                 <p class="hint">
-                  字形空白＝用最上方預設。文字色預設深色方便預覽；名單在深色框內仍用淺色。強調色會套到標題／外框／瞄準框；字級為基準，比重高的名字會略大。
+                  字形空白＝用最上方預設。文字色預設深色方便預覽；名單在深色框內仍用淺色。強調色會套到標題／外框／瞄準框；字級主要影響標題「抽籤」等外層文字（名單內觀眾名稱維持拉霸列高用的字級）。
                 </p>
               </div>
             </div>
@@ -4884,7 +4884,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.6";
+        const APP_VERSION = "v3.5.7";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";

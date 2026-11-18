@@ -64,7 +64,7 @@
       }
       .title {
         font-family: var(--font-display);
-        font-size: clamp(28px, 5vw, 52px);
+        font-size: calc(var(--size) * 1.35);
         letter-spacing: 0.08em;
         color: var(--accent);
         text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
@@ -946,13 +946,6 @@
           return Math.max(1, Math.min(20, w));
         }
 
-        /** 列高固定跟基礎字級；字本身依比重略放大（上限約 1.28 倍） */
-        function fontSizeForEntry(msg) {
-          const w = weightForEntry(msg);
-          const scaled = baseFontSize * (0.92 + 0.08 * w);
-          return Math.round(Math.max(baseFontSize, Math.min(baseFontSize * 1.28, scaled)));
-        }
-
         function shuffleInPlace(arr) {
           for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -1062,9 +1055,8 @@
               if (e.isSub) badges.push(e.platform === "yt" ? "會員" : "付費訂閱");
               if (e.isFollow) badges.push("TW追隨");
               if (e.isYtSub) badges.push("YT訂閱");
-              const fs = fontSizeForEntry(e);
               rows.push(
-                `<div class="item" data-key="${e.key}" style="font-size:${fs}px">` +
+                `<div class="item" data-key="${e.key}">` +
                   `<span class="plat">${e.platform === "tw" ? "TW" : "YT"}</span>` +
                   `<span class="name"></span>` +
                   (badges.length
@@ -1076,7 +1068,7 @@
           }
           reel.innerHTML =
             rows.join("") ||
-            `<div class="item" style="font-size:${baseFontSize}px"><span class="name">等待符合條件的人…</span></div>`;
+            `<div class="item"><span class="name">等待符合條件的人…</span></div>`;
           Array.from(reel.querySelectorAll(".item")).forEach((el, i) => {
             const nameEl = el.querySelector(".name");
             if (!nameEl) return;

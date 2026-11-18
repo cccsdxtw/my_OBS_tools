@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.3.0</span>
+          <span class="brand-version" id="brandVersion">v3.3.1</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3688,7 +3688,9 @@
               <span class="side-title">OBS 瀏覽器來源</span>
             </div>
             <textarea id="raffleUrl" class="url-box" readonly></textarea>
-            <p class="hint">建議約 640×720 透明覆蓋。預覽可直接按開始／停止；OBS 內請開「互動」。</p>
+            <p class="hint">
+              建議約 640×720 透明覆蓋。預覽／OBS「互動」可改收件秒數並按開始／停止。按鈕色固定，不會吃到文字色範例。
+            </p>
             <div class="actions">
               <button type="button" id="copyRaffle">複製抽籤網址</button>
               <a class="btn secondary" id="openRaffle" href="#" target="_blank" rel="noopener"
@@ -4596,7 +4598,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.3.0";
+        const APP_VERSION = "v3.3.1";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";

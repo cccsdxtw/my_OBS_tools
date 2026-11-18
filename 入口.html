@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.4.0</span>
+          <span class="brand-version" id="brandVersion">v3.4.1</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3609,7 +3609,7 @@
             </p>
             <div class="row">
               <label
-                ><input type="checkbox" id="raffleUseChatExtra" checked />
+                ><input type="checkbox" id="raffleUseChatExtra" />
                 沿用 B - ① 聊天室的額外 TW／YT 台</label
               >
             </div>
@@ -3729,7 +3729,15 @@
                   </div>
                   <div>
                     <label for="raffleColor">文字色</label>
-                    <input id="raffleColor" type="text" value="#fff8e7" />
+                    <div class="color-pair">
+                      <input id="raffleColor" type="text" value="#1a1a1a" />
+                      <input
+                        type="color"
+                        data-sync="raffleColor"
+                        value="#1a1a1a"
+                        title="快速選色"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div class="row">
@@ -3744,10 +3752,18 @@
                   </div>
                   <div>
                     <label for="raffleAccent">強調色</label>
-                    <input id="raffleAccent" type="text" value="#f0b429" />
+                    <div class="color-pair">
+                      <input id="raffleAccent" type="text" value="#f0b429" />
+                      <input
+                        type="color"
+                        data-sync="raffleAccent"
+                        value="#f0b429"
+                        title="快速選色"
+                      />
+                    </div>
                   </div>
                 </div>
-                <p class="hint">字形空白＝用最上方預設。</p>
+                <p class="hint">字形空白＝用最上方預設。文字色預設深色方便預覽；名單在深色框內仍用淺色。</p>
               </div>
             </div>
           </aside>
@@ -4614,7 +4630,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.4.0";
+        const APP_VERSION = "v3.4.1";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -8716,8 +8732,9 @@
           const ytChannel = resolveYtChannelForUrl(fields.ytChannel.value);
           const ytVideo = extractYoutubeVideoId(fields.ytVideo.value);
           const ytKey = fields.ytKey.value.trim();
-          const useExtra =
-            !fields.raffleUseChatExtra || fields.raffleUseChatExtra.checked;
+          const useExtra = !!(
+            fields.raffleUseChatExtra && fields.raffleUseChatExtra.checked
+          );
           const extraTw = useExtra ? splitList(fields.chatExtraTw.value) : [];
           const extraYt = useExtra
             ? splitList(fields.chatExtraYt.value).map(resolveYtChannelForUrl)

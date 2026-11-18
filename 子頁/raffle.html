@@ -16,12 +16,13 @@
     />
     <style>
       :root {
-        --fg: #fff8e7;
-        --muted: rgba(255, 248, 231, 0.72);
+        --fg: #1a1a1a;
+        --muted: rgba(26, 26, 26, 0.72);
         --accent: #f0b429;
         --accent-2: #ff6b35;
         --panel: rgba(12, 14, 18, 0.72);
         --line: rgba(240, 180, 41, 0.45);
+        --reel-fg: #fff8e7;
         --size: 28px;
         --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
           "PingFang TC", sans-serif;
@@ -132,6 +133,7 @@
         padding: 0 18px;
         font-size: var(--size);
         font-weight: 700;
+        color: var(--reel-fg);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -169,61 +171,65 @@
         justify-content: center;
         align-items: center;
         pointer-events: auto;
-        /* 按鈕色固定，不要吃到名單文字色／範例色 */
-        color: #1a1208;
       }
       .controls .time-set {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 8px 12px;
+        height: 44px;
+        padding: 0 12px;
         border-radius: 14px;
-        background: rgba(12, 14, 18, 0.82);
-        border: 1px solid rgba(240, 180, 41, 0.45);
-        color: #fff8e7;
-        font: 700 12px/1 var(--font-zh);
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(26, 26, 26, 0.18);
+        color: var(--fg);
+        font: 700 13px/1 var(--font-zh);
+        box-sizing: border-box;
+      }
+      .controls .time-set input[type="number"],
+      .controls .time-set input[type="datetime-local"] {
+        height: 28px;
+        margin: 0;
+        border: 1px solid rgba(26, 26, 26, 0.16);
+        border-radius: 8px;
+        padding: 0 8px;
+        font: 700 13px/28px var(--font-zh);
+        color: #1a1a1a;
+        background: #fff;
+        box-sizing: border-box;
+        vertical-align: middle;
       }
       .controls .time-set input[type="number"] {
         width: 72px;
-        border: 0;
-        border-radius: 8px;
-        padding: 8px 10px;
-        font: 700 14px/1 var(--font-zh);
-        color: #1a1208;
-        background: #fff8e7;
       }
       .controls .time-set input[type="datetime-local"] {
-        border: 0;
-        border-radius: 8px;
-        padding: 6px 8px;
-        font: 700 12px/1.2 var(--font-zh);
-        color: #1a1208;
-        background: #fff8e7;
-        max-width: min(220px, 42vw);
+        width: min(210px, 46vw);
+        max-width: 210px;
       }
       .controls button {
         appearance: none;
         border: 0;
         border-radius: 999px;
-        padding: 12px 22px;
+        height: 44px;
+        padding: 0 22px;
         font: 700 15px/1 var(--font-zh);
         cursor: pointer;
         color: #1a1208;
         background: linear-gradient(180deg, #ffd56a, #f0b429);
         box-shadow: 0 4px 0 #b07a12;
+        box-sizing: border-box;
       }
       .controls button:active {
         transform: translateY(2px);
         box-shadow: 0 2px 0 #b07a12;
       }
       .controls button.secondary {
-        color: #fff8e7;
-        background: #2a3038;
-        box-shadow: 0 4px 0 #12151a;
-        border: 1px solid rgba(240, 180, 41, 0.35);
+        color: var(--fg);
+        background: #fff;
+        box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18);
+        border: 1px solid rgba(26, 26, 26, 0.18);
       }
       .controls button.secondary:active {
-        box-shadow: 0 2px 0 #12151a;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
       }
       .controls button:disabled {
         opacity: 0.45;
@@ -291,7 +297,25 @@
         }
         cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
         if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
-        cssVar("--fg", params.get("color"));
+        const fg = (params.get("color") || "").trim() || "#1a1a1a";
+        cssVar("--fg", fg);
+        // muted 跟著文字色走，避免預覽白底上看不見
+        try {
+          const hex = fg.replace("#", "");
+          const full =
+            hex.length === 3
+              ? hex
+                  .split("")
+                  .map((c) => c + c)
+                  .join("")
+              : hex;
+          if (/^[0-9a-fA-F]{6}$/.test(full)) {
+            const r = parseInt(full.slice(0, 2), 16);
+            const g = parseInt(full.slice(2, 4), 16);
+            const b = parseInt(full.slice(4, 6), 16);
+            cssVar("--muted", `rgba(${r}, ${g}, ${b}, 0.72)`);
+          }
+        } catch (_) {}
         cssVar("--accent", params.get("accent") || "");
         const css = (params.get("css") || "").trim();
         if (css) {

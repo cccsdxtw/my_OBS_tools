@@ -1507,7 +1507,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.3.2</span>
+          <span class="brand-version" id="brandVersion">v3.4.0</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3624,14 +3624,30 @@
                 </select>
               </div>
               <div>
-                <label for="raffleCollect">收件秒數</label>
-                <input id="raffleCollect" type="number" min="5" max="600" value="60" />
-              </div>
-              <div>
                 <label for="raffleKeyword">關鍵字（可空）</label>
                 <input id="raffleKeyword" type="text" placeholder="例如 抽獎 / !join" />
               </div>
             </div>
+            <div class="row">
+              <div>
+                <label for="raffleStart">收件開始（年→秒）</label>
+                <input id="raffleStart" type="datetime-local" step="1" />
+              </div>
+              <div>
+                <label for="raffleEnd">收件結束（年→秒）</label>
+                <input id="raffleEnd" type="datetime-local" step="1" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="raffleCollect">備援收件秒數</label>
+                <input id="raffleCollect" type="number" min="5" max="600" value="60" />
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              時段精度：年／月／日／時／分／秒（本機時區）。空白開始＝開啟頁面就收；空白結束＝不自動截止（可按截止收件）。開始與結束都空白時，改用「備援收件秒數」。
+            </p>
             <div class="row">
               <div>
                 <label for="raffleVip">VIP</label>
@@ -3689,7 +3705,7 @@
             </div>
             <textarea id="raffleUrl" class="url-box" readonly></textarea>
             <p class="hint">
-              建議約 640×720 透明覆蓋。預覽與複製都是正式網址（不會帶示範名單）。OBS「互動」可改收件秒數並按開始／停止。
+              建議約 640×720 透明覆蓋。預覽與複製都是正式網址（不會帶示範名單）。OBS「互動」可改開始／結束時間並按開始／停止。
             </p>
             <div class="actions">
               <button type="button" id="copyRaffle">複製抽籤網址</button>
@@ -4598,7 +4614,7 @@
       (() => {
         const $ = (id) => document.getElementById(id);
 
-        const APP_VERSION = "v3.3.2";
+        const APP_VERSION = "v3.4.0";
         const RELEASES_API =
           "https://api.github.com/repos/cccsdxtw/my_OBS_tools/releases/latest";
         const RELEASES_PAGE = "https://github.com/cccsdxtw/my_OBS_tools/releases/latest";
@@ -6754,6 +6770,8 @@
           raffleUseChatExtra: $("raffleUseChatExtra"),
           raffleSource: $("raffleSource"),
           raffleCollect: $("raffleCollect"),
+          raffleStart: $("raffleStart"),
+          raffleEnd: $("raffleEnd"),
           raffleKeyword: $("raffleKeyword"),
           raffleVip: $("raffleVip"),
           raffleMod: $("raffleMod"),
@@ -8722,6 +8740,14 @@
           if (ytKey) p.set("ytKey", ytKey);
           applyYtChatParam(p);
           p.set("chatSource", (fields.raffleSource && fields.raffleSource.value) || "auto");
+          if (fields.raffleStart && fields.raffleStart.value) {
+            const local = new Date(fields.raffleStart.value);
+            if (!Number.isNaN(local.getTime())) p.set("start", local.toISOString());
+          }
+          if (fields.raffleEnd && fields.raffleEnd.value) {
+            const local = new Date(fields.raffleEnd.value);
+            if (!Number.isNaN(local.getTime())) p.set("end", local.toISOString());
+          }
           const collect = parseInt(fields.raffleCollect && fields.raffleCollect.value, 10);
           if (collect && collect >= 5) p.set("collect", String(collect));
           const kw = (fields.raffleKeyword && fields.raffleKeyword.value.trim()) || "";

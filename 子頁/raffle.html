@@ -176,21 +176,30 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 8px 14px;
-        border-radius: 999px;
+        padding: 8px 12px;
+        border-radius: 14px;
         background: rgba(12, 14, 18, 0.82);
         border: 1px solid rgba(240, 180, 41, 0.45);
         color: #fff8e7;
-        font: 700 13px/1 var(--font-zh);
+        font: 700 12px/1 var(--font-zh);
       }
-      .controls .time-set input {
+      .controls .time-set input[type="number"] {
         width: 72px;
         border: 0;
         border-radius: 8px;
         padding: 8px 10px;
-        font: 700 15px/1 var(--font-zh);
+        font: 700 14px/1 var(--font-zh);
         color: #1a1208;
         background: #fff8e7;
+      }
+      .controls .time-set input[type="datetime-local"] {
+        border: 0;
+        border-radius: 8px;
+        padding: 6px 8px;
+        font: 700 12px/1.2 var(--font-zh);
+        color: #1a1208;
+        background: #fff8e7;
+        max-width: min(220px, 42vw);
       }
       .controls button {
         appearance: none;
@@ -254,8 +263,16 @@
       </div>
       <div class="winner-banner" id="winnerBanner"></div>
       <div class="controls">
-        <label class="time-set" for="collectInput"
-          >收件秒數
+        <label class="time-set" for="startInput"
+          >開始
+          <input id="startInput" type="datetime-local" step="1" />
+        </label>
+        <label class="time-set" for="endInput"
+          >結束
+          <input id="endInput" type="datetime-local" step="1" />
+        </label>
+        <label class="time-set" for="collectInput" title="開始與結束都空白時才用"
+          >備援秒數
           <input id="collectInput" type="number" min="5" max="600" step="1" />
         </label>
         <button type="button" class="secondary" id="btnClose">截止收件</button>
@@ -295,6 +312,40 @@
           5,
           Math.min(600, parseInt(params.get("collect") || params.get("secs") || "60", 10) || 60)
         );
+        function parseTimeParam(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return null;
+          const d = new Date(s);
+          return Number.isNaN(d.getTime()) ? null : d;
+        }
+        function toLocalInputValue(d) {
+          if (!d || Number.isNaN(d.getTime())) return "";
+          const pad = (n) => String(n).padStart(2, "0");
+          return (
+            d.getFullYear() +
+            "-" +
+            pad(d.getMonth() + 1) +
+            "-" +
+            pad(d.getDate()) +
+            "T" +
+            pad(d.getHours()) +
+            ":" +
+            pad(d.getMinutes()) +
+            ":" +
+            pad(d.getSeconds())
+          );
+        }
+        function formatRemain(ms) {
+          const total = Math.max(0, Math.ceil(ms / 1000));
+          const h = Math.floor(total / 3600);
+          const m = Math.floor((total % 3600) / 60);
+          const s = total % 60;
+          const pad = (n) => String(n).padStart(2, "0");
+          if (h > 0) return h + ":" + pad(m) + ":" + pad(s);
+          return pad(m) + ":" + pad(s);
+        }
+        let windowStart = parseTimeParam(params.get("start") || params.get("from"));
+        let windowEnd = parseTimeParam(params.get("end") || params.get("to"));
         const keyword = (params.get("keyword") || params.get("kw") || "").trim();
         const vipMode = (params.get("vip") || "any").toLowerCase();
         const modMode = (params.get("mod") || "any").toLowerCase();
@@ -368,32 +419,67 @@
         const filterLabel = document.getElementById("filterLabel");
         const reel = document.getElementById("reel");
         const winnerBanner = document.getElementById("winnerBanner");
+        const startInput = document.getElementById("startInput");
+        const endInput = document.getElementById("endInput");
         const collectInput = document.getElementById("collectInput");
         const btnClose = document.getElementById("btnClose");
         const btnStart = document.getElementById("btnStart");
         const btnStop = document.getElementById("btnStop");
         const btnReset = document.getElementById("btnReset");
         if (collectInput) collectInput.value = String(collectSec);
+        if (startInput) startInput.value = toLocalInputValue(windowStart);
+        if (endInput) endInput.value = toLocalInputValue(windowEnd);
 
         function readCollectSecFromInput() {
           const n = parseInt(collectInput && collectInput.value, 10);
           return Math.max(5, Math.min(600, Number.isFinite(n) ? n : collectSec));
         }
 
-        function applyCollectSec(nextSec, opts) {
-          const keepRemain = !!(opts && opts.keepRemain);
-          const prevSec = collectSec;
-          collectSec = Math.max(5, Math.min(600, nextSec || collectSec));
+        function readWindowFromInputs() {
+          const sRaw = startInput && startInput.value;
+          const eRaw = endInput && endInput.value;
+          windowStart = sRaw ? parseTimeParam(sRaw) : null;
+          windowEnd = eRaw ? parseTimeParam(eRaw) : null;
+          if (
+            windowStart &&
+            windowEnd &&
+            windowEnd.getTime() < windowStart.getTime()
+          ) {
+            const tmp = windowStart;
+            windowStart = windowEnd;
+            windowEnd = tmp;
+            if (startInput) startInput.value = toLocalInputValue(windowStart);
+            if (endInput) endInput.value = toLocalInputValue(windowEnd);
+          }
+          collectSec = readCollectSecFromInput();
           if (collectInput) collectInput.value = String(collectSec);
-          if (phase !== "collect") return;
-          if (keepRemain) {
-            const remainMs = Math.max(0, collectEndsAt - Date.now());
-            // 改總秒數時：剩餘時間按比例，至少留 1 秒
-            const ratio = prevSec > 0 ? remainMs / (prevSec * 1000) : 1;
-            const nextRemain = Math.max(1000, Math.round(collectSec * 1000 * ratio));
-            collectEndsAt = Date.now() + Math.min(collectSec * 1000, nextRemain);
-          } else {
-            collectEndsAt = Date.now() + collectSec * 1000;
+        }
+
+        function usesAbsoluteWindow() {
+          return !!(windowStart || windowEnd);
+        }
+
+        function syncScheduleFromInputs(opts) {
+          const forcePhase = opts && opts.forcePhase;
+          readWindowFromInputs();
+          const now = Date.now();
+          if (usesAbsoluteWindow()) {
+            const startMs = windowStart ? windowStart.getTime() : now;
+            const endMs = windowEnd ? windowEnd.getTime() : null;
+            collectEndsAt = endMs;
+            if (forcePhase || phase === "wait" || phase === "collect") {
+              if (now < startMs) setPhase("wait");
+              else if (endMs != null && now >= endMs) {
+                setPhase("ready");
+                timerLabel.textContent = "0";
+              } else setPhase("collect");
+            }
+            return;
+          }
+          // 無起訖：用備援秒數
+          collectEndsAt = now + collectSec * 1000;
+          if (forcePhase || phase === "wait" || phase === "collect") {
+            setPhase("collect");
           }
         }
 
@@ -411,8 +497,8 @@
 
         /** @type {Map<string, object>} */
         const entries = new Map();
-        let phase = "collect"; // collect | ready | spin | stop | win
-        let collectEndsAt = Date.now() + collectSec * 1000;
+        let phase = "collect"; // wait | collect | ready | spin | stop | win
+        let collectEndsAt = null; // number | null（null＝不自動截止）
         let sharedOverrideVideoId = "";
         let twConnected = new Set();
         let ytConnected = new Set();
@@ -495,6 +581,7 @@
         function setPhase(next) {
           phase = next;
           const map = {
+            wait: "尚未開始",
             collect: "收件中",
             ready: "就緒",
             spin: "拉霸中",
@@ -621,7 +708,7 @@
         requestAnimationFrame(tickAnim);
 
         function addEntry(msg) {
-          if (phase !== "collect" && phase !== "ready") return;
+          if (phase !== "collect") return;
           if (!matchesFilters(msg)) return;
           const key = entryKey(msg);
           if (!key || key.endsWith(":")) return;
@@ -645,7 +732,7 @@
         }
 
         function closeCollect() {
-          if (phase !== "collect") return;
+          if (phase !== "collect" && phase !== "wait") return;
           setPhase("ready");
           timerLabel.textContent = "0";
           rebuildReelVisual();
@@ -703,8 +790,7 @@
           animMode = "idle";
           velocity = 0;
           offsetY = 0;
-          applyCollectSec(readCollectSecFromInput(), { keepRemain: false });
-          setPhase("collect");
+          syncScheduleFromInputs({ forcePhase: true });
           rebuildReelVisual();
         }
 
@@ -712,30 +798,43 @@
         btnStart.addEventListener("click", startSpin);
         btnStop.addEventListener("click", stopSpin);
         btnReset.addEventListener("click", resetAll);
-        if (collectInput) {
-          collectInput.addEventListener("change", () => {
-            applyCollectSec(readCollectSecFromInput(), { keepRemain: phase === "collect" });
+        [startInput, endInput, collectInput].forEach((el) => {
+          if (!el) return;
+          el.addEventListener("change", () => {
+            if (phase === "spin" || phase === "stop" || phase === "win") return;
+            syncScheduleFromInputs({ forcePhase: true });
           });
-          collectInput.addEventListener("keydown", (ev) => {
-            if (ev.key === "Enter") {
-              ev.preventDefault();
-              applyCollectSec(readCollectSecFromInput(), {
-                keepRemain: phase === "collect",
-              });
-              collectInput.blur();
-            }
-          });
-        }
+        });
 
         function timerTick() {
+          const now = Date.now();
+          if (phase === "wait") {
+            const startMs = windowStart ? windowStart.getTime() : now;
+            const left = startMs - now;
+            timerLabel.textContent = left > 0 ? formatRemain(left) : "0";
+            if (left <= 0) {
+              if (windowEnd && now >= windowEnd.getTime()) {
+                setPhase("ready");
+                timerLabel.textContent = "0";
+              } else {
+                setPhase("collect");
+                collectEndsAt = windowEnd ? windowEnd.getTime() : null;
+              }
+            }
+            return;
+          }
           if (phase !== "collect") return;
-          const left = Math.max(0, Math.ceil((collectEndsAt - Date.now()) / 1000));
-          timerLabel.textContent = String(left);
+          if (collectEndsAt == null) {
+            timerLabel.textContent = "—";
+            return;
+          }
+          const left = collectEndsAt - now;
+          timerLabel.textContent = left > 0 ? formatRemain(left) : "0";
           if (left <= 0) closeCollect();
         }
         setInterval(timerTick, 200);
+        syncScheduleFromInputs({ forcePhase: true });
         timerTick();
-        setPhase("collect");
         rebuildReelVisual();
 
         async function refreshSharedLiveOverride() {

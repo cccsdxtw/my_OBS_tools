@@ -99,9 +99,9 @@
       }
       /*
         走路樣式：
-        - 上半／整圓底圖不動（不裂腰）
-        - 只在下半左右各約 1/4 用柔邊遮罩疊一層，輪流「向前」扭
-        - 一步：左→右；下一步：右→左；撞牆翻轉後 --fwd 改號，向前跟行進方向一致
+        - 白邊畫在 base／腳層上 → 扭腳時外圈一起扭
+        - 字母在 .avatar-glyph，永遠置中、不參與腳層變形
+        - 一步：左→右；下一步：右→左；撞牆翻轉更新 --fwd
       */
       .walker .avatar-wrap {
         --fwd: 1;
@@ -109,11 +109,14 @@
         width: var(--avatar);
         height: var(--avatar);
         flex-shrink: 0;
-        border-radius: 50%;
-        overflow: hidden;
-        background: #333;
-        border: 3px solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        /* 不可 overflow:hidden，否則外圈扭動會被裁回正圓 */
+        overflow: visible;
+        background: transparent;
+      }
+      .walker .avatar-wrap .avatar-face {
+        position: absolute;
+        inset: 0;
+        overflow: visible;
       }
       .walker .avatar-wrap .avatar-base,
       .walker .avatar-wrap .avatar-fl,
@@ -121,35 +124,55 @@
         position: absolute;
         inset: 0;
         pointer-events: none;
+        border-radius: 50%;
+        box-sizing: border-box;
+        /* 外圈畫在會扭的層上；層可扭出 wrap，邊框才看得見在動 */
+        border: 3px solid rgba(255, 255, 255, 0.92);
+        overflow: hidden;
+        background: #333;
+      }
+      .walker .avatar-wrap .avatar-base {
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        z-index: 1;
       }
       .walker .avatar-wrap .avatar-base img,
       .walker .avatar-wrap .avatar-base .fallback,
       .walker .avatar-wrap .avatar-fl img,
-      .walker .avatar-wrap .avatar-fr img,
-      .walker .avatar-wrap > img,
-      .walker .avatar-wrap > .fallback {
+      .walker .avatar-wrap .avatar-fr img {
         width: 100%;
         height: 100%;
         display: block;
         object-fit: cover;
+        border-radius: 50%;
       }
       .walker .avatar-wrap .fallback {
+        background: linear-gradient(145deg, #6b5cff, #ff6b6b);
+      }
+      /* 字母獨立一層：永遠置中，不被腳步 skew 帶走 */
+      .walker .avatar-wrap .avatar-glyph {
+        position: absolute;
+        inset: 0;
+        z-index: 6;
         display: grid;
         place-items: center;
+        pointer-events: none;
         font-weight: 700;
         font-size: calc(var(--avatar) * 0.38);
         color: #fff;
-        background: linear-gradient(145deg, #6b5cff, #ff6b6b);
+        line-height: 1;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+      }
+      .walker .avatar-wrap.has-photo .avatar-glyph {
+        display: none;
       }
       .walker .avatar-wrap .avatar-fl,
       .walker .avatar-wrap .avatar-fr {
         z-index: 2;
         will-change: transform;
       }
-      /* 柔邊遮罩：只露出下半左／右約 1/4（中心在底緣外，避免切到腰） */
+      /* 柔邊遮罩：只露出下半左／右約 1/4 */
       .walker .avatar-wrap .avatar-fl,
       .walker .avatar-wrap .avatar-fr {
-        opacity: 0.92;
         -webkit-mask-size: 100% 100%;
         mask-size: 100% 100%;
         -webkit-mask-repeat: no-repeat;
@@ -157,37 +180,37 @@
       }
       .walker .avatar-wrap .avatar-fl {
         -webkit-mask-image: radial-gradient(
-          ellipse 58% 44% at 20% 108%,
+          ellipse 62% 48% at 18% 110%,
           #000 0%,
-          #000 42%,
-          rgba(0, 0, 0, 0.5) 58%,
-          transparent 80%
+          #000 45%,
+          rgba(0, 0, 0, 0.55) 62%,
+          transparent 82%
         );
         mask-image: radial-gradient(
-          ellipse 58% 44% at 20% 108%,
+          ellipse 62% 48% at 18% 110%,
           #000 0%,
-          #000 42%,
-          rgba(0, 0, 0, 0.5) 58%,
-          transparent 80%
+          #000 45%,
+          rgba(0, 0, 0, 0.55) 62%,
+          transparent 82%
         );
-        transform-origin: 20% 100%;
+        transform-origin: 18% 100%;
       }
       .walker .avatar-wrap .avatar-fr {
         -webkit-mask-image: radial-gradient(
-          ellipse 58% 44% at 80% 108%,
+          ellipse 62% 48% at 82% 110%,
           #000 0%,
-          #000 42%,
-          rgba(0, 0, 0, 0.5) 58%,
-          transparent 80%
+          #000 45%,
+          rgba(0, 0, 0, 0.55) 62%,
+          transparent 82%
         );
         mask-image: radial-gradient(
-          ellipse 58% 44% at 80% 108%,
+          ellipse 62% 48% at 82% 110%,
           #000 0%,
-          #000 42%,
-          rgba(0, 0, 0, 0.5) 58%,
-          transparent 80%
+          #000 45%,
+          rgba(0, 0, 0, 0.55) 62%,
+          transparent 82%
         );
-        transform-origin: 80% 100%;
+        transform-origin: 82% 100%;
       }
       body.gait-bob .walker .avatar-wrap {
         animation: gait-bob var(--gait-dur, 0.55s) ease-in-out infinite alternate;
@@ -198,7 +221,6 @@
       body.gait-none .walker .avatar-wrap {
         animation: none;
       }
-      /* 踏步／扭動／搖擺：左右腳層輪流向前扭 */
       body.gait-stride .walker .avatar-wrap.has-feet .avatar-fl,
       body.gait-wobble .walker .avatar-wrap.has-feet .avatar-fl {
         animation: foot-fl var(--gait-dur, 0.5s) ease-in-out infinite;
@@ -213,12 +235,11 @@
       body.gait-waddle .walker .avatar-wrap.has-feet .avatar-fr {
         animation: foot-fr var(--gait-dur, 0.56s) ease-in-out infinite;
       }
-      /* 翻轉鏡像只套在圖上；腳層容器負責扭動，才不會被 animation 蓋掉 */
-      .walker.face-left .avatar-wrap img,
-      .walker.face-left .avatar-wrap .fallback {
+      /* 往左走：只翻圖／底色；遮罩與字母位置不動，字永遠置中 */
+      .walker.face-left .avatar-face img,
+      .walker.face-left .avatar-face .fallback {
         transform: scaleX(-1);
       }
-      /* 往左走：左右腳先後對調（一步仍是「前腳→後腳」語感） */
       body.gait-stride .walker.face-left .avatar-wrap.has-feet .avatar-fl,
       body.gait-stride .walker.face-left .avatar-wrap.has-feet .avatar-fr,
       body.gait-wobble .walker.face-left .avatar-wrap.has-feet .avatar-fl,
@@ -652,19 +673,25 @@
               .charAt(0)
               .toUpperCase() || "?";
 
-          function makeFallback(withLetter) {
+          function makeFallback() {
             const fb = document.createElement("div");
-            fb.className = withLetter ? "fallback" : "fallback fallback-feet";
-            /* 腳層不加字母，避免扭動時字跑偏；只扭底色 */
-            if (withLetter) fb.textContent = letter;
+            fb.className = "fallback";
             return fb;
           }
 
+          const face = document.createElement("div");
+          face.className = "avatar-face";
+
           const base = document.createElement("div");
           base.className = "avatar-base";
-          const fallbackBase = makeFallback(true);
+          const fallbackBase = makeFallback();
           base.appendChild(fallbackBase);
-          avatarWrap.appendChild(base);
+          face.appendChild(base);
+
+          /* 字母在 face 外：不翻、不扭，永遠置中 */
+          const glyph = document.createElement("div");
+          glyph.className = "avatar-glyph";
+          glyph.textContent = letter;
 
           let fl = null;
           let fr = null;
@@ -675,12 +702,14 @@
             fl.className = "avatar-fl";
             fr = document.createElement("div");
             fr.className = "avatar-fr";
-            fallbackFl = makeFallback(false);
-            fallbackFr = makeFallback(false);
+            fallbackFl = makeFallback();
+            fallbackFr = makeFallback();
             fl.appendChild(fallbackFl);
             fr.appendChild(fallbackFr);
-            avatarWrap.append(fl, fr);
+            face.append(fl, fr);
           }
+
+          avatarWrap.append(face, glyph);
 
           resolveAvatar(msg).then((url) => {
             if (!url) return;
@@ -690,6 +719,7 @@
                 try {
                   fallbackEl?.remove();
                 } catch (_) {}
+                avatarWrap.classList.add("has-photo");
               };
               img.onerror = () => {
                 try {

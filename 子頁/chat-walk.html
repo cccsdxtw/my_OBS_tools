@@ -227,24 +227,28 @@
       }
       @keyframes gait-legs-wobble {
         0%, 100% { transform: skewX(0deg); }
-        25% { transform: skewX(-12deg); }
-        75% { transform: skewX(12deg); }
+        25% { transform: skewX(12deg); }
+        75% { transform: skewX(-12deg); }
       }
       @keyframes gait-legs-waddle {
         0%, 100% { transform: skewX(0deg) translateX(0); }
-        25% { transform: skewX(-16deg) translateX(-1px); }
-        75% { transform: skewX(16deg) translateX(1px); }
+        25% { transform: skewX(16deg) translateX(1px); }
+        75% { transform: skewX(-16deg) translateX(-1px); }
       }
-      /* 下半左右交替扯歪＋落地微壓＝像換腳 */
+      /* 下半左右交替扯歪（方向已對調）＋落地微壓；少上下跳，避免像單腳蹦 */
       @keyframes gait-legs-stride {
-        0%, 100% { transform: skewX(0deg) scaleY(1) translateY(0); }
-        18% { transform: skewX(-18deg) scaleY(0.97) translateY(-1px); }
-        32% { transform: skewX(-22deg) scaleY(0.94) translateY(-2px); }
-        42% { transform: skewX(-8deg) scaleY(0.88) translateY(0); }
-        50% { transform: skewX(0deg) scaleY(1) translateY(0); }
-        68% { transform: skewX(18deg) scaleY(0.97) translateY(-1px); }
-        82% { transform: skewX(22deg) scaleY(0.94) translateY(-2px); }
-        92% { transform: skewX(8deg) scaleY(0.88) translateY(0); }
+        0%, 100% { transform: skewX(0deg) scaleX(1) scaleY(1); }
+        18% { transform: skewX(16deg) scaleX(1.03) scaleY(0.97); }
+        30% { transform: skewX(20deg) scaleX(1.06) scaleY(0.95); }
+        42% { transform: skewX(7deg) scaleX(1.02) scaleY(0.9); }
+        50% { transform: skewX(0deg) scaleX(1) scaleY(1); }
+        68% { transform: skewX(-16deg) scaleX(1.03) scaleY(0.97); }
+        80% { transform: skewX(-20deg) scaleX(1.06) scaleY(0.95); }
+        92% { transform: skewX(-7deg) scaleX(1.02) scaleY(0.9); }
+      }
+      /* 面朝左時再反一次，跟行進方向一致 */
+      .walker.face-left .avatar-wrap.is-split .avatar-legs {
+        animation-direction: reverse;
       }
       #status {
         position: absolute; left: 8px; top: 6px; z-index: 5;

@@ -44,6 +44,9 @@
         align-items: center;
         will-change: left;
         transition: opacity 0.3s ease;
+        /* 各自獨立層疊：白圈 z-index 不會穿進隔壁頭像 */
+        isolation: isolate;
+        z-index: 1;
       }
       .walker.leaving { opacity: 0; }
       .walker .bubble {
@@ -64,7 +67,7 @@
         transform: translateX(-50%) translateY(8px) scale(0.96);
         transition: opacity 0.25s ease, transform 0.25s ease;
         pointer-events: none;
-        z-index: 2;
+        z-index: 10; /* 高於外圈，避免圓框穿進氣泡尾巴 */
       }
       .walker .bubble.show {
         opacity: 1;
@@ -101,8 +104,9 @@
         走路樣式：
         - base 挖空下半左右腳位；腳層補上並扭動
         - 腳扭開後洞裡是透明背景（不再疊第二層圓）
-        - 字母只在無圖 fallback 裡（有照片就拿掉，绝不壓在頭像上）
-        - 上半白圈固定；下半白圈畫在腳層上，跟著扭
+        - 字母只在無圖 fallback 裡（有照片就拿掉）
+        - 外圈白邊完整一圈在 shell 上（不拆腳層邊框，避免穿臉／穿隔壁）
+        - 每個 walker isolation，白圈 z-index 不會穿進隔壁頭像
       */
       .walker .avatar-shell {
         position: relative;
@@ -113,45 +117,45 @@
       }
       .walker .avatar-wrap {
         --fwd: 1;
-        /* 腳遮罩：左右在底部中央重疊，白邊連成下半弧 */
         --foot-mask-fl: radial-gradient(
-          ellipse 95% 48% at 12% 118%,
+          ellipse 70% 44% at 20% 112%,
           #000 0%,
-          #000 60%,
-          rgba(0, 0, 0, 0.75) 76%,
-          transparent 92%
+          #000 52%,
+          rgba(0, 0, 0, 0.65) 72%,
+          transparent 88%
         );
         --foot-mask-fr: radial-gradient(
-          ellipse 95% 48% at 88% 118%,
+          ellipse 70% 44% at 80% 112%,
           #000 0%,
-          #000 60%,
-          rgba(0, 0, 0, 0.75) 76%,
-          transparent 92%
+          #000 52%,
+          rgba(0, 0, 0, 0.65) 72%,
+          transparent 88%
         );
         --foot-hole-fl: radial-gradient(
-          ellipse 78% 40% at 12% 118%,
+          ellipse 58% 38% at 20% 112%,
           transparent 0%,
-          transparent 42%,
-          rgba(0, 0, 0, 0.45) 60%,
-          #000 80%
+          transparent 40%,
+          rgba(0, 0, 0, 0.45) 58%,
+          #000 78%
         );
         --foot-hole-fr: radial-gradient(
-          ellipse 78% 40% at 88% 118%,
+          ellipse 58% 38% at 80% 112%,
           transparent 0%,
-          transparent 42%,
-          rgba(0, 0, 0, 0.45) 60%,
-          #000 80%
+          transparent 40%,
+          rgba(0, 0, 0, 0.45) 58%,
+          #000 78%
         );
         position: absolute;
         inset: 0;
-        overflow: visible;
+        /* 裁在圓內：腳層軟邊／扭動不會溢出到白圈外（看起來像圓框穿進去） */
+        overflow: hidden;
         background: transparent;
         border-radius: 50%;
       }
       .walker .avatar-wrap.has-feet {
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
       }
-      /* 上半外圈固定；下半交給腳層白邊跟著扭 */
+      /* 完整外圈：在 wrap 外，整圈不斷；isolation 後不會穿隔壁 */
       .walker .avatar-shell .avatar-ring {
         position: absolute;
         inset: -3.5px;
@@ -159,19 +163,7 @@
         border: 3.5px solid #fff;
         box-sizing: border-box;
         pointer-events: none;
-        z-index: 40;
-        -webkit-mask-image: linear-gradient(
-          to bottom,
-          #000 0%,
-          #000 55%,
-          transparent 70%
-        );
-        mask-image: linear-gradient(
-          to bottom,
-          #000 0%,
-          #000 55%,
-          transparent 70%
-        );
+        z-index: 5;
       }
       .walker .avatar-shell:not(.has-ring) .avatar-ring {
         display: none;
@@ -207,19 +199,17 @@
         -webkit-mask-repeat: no-repeat;
         mask-repeat: no-repeat;
       }
-      /* 腳層：帶白邊，下半外圈跟著扭動（與上半固定圈銜接） */
+      /* 腳層色塊：無邊框；外圈由 shell .avatar-ring 負責 */
       .walker .avatar-wrap .avatar-fl,
       .walker .avatar-wrap .avatar-fr {
         position: absolute;
-        inset: -3.5px;
+        inset: 0;
         pointer-events: none;
         z-index: 2;
         will-change: transform;
         background: transparent;
-        border: 3.5px solid #fff;
-        border-radius: 50%;
-        box-sizing: border-box;
-        overflow: hidden;
+        border: none;
+        overflow: visible;
         transform-origin: 20% 100%;
       }
       .walker .avatar-wrap .avatar-fr {
@@ -660,9 +650,13 @@
           }, 320);
         }
 
+        let walkZ = 1;
         function speakOnWalker(w, msg) {
           clearTimeout(w.bubbleTimer);
           clearTimeout(w.idleTimer);
+          /* 說話的頭像提到最前，圓框不會被後面的蓋穿 */
+          walkZ += 1;
+          w.el.style.zIndex = String(walkZ);
           w.bubble.innerHTML = "";
           const meta = document.createElement("div");
           meta.className = "meta";
@@ -813,6 +807,8 @@
           };
           walkers.set(key, w);
           el.style.left = w.x + "px";
+          walkZ += 1;
+          el.style.zIndex = String(walkZ);
           applyWalkFacing(w);
           speakOnWalker(w, msg);
           return w;

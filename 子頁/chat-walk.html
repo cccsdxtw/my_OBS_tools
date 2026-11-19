@@ -103,43 +103,65 @@
         - 腳扭開後洞裡是透明背景（不再疊第二層圓）
         - 字母在 glyph，置中且在最上層，不被邊框穿過
       */
-      .walker .avatar-wrap {
-        --fwd: 1;
-        /* 腳層略大於挖洞，靜止時接縫蓋住；扭開後洞露背景 */
-        --foot-mask-fl: radial-gradient(
-          ellipse 60% 44% at 20% 112%,
-          #000 0%,
-          #000 50%,
-          rgba(0, 0, 0, 0.55) 68%,
-          transparent 86%
-        );
-        --foot-mask-fr: radial-gradient(
-          ellipse 60% 44% at 80% 112%,
-          #000 0%,
-          #000 50%,
-          rgba(0, 0, 0, 0.55) 68%,
-          transparent 86%
-        );
-        --foot-hole-fl: radial-gradient(
-          ellipse 56% 40% at 20% 112%,
-          transparent 0%,
-          transparent 44%,
-          rgba(0, 0, 0, 0.45) 62%,
-          #000 82%
-        );
-        --foot-hole-fr: radial-gradient(
-          ellipse 56% 40% at 80% 112%,
-          transparent 0%,
-          transparent 44%,
-          rgba(0, 0, 0, 0.45) 62%,
-          #000 82%
-        );
+      .walker .avatar-shell {
         position: relative;
         width: var(--avatar);
         height: var(--avatar);
         flex-shrink: 0;
         overflow: visible;
+      }
+      .walker .avatar-wrap {
+        --fwd: 1;
+        /* 腳層軟邊收在圓內，外圈白邊留給 .avatar-ring */
+        --foot-mask-fl: radial-gradient(
+          ellipse 58% 40% at 20% 108%,
+          #000 0%,
+          #000 46%,
+          rgba(0, 0, 0, 0.5) 64%,
+          transparent 78%
+        );
+        --foot-mask-fr: radial-gradient(
+          ellipse 58% 40% at 80% 108%,
+          #000 0%,
+          #000 46%,
+          rgba(0, 0, 0, 0.5) 64%,
+          transparent 78%
+        );
+        --foot-hole-fl: radial-gradient(
+          ellipse 54% 36% at 20% 108%,
+          transparent 0%,
+          transparent 42%,
+          rgba(0, 0, 0, 0.45) 60%,
+          #000 78%
+        );
+        --foot-hole-fr: radial-gradient(
+          ellipse 54% 36% at 80% 108%,
+          transparent 0%,
+          transparent 42%,
+          rgba(0, 0, 0, 0.45) 60%,
+          #000 78%
+        );
+        position: absolute;
+        inset: 0;
+        overflow: visible;
         background: transparent;
+        border-radius: 50%;
+      }
+      .walker .avatar-wrap.has-feet {
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      }
+      /* 外圈在 shell、wrap 之外：完整一圈，永遠蓋在腳層上面 */
+      .walker .avatar-shell .avatar-ring {
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        border: 3.5px solid #fff;
+        box-sizing: border-box;
+        pointer-events: none;
+        z-index: 40;
+      }
+      .walker .avatar-shell:not(.has-ring) .avatar-ring {
+        display: none;
       }
       .walker .avatar-wrap .avatar-face {
         position: absolute;
@@ -154,9 +176,12 @@
         box-sizing: border-box;
         overflow: hidden;
         background: #333;
+        border: none;
+        z-index: 1;
+      }
+      .walker .avatar-wrap:not(.has-feet) .avatar-base {
         border: 3px solid rgba(255, 255, 255, 0.92);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-        z-index: 1;
       }
       /* 有腳步時：base 挖空左右腳；扭開後洞裡是透明背景 */
       .walker .avatar-wrap.has-feet .avatar-base {
@@ -169,7 +194,7 @@
         -webkit-mask-repeat: no-repeat;
         mask-repeat: no-repeat;
       }
-      /* 腳層：不是第二個圓，只是橢圓色塊（無整圈邊框） */
+      /* 腳層：橢圓色塊（無整圈邊框）；外圈由 shell .avatar-ring 負責 */
       .walker .avatar-wrap .avatar-fl,
       .walker .avatar-wrap .avatar-fr {
         position: absolute;
@@ -682,10 +707,15 @@
           el.className = "walker";
           const bubble = document.createElement("div");
           bubble.className = "bubble";
+          const avatarShell = document.createElement("div");
+          avatarShell.className = "avatar-shell";
           const avatarWrap = document.createElement("div");
           avatarWrap.className = "avatar-wrap";
           const useFeet = FOOT_GAITS.has(gait);
-          if (useFeet) avatarWrap.classList.add("has-feet");
+          if (useFeet) {
+            avatarWrap.classList.add("has-feet");
+            avatarShell.classList.add("has-ring");
+          }
 
           const letter =
             String(msg.user || "?")
@@ -730,6 +760,10 @@
           }
 
           avatarWrap.append(face, glyph);
+          const ring = document.createElement("div");
+          ring.className = "avatar-ring";
+          ring.setAttribute("aria-hidden", "true");
+          avatarShell.append(avatarWrap, ring);
 
           resolveAvatar(msg).then((url) => {
             if (!url) return;
@@ -754,7 +788,7 @@
               mountImg(fr, fallbackFr);
             }
           });
-          el.append(bubble, avatarWrap);
+          el.append(bubble, avatarShell);
           stage.appendChild(el);
 
           const stageW = stage.clientWidth || window.innerWidth || 1280;
@@ -765,6 +799,7 @@
             el,
             bubble,
             avatarWrap,
+            avatarShell,
             x: startX,
             dir,
             speed: pxPerSec * (0.85 + Math.random() * 0.35),

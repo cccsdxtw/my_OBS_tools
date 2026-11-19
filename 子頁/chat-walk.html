@@ -96,49 +96,26 @@
       }
       .walker .avatar-wrap {
         position: relative;
-        width: var(--avatar); height: var(--avatar); border-radius: 50%;
-        overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,0.35);
-        border: 3px solid rgba(255,255,255,0.92); background: #333;
-        /* 上半／下半分層：只扭下半才像腳在換 */
+        width: var(--avatar);
+        height: var(--avatar);
         flex-shrink: 0;
       }
-      .walker .avatar-head,
-      .walker .avatar-legs {
-        position: absolute;
-        left: 0;
-        right: 0;
+      /* 不扭：一般整圓頭像 */
+      .walker .avatar-wrap.is-plain {
+        border-radius: 50%;
         overflow: hidden;
-        pointer-events: none;
+        background: #333;
+        border: 3px solid rgba(255, 255, 255, 0.92);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
       }
-      .walker .avatar-head {
-        top: 0;
-        height: 58%;
-        z-index: 2;
-      }
-      .walker .avatar-legs {
-        bottom: 0;
-        height: 55%;
-        z-index: 1;
-        /* 支點在腰線，只左右扯下半 */
-        transform-origin: 50% 0%;
-        will-change: transform;
-      }
-      .walker .avatar-face {
-        position: absolute;
-        left: 0;
-        width: 100%;
-        height: var(--avatar);
-      }
-      .walker .avatar-head .avatar-face { top: 0; }
-      .walker .avatar-legs .avatar-face { bottom: 0; }
-      .walker .avatar-face img,
-      .walker .avatar-face .fallback {
+      .walker .avatar-wrap.is-plain > img,
+      .walker .avatar-wrap.is-plain > .fallback {
         width: 100%;
         height: 100%;
         display: block;
         object-fit: cover;
       }
-      .walker .avatar-face .fallback {
+      .walker .avatar-wrap.is-plain > .fallback {
         display: grid;
         place-items: center;
         font-weight: 700;
@@ -146,34 +123,91 @@
         color: #fff;
         background: linear-gradient(145deg, #6b5cff, #ff6b6b);
       }
-      /* 輕跳／彈跳：整顆輕微上下；扭曲類：只動下半 */
-      body.gait-bob .walker .avatar-wrap {
+      /* 有扭：上下分層；外框畫在各半上，下半歪時圈也一起歪 */
+      .walker .avatar-wrap.is-split {
+        overflow: visible;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+      }
+      .walker .avatar-wrap.is-split .avatar-head,
+      .walker .avatar-wrap.is-split .avatar-legs {
+        position: absolute;
+        left: 0;
+        right: 0;
+        overflow: hidden;
+        pointer-events: none;
+        background: #333;
+        border: 3px solid rgba(255, 255, 255, 0.92);
+      }
+      .walker .avatar-wrap.is-split .avatar-head {
+        top: 0;
+        height: 52%;
+        z-index: 2;
+        border-radius: calc(var(--avatar) / 2) calc(var(--avatar) / 2) 0 0;
+        border-bottom: 0;
+      }
+      .walker .avatar-wrap.is-split .avatar-legs {
+        bottom: 0;
+        height: 54%;
+        z-index: 1;
+        border-radius: 0 0 calc(var(--avatar) / 2) calc(var(--avatar) / 2);
+        border-top: 0;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        transform-origin: 50% 0%;
+        will-change: transform;
+      }
+      .walker .avatar-wrap.is-split .avatar-face {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: var(--avatar);
+      }
+      .walker .avatar-wrap.is-split .avatar-head .avatar-face { top: 0; }
+      .walker .avatar-wrap.is-split .avatar-legs .avatar-face { bottom: 0; }
+      .walker .avatar-wrap.is-split .avatar-face img,
+      .walker .avatar-wrap.is-split .avatar-face .fallback {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+      }
+      .walker .avatar-wrap.is-split .avatar-face .fallback {
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: calc(var(--avatar) * 0.38);
+        color: #fff;
+        background: linear-gradient(145deg, #6b5cff, #ff6b6b);
+      }
+      /* 輕跳／彈跳／不動：整顆正常圓；扭曲類：只動下半（含外框） */
+      body.gait-bob .walker .avatar-wrap.is-plain {
         animation: gait-bob var(--gait-dur, 0.55s) ease-in-out infinite alternate;
       }
-      body.gait-bounce .walker .avatar-wrap {
+      body.gait-bounce .walker .avatar-wrap.is-plain {
         animation: gait-bounce var(--gait-dur, 0.48s) ease-in-out infinite;
       }
-      body.gait-wobble .walker .avatar-legs {
+      body.gait-wobble .walker .avatar-wrap.is-split .avatar-legs {
         animation: gait-legs-wobble var(--gait-dur, 0.5s) ease-in-out infinite;
       }
-      body.gait-waddle .walker .avatar-legs {
+      body.gait-waddle .walker .avatar-wrap.is-split .avatar-legs {
         animation: gait-legs-waddle var(--gait-dur, 0.52s) ease-in-out infinite;
       }
-      body.gait-stride .walker .avatar-legs {
+      body.gait-stride .walker .avatar-wrap.is-split .avatar-legs {
         animation: gait-legs-stride var(--gait-dur, 0.46s) ease-in-out infinite;
       }
-      body.gait-stride .walker .avatar-head,
-      body.gait-wobble .walker .avatar-head,
-      body.gait-waddle .walker .avatar-head {
+      body.gait-stride .walker .avatar-wrap.is-split .avatar-head,
+      body.gait-wobble .walker .avatar-wrap.is-split .avatar-head,
+      body.gait-waddle .walker .avatar-wrap.is-split .avatar-head {
         animation: gait-head-bob var(--gait-dur, 0.5s) ease-in-out infinite;
       }
-      body.gait-none .walker .avatar-wrap,
-      body.gait-none .walker .avatar-legs,
-      body.gait-none .walker .avatar-head {
+      body.gait-none .walker .avatar-wrap {
         animation: none;
       }
-      .walker.face-left .avatar-face img,
-      .walker.face-left .avatar-face .fallback {
+      .walker.face-left .avatar-wrap.is-plain > img,
+      .walker.face-left .avatar-wrap.is-plain > .fallback,
+      .walker.face-left .avatar-wrap.is-split .avatar-face img,
+      .walker.face-left .avatar-wrap.is-split .avatar-face .fallback {
         transform: scaleX(-1);
       }
       @keyframes gait-bob {
@@ -287,6 +321,8 @@
           return "stride";
         })();
         document.body.classList.add("gait-" + gait);
+        const legsWarp =
+          gait === "stride" || gait === "wobble" || gait === "waddle";
         const gaitDur =
           speedKey === "slow" ? "0.7s" : speedKey === "fast" ? "0.36s" : "0.5s";
         document.documentElement.style.setProperty("--gait-dur", gaitDur);
@@ -559,7 +595,8 @@
           const bubble = document.createElement("div");
           bubble.className = "bubble";
           const avatarWrap = document.createElement("div");
-          avatarWrap.className = "avatar-wrap";
+          avatarWrap.className =
+            "avatar-wrap " + (legsWarp ? "is-split" : "is-plain");
           const letter =
             String(msg.user || "?")
               .trim()
@@ -571,24 +608,16 @@
             fb.textContent = letter;
             return fb;
           };
-          const head = document.createElement("div");
-          head.className = "avatar-head";
-          const legs = document.createElement("div");
-          legs.className = "avatar-legs";
-          const headFace = makeAvatarFace(mkFallback());
-          const legsFace = makeAvatarFace(mkFallback());
-          head.appendChild(headFace);
-          legs.appendChild(legsFace);
-          avatarWrap.append(head, legs);
-          resolveAvatar(msg).then((url) => {
-            if (!url) return;
-            const place = (face) => {
+          const attachImg = (host, { replaceFallback } = {}) => {
+            resolveAvatar(msg).then((url) => {
+              if (!url) return;
               const img = document.createElement("img");
               img.alt = "";
               img.referrerPolicy = "no-referrer";
               img.decoding = "async";
               img.onload = () => {
-                face.querySelectorAll(".fallback").forEach((n) => {
+                if (!replaceFallback) return;
+                host.querySelectorAll(".fallback").forEach((n) => {
                   try {
                     n.remove();
                   } catch (_) {}
@@ -600,11 +629,25 @@
                 } catch (_) {}
               };
               img.src = url;
-              face.appendChild(img);
-            };
-            place(headFace);
-            place(legsFace);
-          });
+              host.appendChild(img);
+            });
+          };
+          if (legsWarp) {
+            const head = document.createElement("div");
+            head.className = "avatar-head";
+            const legs = document.createElement("div");
+            legs.className = "avatar-legs";
+            const headFace = makeAvatarFace(mkFallback());
+            const legsFace = makeAvatarFace(mkFallback());
+            head.appendChild(headFace);
+            legs.appendChild(legsFace);
+            avatarWrap.append(head, legs);
+            attachImg(headFace, { replaceFallback: true });
+            attachImg(legsFace, { replaceFallback: true });
+          } else {
+            avatarWrap.appendChild(mkFallback());
+            attachImg(avatarWrap, { replaceFallback: true });
+          }
           el.append(bubble, avatarWrap);
           stage.appendChild(el);
 

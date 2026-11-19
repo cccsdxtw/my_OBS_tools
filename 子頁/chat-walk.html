@@ -143,34 +143,46 @@
         z-index: 2;
         will-change: transform;
       }
-      /* 柔邊遮罩：只露出下半左／右約四分之一，邊緣淡出避免腰裂 */
+      /* 柔邊遮罩：只露出下半左／右約 1/4（中心在底緣外，避免切到腰） */
+      .walker .avatar-wrap .avatar-fl,
+      .walker .avatar-wrap .avatar-fr {
+        opacity: 0.92;
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+      }
       .walker .avatar-wrap .avatar-fl {
         -webkit-mask-image: radial-gradient(
-          ellipse 58% 48% at 22% 92%,
+          ellipse 58% 44% at 20% 108%,
           #000 0%,
           #000 42%,
-          transparent 72%
+          rgba(0, 0, 0, 0.5) 58%,
+          transparent 80%
         );
         mask-image: radial-gradient(
-          ellipse 58% 48% at 22% 92%,
+          ellipse 58% 44% at 20% 108%,
           #000 0%,
           #000 42%,
-          transparent 72%
+          rgba(0, 0, 0, 0.5) 58%,
+          transparent 80%
         );
         transform-origin: 20% 100%;
       }
       .walker .avatar-wrap .avatar-fr {
         -webkit-mask-image: radial-gradient(
-          ellipse 58% 48% at 78% 92%,
+          ellipse 58% 44% at 80% 108%,
           #000 0%,
           #000 42%,
-          transparent 72%
+          rgba(0, 0, 0, 0.5) 58%,
+          transparent 80%
         );
         mask-image: radial-gradient(
-          ellipse 58% 48% at 78% 92%,
+          ellipse 58% 44% at 80% 108%,
           #000 0%,
           #000 42%,
-          transparent 72%
+          rgba(0, 0, 0, 0.5) 58%,
+          transparent 80%
         );
         transform-origin: 80% 100%;
       }
@@ -229,48 +241,44 @@
       */
       @keyframes foot-fl {
         0%, 6% {
-          transform: translate(0, 0) skewX(0deg) rotate(0deg);
+          transform: translate(0, 0) skewX(0deg);
         }
         /* 第一步：左 1/4 向前 */
         14% {
-          transform: translate(calc(var(--fwd) * 5px), -4px)
-            skewX(calc(var(--fwd) * 16deg))
-            rotate(calc(var(--fwd) * -3deg));
+          transform: translate(calc(var(--fwd) * 6px), -2px)
+            skewX(calc(var(--fwd) * 18deg));
         }
         22%, 48% {
-          transform: translate(0, 0) skewX(0deg) rotate(0deg);
+          transform: translate(0, 0) skewX(0deg);
         }
         /* 第二步：左 1/4 再向前（接在右之後） */
         78% {
-          transform: translate(calc(var(--fwd) * 5px), -4px)
-            skewX(calc(var(--fwd) * 16deg))
-            rotate(calc(var(--fwd) * -3deg));
+          transform: translate(calc(var(--fwd) * 6px), -2px)
+            skewX(calc(var(--fwd) * 18deg));
         }
         88%, 100% {
-          transform: translate(0, 0) skewX(0deg) rotate(0deg);
+          transform: translate(0, 0) skewX(0deg);
         }
       }
       @keyframes foot-fr {
         0%, 22% {
-          transform: translate(0, 0) skewX(0deg) rotate(0deg);
+          transform: translate(0, 0) skewX(0deg);
         }
         /* 第一步：右 1/4 向前 */
         30% {
-          transform: translate(calc(var(--fwd) * 5px), -4px)
-            skewX(calc(var(--fwd) * 16deg))
-            rotate(calc(var(--fwd) * 3deg));
+          transform: translate(calc(var(--fwd) * 6px), -2px)
+            skewX(calc(var(--fwd) * 18deg));
         }
         40%, 54% {
-          transform: translate(0, 0) skewX(0deg) rotate(0deg);
+          transform: translate(0, 0) skewX(0deg);
         }
         /* 第二步：右 1/4 先向前 */
         62% {
-          transform: translate(calc(var(--fwd) * 5px), -4px)
-            skewX(calc(var(--fwd) * 16deg))
-            rotate(calc(var(--fwd) * 3deg));
+          transform: translate(calc(var(--fwd) * 6px), -2px)
+            skewX(calc(var(--fwd) * 18deg));
         }
         72%, 100% {
-          transform: translate(0, 0) skewX(0deg) rotate(0deg);
+          transform: translate(0, 0) skewX(0deg);
         }
       }
       #status {
@@ -640,54 +648,57 @@
               .trim()
               .charAt(0)
               .toUpperCase() || "?";
-          const fallback = document.createElement("div");
-          fallback.className = "fallback";
-          fallback.textContent = letter;
+
+          function makeFallback() {
+            const fb = document.createElement("div");
+            fb.className = "fallback";
+            fb.textContent = letter;
+            return fb;
+          }
 
           const base = document.createElement("div");
           base.className = "avatar-base";
-          base.appendChild(fallback);
+          const fallbackBase = makeFallback();
+          base.appendChild(fallbackBase);
           avatarWrap.appendChild(base);
 
           let fl = null;
           let fr = null;
+          let fallbackFl = null;
+          let fallbackFr = null;
           if (useFeet) {
             fl = document.createElement("div");
             fl.className = "avatar-fl";
             fr = document.createElement("div");
             fr.className = "avatar-fr";
+            /* 沒圖時也要有可扭的下半層（字母頭像） */
+            fallbackFl = makeFallback();
+            fallbackFr = makeFallback();
+            fl.appendChild(fallbackFl);
+            fr.appendChild(fallbackFr);
             avatarWrap.append(fl, fr);
           }
 
           resolveAvatar(msg).then((url) => {
             if (!url) return;
-            const imgBase = makeAvatarImg(url);
-            imgBase.onload = () => {
-              try {
-                fallback.remove();
-              } catch (_) {}
+            const mountImg = (host, fallbackEl) => {
+              const img = makeAvatarImg(url);
+              img.onload = () => {
+                try {
+                  fallbackEl?.remove();
+                } catch (_) {}
+              };
+              img.onerror = () => {
+                try {
+                  img.remove();
+                } catch (_) {}
+              };
+              host.appendChild(img);
             };
-            imgBase.onerror = () => {
-              try {
-                imgBase.remove();
-              } catch (_) {}
-            };
-            base.appendChild(imgBase);
+            mountImg(base, fallbackBase);
             if (fl && fr) {
-              const imgL = makeAvatarImg(url);
-              const imgR = makeAvatarImg(url);
-              imgL.onerror = () => {
-                try {
-                  imgL.remove();
-                } catch (_) {}
-              };
-              imgR.onerror = () => {
-                try {
-                  imgR.remove();
-                } catch (_) {}
-              };
-              fl.appendChild(imgL);
-              fr.appendChild(imgR);
+              mountImg(fl, fallbackFl);
+              mountImg(fr, fallbackFr);
             }
           });
           el.append(bubble, avatarWrap);

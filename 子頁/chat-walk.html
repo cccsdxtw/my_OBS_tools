@@ -734,25 +734,35 @@
           tickWalkers._last = now;
           const stageW = stage.clientWidth || window.innerWidth || 1280;
           const margin = 24;
+          const stageRect = stage.getBoundingClientRect();
           walkers.forEach((w) => {
             const avatarW = Math.max(
               w.avatarWrap?.offsetWidth || w.el.offsetWidth || 64,
               48
             );
-            const bubbleW = w.bubble?.classList.contains("show")
-              ? w.bubble.offsetWidth || 0
-              : 0;
-            /* 氣泡置中於頭像，兩側可能溢出，撞牆時要留足空間 */
-            const overflow = Math.max(0, (bubbleW - avatarW) / 2);
             w.x += w.dir * w.speed * dt;
-            if (w.x < margin + overflow) {
-              w.x = margin + overflow;
+            if (w.x < margin) {
+              w.x = margin;
               w.dir = 1;
-            } else if (w.x > stageW - avatarW - margin - overflow) {
-              w.x = stageW - avatarW - margin - overflow;
+            } else if (w.x > stageW - avatarW - margin) {
+              w.x = stageW - avatarW - margin;
               w.dir = -1;
             }
             w.el.style.left = w.x + "px";
+            /* 氣泡置中於頭像；若超出舞台左右，把整組往回推，避免字被切 */
+            if (w.bubble?.classList.contains("show")) {
+              const br = w.bubble.getBoundingClientRect();
+              if (br.width > 0) {
+                if (br.left < stageRect.left + margin) {
+                  w.x += stageRect.left + margin - br.left;
+                  w.dir = 1;
+                } else if (br.right > stageRect.right - margin) {
+                  w.x -= br.right - (stageRect.right - margin);
+                  w.dir = -1;
+                }
+                w.el.style.left = w.x + "px";
+              }
+            }
             applyWalkFacing(w);
           });
           requestAnimationFrame(tickWalkers);

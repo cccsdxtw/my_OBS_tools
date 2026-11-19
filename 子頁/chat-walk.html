@@ -313,25 +313,28 @@
       body.gait-bob .walker .avatar-wrap {
         animation: gait-bob var(--gait-dur, 0.55s) ease-in-out infinite alternate;
       }
+      /* 扭動：整顆歪扭（skew），不是腳步、也不是單純左右搖 */
+      body.gait-wobble .walker .avatar-wrap {
+        animation: gait-wobble var(--gait-dur, 0.5s) ease-in-out infinite;
+        transform-origin: 50% 85%;
+      }
+      /* 搖擺：整顆左右搖 */
+      body.gait-waddle .walker .avatar-wrap {
+        animation: gait-waddle var(--gait-dur, 0.52s) ease-in-out infinite;
+        transform-origin: 50% 100%;
+      }
       body.gait-bounce .walker .avatar-wrap {
         animation: gait-bounce var(--gait-dur, 0.48s) ease-in-out infinite;
       }
       body.gait-none .walker .avatar-wrap {
         animation: none;
       }
-      body.gait-stride .walker .avatar-wrap.has-feet .avatar-fl,
-      body.gait-wobble .walker .avatar-wrap.has-feet .avatar-fl {
+      /* 踏步：左右下 1/4 腳層交替向前扭 */
+      body.gait-stride .walker .avatar-wrap.has-feet .avatar-fl {
         animation: foot-fl var(--gait-dur, 0.5s) ease-in-out infinite;
       }
-      body.gait-stride .walker .avatar-wrap.has-feet .avatar-fr,
-      body.gait-wobble .walker .avatar-wrap.has-feet .avatar-fr {
+      body.gait-stride .walker .avatar-wrap.has-feet .avatar-fr {
         animation: foot-fr var(--gait-dur, 0.5s) ease-in-out infinite;
-      }
-      body.gait-waddle .walker .avatar-wrap.has-feet .avatar-fl {
-        animation: foot-fl var(--gait-dur, 0.56s) ease-in-out infinite;
-      }
-      body.gait-waddle .walker .avatar-wrap.has-feet .avatar-fr {
-        animation: foot-fr var(--gait-dur, 0.56s) ease-in-out infinite;
       }
       /* 往左走：只翻圖／底色；遮罩與字母位置不動，字永遠置中 */
       .walker.face-left .avatar-face img,
@@ -339,16 +342,32 @@
         transform: scaleX(-1);
       }
       body.gait-stride .walker.face-left .avatar-wrap.has-feet .avatar-fl,
-      body.gait-stride .walker.face-left .avatar-wrap.has-feet .avatar-fr,
-      body.gait-wobble .walker.face-left .avatar-wrap.has-feet .avatar-fl,
-      body.gait-wobble .walker.face-left .avatar-wrap.has-feet .avatar-fr,
-      body.gait-waddle .walker.face-left .avatar-wrap.has-feet .avatar-fl,
-      body.gait-waddle .walker.face-left .avatar-wrap.has-feet .avatar-fr {
+      body.gait-stride .walker.face-left .avatar-wrap.has-feet .avatar-fr {
         animation-direction: reverse;
       }
       @keyframes gait-bob {
         from { transform: translateY(0); }
         to { transform: translateY(-5px); }
+      }
+      @keyframes gait-wobble {
+        0%, 100% {
+          transform: translateY(0) rotate(0deg) skewX(0deg) scaleX(1);
+        }
+        25% {
+          transform: translateY(-2px) rotate(-4deg) skewX(12deg) scaleX(0.96);
+        }
+        50% {
+          transform: translateY(0) rotate(0deg) skewX(0deg) scaleX(1);
+        }
+        75% {
+          transform: translateY(-2px) rotate(4deg) skewX(-12deg) scaleX(0.96);
+        }
+      }
+      @keyframes gait-waddle {
+        0%, 100% { transform: translateY(0) rotate(0deg) translateX(0); }
+        25% { transform: translateY(-2px) rotate(-14deg) translateX(-3px); }
+        50% { transform: translateY(0) rotate(0deg) translateX(0); }
+        75% { transform: translateY(-2px) rotate(14deg) translateX(3px); }
       }
       @keyframes gait-bounce {
         0%, 100% { transform: translateY(0) scaleY(1) scaleX(1); }
@@ -365,18 +384,18 @@
         0%, 6% {
           transform: translate(0, 0) skewX(0deg);
         }
-        /* 第一步：左 1/4 向前（外圈白邊一起扭） */
+        /* 第一步：左 1/4 明顯向前（上半仍圓、只有腳扭） */
         14% {
-          transform: translate(calc(var(--fwd) * 7px), -2px)
-            skewX(calc(var(--fwd) * 18deg));
+          transform: translate(calc(var(--fwd) * 11px), -3px)
+            skewX(calc(var(--fwd) * 26deg));
         }
         22%, 48% {
           transform: translate(0, 0) skewX(0deg);
         }
-        /* 第二步：左 1/4 再向前（接在右之後） */
+        /* 第二步：左 1/4 再向前 */
         78% {
-          transform: translate(calc(var(--fwd) * 7px), -2px)
-            skewX(calc(var(--fwd) * 18deg));
+          transform: translate(calc(var(--fwd) * 11px), -3px)
+            skewX(calc(var(--fwd) * 26deg));
         }
         88%, 100% {
           transform: translate(0, 0) skewX(0deg);
@@ -388,16 +407,16 @@
         }
         /* 第一步：右 1/4 向前 */
         30% {
-          transform: translate(calc(var(--fwd) * 7px), -2px)
-            skewX(calc(var(--fwd) * 18deg));
+          transform: translate(calc(var(--fwd) * 11px), -3px)
+            skewX(calc(var(--fwd) * 26deg));
         }
         40%, 54% {
           transform: translate(0, 0) skewX(0deg);
         }
         /* 第二步：右 1/4 先向前 */
         62% {
-          transform: translate(calc(var(--fwd) * 7px), -2px)
-            skewX(calc(var(--fwd) * 18deg));
+          transform: translate(calc(var(--fwd) * 11px), -3px)
+            skewX(calc(var(--fwd) * 26deg));
         }
         72%, 100% {
           transform: translate(0, 0) skewX(0deg);
@@ -740,7 +759,8 @@
           }, holdSec * 1000);
         }
 
-        const FOOT_GAITS = new Set(["stride", "wobble", "waddle"]);
+        /* 只有「踏步扭曲」用左右腳層；扭動／搖擺是整顆 rotate */
+        const FOOT_GAITS = new Set(["stride"]);
 
         function makeAvatarImg(url) {
           const img = document.createElement("img");

@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.6.0</span>
+          <span class="brand-version" id="brandVersion">v3.6.1</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3561,7 +3561,7 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              頭像在畫面下方走來走去；有留言就冒對話框。跟 B - ①／B - ③／B - ⑤<strong>分開</strong>，可同時用。選「踏步／扭動／搖擺」時整顆連續圓以左腳／右腳底為支點輕傾（不切開）；選「輕跳／彈跳／不動」則較單純上下。
+              頭像在畫面下方走來走去；有留言就冒對話框。跟 B - ①／B - ③／B - ⑤<strong>分開</strong>，可同時用。「踏步扭曲」＝只有左右腳交替向前；「扭動」＝整顆歪扭；「搖擺」＝整顆左右搖；「輕跳／彈跳／不動」則較單純上下。
             </p>
             <div class="row">
               <label
@@ -3590,9 +3590,9 @@
               <div>
                 <label for="walkGait">走路樣式</label>
                 <select id="walkGait">
-                  <option value="stride" selected>踏步扭曲（像有腳）</option>
-                  <option value="wobble">扭動</option>
-                  <option value="waddle">搖擺</option>
+                  <option value="stride" selected>踏步扭曲（左右腳）</option>
+                  <option value="wobble">扭動（整顆歪扭）</option>
+                  <option value="waddle">搖擺（左右搖）</option>
                   <option value="bounce">彈跳</option>
                   <option value="bob">輕跳</option>
                   <option value="none">不動</option>
@@ -4923,7 +4923,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.6.0";
+        const APP_VERSION = "v3.6.1";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";

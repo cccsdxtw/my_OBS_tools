@@ -154,8 +154,9 @@
         border-radius: 0 0 calc(var(--avatar) / 2) calc(var(--avatar) / 2);
         border-top: 0;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-        transform-origin: 50% 0%;
-        will-change: transform;
+        /* 支點在「腳底」；動畫裡會在左腳／右腳之間切換 */
+        transform-origin: 50% 100%;
+        will-change: transform, transform-origin;
       }
       .walker .avatar-wrap.is-split .avatar-face {
         position: absolute;
@@ -221,32 +222,85 @@
         70% { transform: translateY(-3px) scaleY(1.02) scaleX(0.99); }
       }
       @keyframes gait-head-bob {
-        0%, 100% { transform: translateY(0); }
-        25%, 75% { transform: translateY(-1.5px); }
-        50% { transform: translateY(0); }
+        0%, 50%, 100% { transform: translateY(0); }
+        22%, 72% { transform: translateY(-2px); }
+      }
+      /* 左腳→右腳→左腳：支點在左下／右下輪流，不是同一隻前後擺 */
+      @keyframes gait-legs-stride {
+        0% {
+          transform-origin: 22% 100%;
+          transform: rotate(0deg) scaleY(1);
+        }
+        14% {
+          transform-origin: 22% 100%;
+          transform: rotate(11deg) scaleY(0.93);
+        }
+        24% {
+          transform-origin: 22% 100%;
+          transform: rotate(15deg) scaleY(0.96);
+        }
+        34% {
+          transform-origin: 50% 100%;
+          transform: rotate(0deg) scaleY(1);
+        }
+        50% {
+          transform-origin: 78% 100%;
+          transform: rotate(0deg) scaleY(1);
+        }
+        64% {
+          transform-origin: 78% 100%;
+          transform: rotate(-11deg) scaleY(0.93);
+        }
+        74% {
+          transform-origin: 78% 100%;
+          transform: rotate(-15deg) scaleY(0.96);
+        }
+        84% {
+          transform-origin: 50% 100%;
+          transform: rotate(0deg) scaleY(1);
+        }
+        100% {
+          transform-origin: 22% 100%;
+          transform: rotate(0deg) scaleY(1);
+        }
       }
       @keyframes gait-legs-wobble {
-        0%, 100% { transform: skewX(0deg); }
-        25% { transform: skewX(12deg); }
-        75% { transform: skewX(-12deg); }
+        0%, 100% {
+          transform-origin: 28% 100%;
+          transform: rotate(0deg);
+        }
+        25% {
+          transform-origin: 28% 100%;
+          transform: rotate(9deg) scaleY(0.96);
+        }
+        50% {
+          transform-origin: 72% 100%;
+          transform: rotate(0deg);
+        }
+        75% {
+          transform-origin: 72% 100%;
+          transform: rotate(-9deg) scaleY(0.96);
+        }
       }
       @keyframes gait-legs-waddle {
-        0%, 100% { transform: skewX(0deg) translateX(0); }
-        25% { transform: skewX(16deg) translateX(1px); }
-        75% { transform: skewX(-16deg) translateX(-1px); }
+        0%, 100% {
+          transform-origin: 24% 100%;
+          transform: rotate(0deg) translateX(0);
+        }
+        25% {
+          transform-origin: 24% 100%;
+          transform: rotate(13deg) translateX(1px) scaleY(0.95);
+        }
+        50% {
+          transform-origin: 76% 100%;
+          transform: rotate(0deg) translateX(0);
+        }
+        75% {
+          transform-origin: 76% 100%;
+          transform: rotate(-13deg) translateX(-1px) scaleY(0.95);
+        }
       }
-      /* 下半左右交替扯歪（方向已對調）＋落地微壓；少上下跳，避免像單腳蹦 */
-      @keyframes gait-legs-stride {
-        0%, 100% { transform: skewX(0deg) scaleX(1) scaleY(1); }
-        18% { transform: skewX(16deg) scaleX(1.03) scaleY(0.97); }
-        30% { transform: skewX(20deg) scaleX(1.06) scaleY(0.95); }
-        42% { transform: skewX(7deg) scaleX(1.02) scaleY(0.9); }
-        50% { transform: skewX(0deg) scaleX(1) scaleY(1); }
-        68% { transform: skewX(-16deg) scaleX(1.03) scaleY(0.97); }
-        80% { transform: skewX(-20deg) scaleX(1.06) scaleY(0.95); }
-        92% { transform: skewX(-7deg) scaleX(1.02) scaleY(0.9); }
-      }
-      /* 面朝左時再反一次，跟行進方向一致 */
+      /* 面朝左時節奏反轉，左右腳順序跟鏡像一致 */
       .walker.face-left .avatar-wrap.is-split .avatar-legs {
         animation-direction: reverse;
       }

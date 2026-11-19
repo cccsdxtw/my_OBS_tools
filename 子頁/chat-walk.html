@@ -103,10 +103,11 @@
       /*
         走路樣式：
         - base 挖空下半左右腳位；腳層補上並扭動
+        - 腳＝圖＋白邊同一組（foot-disk），同一個 mask／transform，避免框圖不同步
         - 腳扭開後洞裡是透明背景（不再疊第二層圓）
         - 字母只在無圖 fallback 裡（有照片就拿掉）
-        - 上半白圈固定；下半用空心 foot-rim 跟著腳扭
-        - 色塊裁在 foot-fill 圓內，不溢出；walker isolation 不穿隔壁
+        - 上半白圈固定；下半白邊是腳組自己的 border
+        - walker isolation 不穿隔壁
       */
       .walker .avatar-shell {
         position: relative;
@@ -155,7 +156,7 @@
       .walker .avatar-wrap.has-feet {
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
       }
-      /* 上半外圈固定；下半交給腳層空心 rim */
+      /* 上半外圈固定；下半白邊＝腳組 foot-disk 的 border（跟圖同一組） */
       .walker .avatar-shell .avatar-ring {
         position: absolute;
         inset: -3.5px;
@@ -211,7 +212,7 @@
         -webkit-mask-repeat: no-repeat;
         mask-repeat: no-repeat;
       }
-      /* 腳層略大於圓並一起扭；遮罩分層：色塊用腳遮罩、白邊用下半圈 */
+      /* 腳層：外層只負責 pivot／動畫；內層 foot-disk＝圖＋白邊同一組 */
       .walker .avatar-wrap .avatar-fl,
       .walker .avatar-wrap .avatar-fr {
         position: absolute;
@@ -227,70 +228,33 @@
       .walker .avatar-wrap .avatar-fr {
         transform-origin: 80% 100%;
       }
-      .walker .avatar-wrap .foot-fill {
-        position: absolute;
-        inset: 3.5px;
-        border-radius: 50%;
-        overflow: hidden;
-        -webkit-mask-size: 100% 100%;
-        mask-size: 100% 100%;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-      }
-      .walker .avatar-wrap .avatar-fl .foot-fill {
-        -webkit-mask-image: var(--foot-mask-fl);
-        mask-image: var(--foot-mask-fl);
-      }
-      .walker .avatar-wrap .avatar-fr .foot-fill {
-        -webkit-mask-image: var(--foot-mask-fr);
-        mask-image: var(--foot-mask-fr);
-      }
-      /* 空心外緣：左右下弧各一段，跟著腳扭（硬遮罩，白邊不被軟邊吃掉） */
-      .walker .avatar-wrap .foot-rim {
+      .walker .avatar-wrap .foot-disk {
         position: absolute;
         inset: 0;
         border-radius: 50%;
-        border: 3.5px solid #fff;
+        border: none;
         box-sizing: border-box;
-        background: transparent;
-        pointer-events: none;
+        overflow: hidden;
+        background: #333;
+        /* 白邊用 inset shadow 畫在同一層，跟圖共用 mask／transform，不會一前一後 */
+        box-shadow: inset 0 0 0 3.5px #fff;
         -webkit-mask-size: 100% 100%;
         mask-size: 100% 100%;
         -webkit-mask-repeat: no-repeat;
         mask-repeat: no-repeat;
       }
-      .walker .avatar-wrap .avatar-fl .foot-rim {
-        -webkit-mask-image: radial-gradient(
-          ellipse 95% 58% at 18% 112%,
-          #000 0%,
-          #000 78%,
-          transparent 96%
-        );
-        mask-image: radial-gradient(
-          ellipse 95% 58% at 18% 112%,
-          #000 0%,
-          #000 78%,
-          transparent 96%
-        );
+      .walker .avatar-wrap .avatar-fl .foot-disk {
+        -webkit-mask-image: var(--foot-mask-fl);
+        mask-image: var(--foot-mask-fl);
       }
-      .walker .avatar-wrap .avatar-fr .foot-rim {
-        -webkit-mask-image: radial-gradient(
-          ellipse 95% 58% at 82% 112%,
-          #000 0%,
-          #000 78%,
-          transparent 96%
-        );
-        mask-image: radial-gradient(
-          ellipse 95% 58% at 82% 112%,
-          #000 0%,
-          #000 78%,
-          transparent 96%
-        );
+      .walker .avatar-wrap .avatar-fr .foot-disk {
+        -webkit-mask-image: var(--foot-mask-fr);
+        mask-image: var(--foot-mask-fr);
       }
       .walker .avatar-wrap .avatar-base img,
       .walker .avatar-wrap .avatar-base .fallback,
-      .walker .avatar-wrap .foot-fill img,
-      .walker .avatar-wrap .foot-fill .fallback {
+      .walker .avatar-wrap .foot-disk img,
+      .walker .avatar-wrap .foot-disk .fallback {
         width: 100%;
         height: 100%;
         display: block;
@@ -819,8 +783,8 @@
 
           let fl = null;
           let fr = null;
-          let fillFl = null;
-          let fillFr = null;
+          let diskFl = null;
+          let diskFr = null;
           let fallbackFl = null;
           let fallbackFr = null;
           if (useFeet) {
@@ -828,22 +792,17 @@
             fl.className = "avatar-fl";
             fr = document.createElement("div");
             fr.className = "avatar-fr";
-            fillFl = document.createElement("div");
-            fillFl.className = "foot-fill";
-            fillFr = document.createElement("div");
-            fillFr.className = "foot-fill";
+            /* 圖＋白邊同一 foot-disk，一起 mask／一起被父層 transform */
+            diskFl = document.createElement("div");
+            diskFl.className = "foot-disk";
+            diskFr = document.createElement("div");
+            diskFr.className = "foot-disk";
             fallbackFl = makeFallback(false);
             fallbackFr = makeFallback(false);
-            fillFl.appendChild(fallbackFl);
-            fillFr.appendChild(fallbackFr);
-            const rimL = document.createElement("div");
-            rimL.className = "foot-rim";
-            rimL.setAttribute("aria-hidden", "true");
-            const rimR = document.createElement("div");
-            rimR.className = "foot-rim";
-            rimR.setAttribute("aria-hidden", "true");
-            fl.append(fillFl, rimL);
-            fr.append(fillFr, rimR);
+            diskFl.appendChild(fallbackFl);
+            diskFr.appendChild(fallbackFr);
+            fl.appendChild(diskFl);
+            fr.appendChild(diskFr);
             face.append(fl, fr);
           }
 
@@ -871,9 +830,9 @@
               host.appendChild(img);
             };
             mountImg(base, fallbackBase);
-            if (fillFl && fillFr) {
-              mountImg(fillFl, fallbackFl);
-              mountImg(fillFr, fallbackFr);
+            if (diskFl && diskFr) {
+              mountImg(diskFl, fallbackFl);
+              mountImg(diskFr, fallbackFr);
             }
           });
           el.append(bubble, avatarShell);

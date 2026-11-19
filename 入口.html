@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.5.14</span>
+          <span class="brand-version" id="brandVersion">v3.5.15</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -3561,7 +3561,7 @@
               <span class="side-title">獨立來源</span>
             </div>
             <p class="hint">
-              頭像在畫面下方走來走去；有留言就冒對話框。跟 B - ①／B - ③／B - ⑤<strong>分開</strong>，可同時用。<strong>走路樣式</strong>會讓靜態頭像看起來像在走（扭動／搖擺／彈跳）。
+              頭像在畫面下方走來走去；有留言就冒對話框。跟 B - ①／B - ③／B - ⑤<strong>分開</strong>，可同時用。<strong>走路樣式</strong>會把圖片左右扯歪（像換腳踩），不是只整顆平移。
             </p>
             <div class="row">
               <label
@@ -3590,7 +3590,8 @@
               <div>
                 <label for="walkGait">走路樣式</label>
                 <select id="walkGait">
-                  <option value="wobble" selected>扭動（像在走）</option>
+                  <option value="stride" selected>踏步扭曲（像有腳）</option>
+                  <option value="wobble">扭動</option>
                   <option value="waddle">搖擺</option>
                   <option value="bounce">彈跳</option>
                   <option value="bob">輕跳</option>
@@ -4922,7 +4923,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.5.14";
+        const APP_VERSION = "v3.5.15";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -9006,9 +9007,8 @@
           applyYtChatParam(p);
           p.set("chatSource", fields.walkSource.value || "auto");
           if (fields.walkSpeed.value) p.set("speed", fields.walkSpeed.value);
-          const walkGait = (fields.walkGait && fields.walkGait.value) || "wobble";
-          if (walkGait && walkGait !== "wobble") p.set("gait", walkGait);
-          else p.set("gait", "wobble");
+          const walkGait = (fields.walkGait && fields.walkGait.value) || "stride";
+          p.set("gait", walkGait);
           if (fields.walkHold.value) p.set("hold", fields.walkHold.value);
           if (fields.walkIdle.value) p.set("idle", fields.walkIdle.value);
           if (fields.walkMax.value) p.set("max", fields.walkMax.value);

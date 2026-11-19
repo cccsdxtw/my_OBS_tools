@@ -95,96 +95,122 @@
         margin: 0 0.08em;
       }
       .walker .avatar-wrap {
+        position: relative;
         width: var(--avatar); height: var(--avatar); border-radius: 50%;
         overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,0.35);
         border: 3px solid rgba(255,255,255,0.92); background: #333;
-        /* 以底部當「腳」支點，才能看出圖片被扯歪 */
-        transform-origin: 50% 100%;
-        will-change: transform;
-        animation: none;
+        /* 上半／下半分層：只扭下半才像腳在換 */
+        flex-shrink: 0;
       }
-      /* 走路樣式：要「扭曲」圖形本身（skew），不是整顆平移／硬轉 */
+      .walker .avatar-head,
+      .walker .avatar-legs {
+        position: absolute;
+        left: 0;
+        right: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .walker .avatar-head {
+        top: 0;
+        height: 58%;
+        z-index: 2;
+      }
+      .walker .avatar-legs {
+        bottom: 0;
+        height: 55%;
+        z-index: 1;
+        /* 支點在腰線，只左右扯下半 */
+        transform-origin: 50% 0%;
+        will-change: transform;
+      }
+      .walker .avatar-face {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: var(--avatar);
+      }
+      .walker .avatar-head .avatar-face { top: 0; }
+      .walker .avatar-legs .avatar-face { bottom: 0; }
+      .walker .avatar-face img,
+      .walker .avatar-face .fallback {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+      }
+      .walker .avatar-face .fallback {
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: calc(var(--avatar) * 0.38);
+        color: #fff;
+        background: linear-gradient(145deg, #6b5cff, #ff6b6b);
+      }
+      /* 輕跳／彈跳：整顆輕微上下；扭曲類：只動下半 */
       body.gait-bob .walker .avatar-wrap {
         animation: gait-bob var(--gait-dur, 0.55s) ease-in-out infinite alternate;
-      }
-      body.gait-wobble .walker .avatar-wrap {
-        animation: gait-wobble var(--gait-dur, 0.5s) ease-in-out infinite;
       }
       body.gait-bounce .walker .avatar-wrap {
         animation: gait-bounce var(--gait-dur, 0.48s) ease-in-out infinite;
       }
-      body.gait-waddle .walker .avatar-wrap {
-        animation: gait-waddle var(--gait-dur, 0.52s) ease-in-out infinite;
+      body.gait-wobble .walker .avatar-legs {
+        animation: gait-legs-wobble var(--gait-dur, 0.5s) ease-in-out infinite;
       }
-      body.gait-stride .walker .avatar-wrap {
-        animation: gait-stride var(--gait-dur, 0.46s) ease-in-out infinite;
+      body.gait-waddle .walker .avatar-legs {
+        animation: gait-legs-waddle var(--gait-dur, 0.52s) ease-in-out infinite;
       }
-      body.gait-none .walker .avatar-wrap {
+      body.gait-stride .walker .avatar-legs {
+        animation: gait-legs-stride var(--gait-dur, 0.46s) ease-in-out infinite;
+      }
+      body.gait-stride .walker .avatar-head,
+      body.gait-wobble .walker .avatar-head,
+      body.gait-waddle .walker .avatar-head {
+        animation: gait-head-bob var(--gait-dur, 0.5s) ease-in-out infinite;
+      }
+      body.gait-none .walker .avatar-wrap,
+      body.gait-none .walker .avatar-legs,
+      body.gait-none .walker .avatar-head {
         animation: none;
       }
-      .walker.face-left .avatar-wrap img,
-      .walker.face-left .avatar-wrap .fallback {
+      .walker.face-left .avatar-face img,
+      .walker.face-left .avatar-face .fallback {
         transform: scaleX(-1);
       }
       @keyframes gait-bob {
-        from { transform: translateY(0) skewX(0deg); }
-        to { transform: translateY(-5px) skewX(0deg); }
-      }
-      /* 輕度 skew：圖形左右扯一下 */
-      @keyframes gait-wobble {
-        0% { transform: translateY(0) skewX(0deg) rotate(0deg); }
-        25% { transform: translateY(-4px) skewX(-10deg) rotate(-4deg); }
-        50% { transform: translateY(0) skewX(0deg) rotate(0deg); }
-        75% { transform: translateY(-4px) skewX(10deg) rotate(4deg); }
-        100% { transform: translateY(0) skewX(0deg) rotate(0deg); }
+        from { transform: translateY(0); }
+        to { transform: translateY(-5px); }
       }
       @keyframes gait-bounce {
-        0%, 100% { transform: translateY(0) scaleY(1) scaleX(1) skewX(0deg); }
-        35% { transform: translateY(-8px) scaleY(1.05) scaleX(0.95) skewX(-4deg); }
-        55% { transform: translateY(0) scaleY(0.9) scaleX(1.08) skewX(0deg); }
-        70% { transform: translateY(-3px) scaleY(1.02) scaleX(0.98) skewX(4deg); }
+        0%, 100% { transform: translateY(0) scaleY(1) scaleX(1); }
+        35% { transform: translateY(-8px) scaleY(1.05) scaleX(0.96); }
+        55% { transform: translateY(0) scaleY(0.9) scaleX(1.06); }
+        70% { transform: translateY(-3px) scaleY(1.02) scaleX(0.99); }
       }
-      @keyframes gait-waddle {
-        0%, 100% { transform: translateY(0) skewX(0deg) rotate(0deg); }
-        25% { transform: translateY(-2px) skewX(-14deg) rotate(-6deg); }
-        50% { transform: translateY(0) skewX(0deg) rotate(0deg); }
-        75% { transform: translateY(-2px) skewX(14deg) rotate(6deg); }
+      @keyframes gait-head-bob {
+        0%, 100% { transform: translateY(0); }
+        25%, 75% { transform: translateY(-1.5px); }
+        50% { transform: translateY(0); }
       }
-      /* 踏步扭曲：左右腳交替——下半被扯歪＋落地壓扁 */
-      @keyframes gait-stride {
-        0% {
-          transform: translateY(0) skewX(0deg) scaleX(1) scaleY(1);
-        }
-        18% {
-          transform: translateY(-3px) skewX(-16deg) scaleX(1.04) scaleY(0.96);
-        }
-        32% {
-          transform: translateY(-7px) skewX(-20deg) scaleX(1.08) scaleY(0.94);
-        }
-        42% {
-          transform: translateY(-1px) skewX(-6deg) scaleX(1.02) scaleY(0.9);
-        }
-        50% {
-          transform: translateY(0) skewX(0deg) scaleX(1) scaleY(1);
-        }
-        68% {
-          transform: translateY(-3px) skewX(16deg) scaleX(1.04) scaleY(0.96);
-        }
-        82% {
-          transform: translateY(-7px) skewX(20deg) scaleX(1.08) scaleY(0.94);
-        }
-        92% {
-          transform: translateY(-1px) skewX(6deg) scaleX(1.02) scaleY(0.9);
-        }
-        100% {
-          transform: translateY(0) skewX(0deg) scaleX(1) scaleY(1);
-        }
+      @keyframes gait-legs-wobble {
+        0%, 100% { transform: skewX(0deg); }
+        25% { transform: skewX(-12deg); }
+        75% { transform: skewX(12deg); }
       }
-      .walker .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-      .walker .avatar-wrap .fallback {
-        width: 100%; height: 100%; display: grid; place-items: center;
-        font-weight: 700; font-size: calc(var(--avatar) * 0.38); color: #fff;
-        background: linear-gradient(145deg, #6b5cff, #ff6b6b);
+      @keyframes gait-legs-waddle {
+        0%, 100% { transform: skewX(0deg) translateX(0); }
+        25% { transform: skewX(-16deg) translateX(-1px); }
+        75% { transform: skewX(16deg) translateX(1px); }
+      }
+      /* 下半左右交替扯歪＋落地微壓＝像換腳 */
+      @keyframes gait-legs-stride {
+        0%, 100% { transform: skewX(0deg) scaleY(1) translateY(0); }
+        18% { transform: skewX(-18deg) scaleY(0.97) translateY(-1px); }
+        32% { transform: skewX(-22deg) scaleY(0.94) translateY(-2px); }
+        42% { transform: skewX(-8deg) scaleY(0.88) translateY(0); }
+        50% { transform: skewX(0deg) scaleY(1) translateY(0); }
+        68% { transform: skewX(18deg) scaleY(0.97) translateY(-1px); }
+        82% { transform: skewX(22deg) scaleY(0.94) translateY(-2px); }
+        92% { transform: skewX(8deg) scaleY(0.88) translateY(0); }
       }
       #status {
         position: absolute; left: 8px; top: 6px; z-index: 5;
@@ -519,6 +545,13 @@
           }, holdSec * 1000);
         }
 
+        function makeAvatarFace(initial) {
+          const face = document.createElement("div");
+          face.className = "avatar-face";
+          if (initial) face.appendChild(initial);
+          return face;
+        }
+
         function createWalker(msg) {
           const key = walkerKey(msg);
           const el = document.createElement("div");
@@ -527,32 +560,50 @@
           bubble.className = "bubble";
           const avatarWrap = document.createElement("div");
           avatarWrap.className = "avatar-wrap";
-          const fallback = document.createElement("div");
-          fallback.className = "fallback";
-          fallback.textContent =
+          const letter =
             String(msg.user || "?")
               .trim()
               .charAt(0)
               .toUpperCase() || "?";
-          avatarWrap.appendChild(fallback);
+          const mkFallback = () => {
+            const fb = document.createElement("div");
+            fb.className = "fallback";
+            fb.textContent = letter;
+            return fb;
+          };
+          const head = document.createElement("div");
+          head.className = "avatar-head";
+          const legs = document.createElement("div");
+          legs.className = "avatar-legs";
+          const headFace = makeAvatarFace(mkFallback());
+          const legsFace = makeAvatarFace(mkFallback());
+          head.appendChild(headFace);
+          legs.appendChild(legsFace);
+          avatarWrap.append(head, legs);
           resolveAvatar(msg).then((url) => {
             if (!url) return;
-            const img = document.createElement("img");
-            img.alt = "";
-            img.referrerPolicy = "no-referrer";
-            img.decoding = "async";
-            img.onload = () => {
-              try {
-                fallback.remove();
-              } catch (_) {}
+            const place = (face) => {
+              const img = document.createElement("img");
+              img.alt = "";
+              img.referrerPolicy = "no-referrer";
+              img.decoding = "async";
+              img.onload = () => {
+                face.querySelectorAll(".fallback").forEach((n) => {
+                  try {
+                    n.remove();
+                  } catch (_) {}
+                });
+              };
+              img.onerror = () => {
+                try {
+                  img.remove();
+                } catch (_) {}
+              };
+              img.src = url;
+              face.appendChild(img);
             };
-            img.onerror = () => {
-              try {
-                img.remove();
-              } catch (_) {}
-            };
-            img.src = url;
-            avatarWrap.appendChild(img);
+            place(headFace);
+            place(legsFace);
           });
           el.append(bubble, avatarWrap);
           stage.appendChild(el);

@@ -110,25 +110,45 @@ def extract_video_id_from_url(raw):
     return ""
 
 
+def yt_player_is_live_now(player_json):
+    details = (player_json or {}).get("videoDetails") or {}
+    if details.get("isLive") is True:
+        return True
+    live_broadcast = (
+        ((player_json or {}).get("microformat") or {})
+        .get("playerMicroformatRenderer")
+        or {}
+    ).get("liveBroadcastDetails") or {}
+    if live_broadcast.get("isLiveNow") is True:
+        return True
+    return False
+
+
 def fetch_yt_viewers(video_id):
-    # 先確認「正在直播」；已結束／一般影片的 viewCount＝累計觀看，不能當同時人數
+    # 先確認「正在直播」(isLiveNow)；已結束影片的數字常是累計觀看，不能當同時人數
+    player_json = None
     details = {}
     try:
-        data = http_post_json(
+        player_json = http_post_json(
             "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
             {"context": {"client": INNERTUBE_CLIENT}, "videoId": video_id},
         )
-        details = (data or {}).get("videoDetails") or {}
+        details = (player_json or {}).get("videoDetails") or {}
     except Exception:
+        player_json = None
         details = {}
 
-    is_live_now = bool(details.get("isLive"))
+    is_live_now = yt_player_is_live_now(player_json)
     if details.get("videoId") and not is_live_now:
-        # isLiveContent 仍可能是過去直播／首播 VOD → 人數顯示 0
-        return {"live": False, "viewers": 0, "source": "innertube"}
+        return {
+            "live": False,
+            "liveNow": False,
+            "viewers": 0,
+            "source": "innertube",
+        }
 
     if is_live_now:
-        # 確認直播中：優先 live_stats（同時人數）
+        # 確認直播中：優先 live_stats（同時人數）；回傳一定帶 liveNow:true
         try:
             got = http_get_text(
                 "https://www.youtube.com/live_stats?v=" + video_id
@@ -137,16 +157,22 @@ def fetch_yt_viewers(video_id):
             if re.fullmatch(r"\d+", text):
                 return {
                     "live": True,
+                    "liveNow": True,
                     "viewers": int(text),
                     "source": "live_stats",
                 }
         except Exception:
             pass
 
-        # live_stats 失敗時：僅在 isLive 時才用 viewCount（此時才是同時觀看）
+        # live_stats 失敗時：僅在 isLiveNow 時才用 viewCount（此時才是同時觀看）
         try:
             n = int(str(details.get("viewCount") or "0"))
-            return {"live": True, "viewers": n, "source": "innertube"}
+            return {
+                "live": True,
+                "liveNow": True,
+                "viewers": n,
+                "source": "innertube",
+            }
         except Exception:
             pass
 

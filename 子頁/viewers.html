@@ -997,7 +997,13 @@
               if (!j || typeof j.viewers !== "number") {
                 throw new Error("bad proxy payload");
               }
-              if (!j.live) {
+              // 舊版本機伺服器沒有 liveNow：可能把累計觀看當同時人數 → 改試下一個來源
+              if (j.live && j.liveNow !== true) {
+                throw new Error(
+                  "本機伺服器需重開（缺少 liveNow 確認，請关掉 8765 視窗再啟動）"
+                );
+              }
+              if (!j.live || j.liveNow !== true) {
                 markYoutubeEnded(videoId);
                 return { live: false, viewers: 0, source: "web" };
               }

@@ -198,27 +198,44 @@ function extractVideoIdFromUrl(raw) {
   return "";
 }
 
+function ytPlayerIsLiveNow(playerJson) {
+  const details = (playerJson && playerJson.videoDetails) || {};
+  if (details.isLive === true) return true;
+  const liveBroadcast =
+    playerJson &&
+    playerJson.microformat &&
+    playerJson.microformat.playerMicroformatRenderer &&
+    playerJson.microformat.playerMicroformatRenderer.liveBroadcastDetails;
+  if (liveBroadcast && liveBroadcast.isLiveNow === true) return true;
+  return false;
+}
+
 async function fetchYtViewers(videoId) {
-  // 先確認「正在直播」；已結束／一般影片的 viewCount＝累計觀看，不能當同時人數
+  // 先確認「正在直播」(isLiveNow)；已結束影片的數字常是累計觀看，不能當同時人數
+  let playerJson = null;
   let details = null;
   try {
-    const j = await httpsPostJson(
+    playerJson = await httpsPostJson(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
       {
         context: { client: INNERTUBE_CLIENT },
         videoId,
       }
     );
-    details = j && j.videoDetails;
+    details = playerJson && playerJson.videoDetails;
   } catch (_) {}
 
-  const isLiveNow = !!(details && details.isLive);
+  const isLiveNow = ytPlayerIsLiveNow(playerJson);
   if (details && details.videoId && !isLiveNow) {
-    // isLiveContent 仍可能是過去直播／首播 VOD → 人數顯示 0
-    return { live: false, viewers: 0, source: "innertube" };
+    return {
+      live: false,
+      liveNow: false,
+      viewers: 0,
+      source: "innertube",
+    };
   }
 
-  // 確認直播中：優先 live_stats（同時人數）
+  // 確認直播中：優先 live_stats（同時人數）；回傳一定帶 liveNow:true
   if (isLiveNow) {
     try {
       const got = await httpsGetText(
@@ -228,15 +245,25 @@ async function fetchYtViewers(videoId) {
       if (/^\d+$/.test(text)) {
         const n = parseInt(text, 10);
         if (Number.isFinite(n)) {
-          return { live: true, viewers: n, source: "live_stats" };
+          return {
+            live: true,
+            liveNow: true,
+            viewers: n,
+            source: "live_stats",
+          };
         }
       }
     } catch (_) {}
 
-    // live_stats 失敗時：僅在 isLive 時才用 viewCount（此時才是同時觀看）
+    // live_stats 失敗時：僅在 isLiveNow 時才用 viewCount（此時才是同時觀看）
     const n = parseInt(String((details && details.viewCount) || "0"), 10);
     if (Number.isFinite(n)) {
-      return { live: true, viewers: n, source: "innertube" };
+      return {
+        live: true,
+        liveNow: true,
+        viewers: n,
+        source: "innertube",
+      };
     }
   }
 

@@ -199,19 +199,8 @@ function extractVideoIdFromUrl(raw) {
 }
 
 async function fetchYtViewers(videoId) {
-  // 1) 舊版 live_stats：回純數字＝正在看的人數
-  try {
-    const got = await httpsGetText(
-      "https://www.youtube.com/live_stats?v=" + encodeURIComponent(videoId)
-    );
-    const text = String(got.body || "").trim();
-    if (/^\d+$/.test(text)) {
-      const n = parseInt(text, 10);
-      return { live: n > 0 || text === "0", viewers: n, source: "live_stats" };
-    }
-  } catch (_) {}
-
-  // 2) Innertube player：直播時 viewCount 常是同時觀看
+  // 先確認「正在直播」；已結束／一般影片的 viewCount＝累計觀看，不能當同時人數
+  let details = null;
   try {
     const j = await httpsPostJson(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
@@ -220,17 +209,36 @@ async function fetchYtViewers(videoId) {
         videoId,
       }
     );
-    const details = j && j.videoDetails;
-    if (details && (details.isLive || details.isLiveContent)) {
-      const n = parseInt(String(details.viewCount || "0"), 10);
-      if (Number.isFinite(n)) {
-        return { live: true, viewers: n, source: "innertube" };
-      }
-    }
-    if (details && details.videoId) {
-      return { live: false, viewers: 0, source: "innertube" };
-    }
+    details = j && j.videoDetails;
   } catch (_) {}
+
+  const isLiveNow = !!(details && details.isLive);
+  if (details && details.videoId && !isLiveNow) {
+    // isLiveContent 仍可能是過去直播／首播 VOD → 人數顯示 0
+    return { live: false, viewers: 0, source: "innertube" };
+  }
+
+  // 確認直播中：優先 live_stats（同時人數）
+  if (isLiveNow) {
+    try {
+      const got = await httpsGetText(
+        "https://www.youtube.com/live_stats?v=" + encodeURIComponent(videoId)
+      );
+      const text = String(got.body || "").trim();
+      if (/^\d+$/.test(text)) {
+        const n = parseInt(text, 10);
+        if (Number.isFinite(n)) {
+          return { live: true, viewers: n, source: "live_stats" };
+        }
+      }
+    } catch (_) {}
+
+    // live_stats 失敗時：僅在 isLive 時才用 viewCount（此時才是同時觀看）
+    const n = parseInt(String((details && details.viewCount) || "0"), 10);
+    if (Number.isFinite(n)) {
+      return { live: true, viewers: n, source: "innertube" };
+    }
+  }
 
   throw new Error("yt web viewers unavailable");
 }

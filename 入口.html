@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.6.2</span>
+          <span class="brand-version" id="brandVersion">v3.6.3</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -2008,7 +2008,7 @@
             </div>
             <textarea id="vcUrl" class="url-box" readonly></textarea>
             <p class="hint">
-              建議寬度 220–420、高度 40–60。跟資訊條分開放。框內展示用預覽數字；「複製」「預覽」都是正式網址（無假資料），可安心給 OBS。
+              建議寬度 220–420、高度 40–60。跟資訊條分開放。框內與「複製／預覽」都是真的去抓人數（不是假資料）；未開播時 YouTube 顯示 0（不會把累計觀看當成同時人數）。
             </p>
             <div class="actions">
               <button type="button" id="copyVc">複製人數網址</button>
@@ -4923,7 +4923,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.6.2";
+        const APP_VERSION = "v3.6.3";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";

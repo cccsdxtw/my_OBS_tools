@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.6.3</span>
+          <span class="brand-version" id="brandVersion">v3.6.5</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -1909,7 +1909,7 @@
               開台後才查 YouTube 人數</label
             >
             <p class="hint" id="ytAfterTwHint">
-              勾選＝YT 秒數忽略，跟 TW 節奏走；TW 還沒開台時 YT 顯示 0。
+              勾選＝YT 秒數忽略，跟 TW 節奏走；TW 還沒開台時 YT 顯示「無法取得」。
             </p>
 
             <p class="hint" style="margin-top: 12px; margin-bottom: 0; font-weight: 600; color: var(--ink)">
@@ -2008,7 +2008,7 @@
             </div>
             <textarea id="vcUrl" class="url-box" readonly></textarea>
             <p class="hint">
-              建議寬度 220–420、高度 40–60。跟資訊條分開放。框內與「複製／預覽」都是真的去抓人數（不是假資料）；未開播時 YouTube 顯示 0（不會把累計觀看當成同時人數）。
+              建議寬度 220–420、高度 40–60。跟資訊條分開放。框內與「複製／預覽」都是真的去抓人數（不是假資料）；只有確認正在直播才顯示人數，否則 YouTube 顯示「無法取得」。
             </p>
             <div class="actions">
               <button type="button" id="copyVc">複製人數網址</button>
@@ -4923,7 +4923,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.6.3";
+        const APP_VERSION = "v3.6.5";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -9424,7 +9424,7 @@ function syncYtAfterTwUi() {
           const hint = $("ytAfterTwHint");
           if (hint) {
             hint.textContent = gated
-              ? "勾選中：無視 YT 開台／離線秒數；TW 還沒開台 YT 顯示 0，開台後跟 TW 節奏查。只填 YT、沒填 TW 時不受影響。"
+              ? "勾選中：無視 YT 開台／離線秒數；TW 還沒開台 YT 顯示「無法取得」，開台後跟 TW 節奏查。只填 YT、沒填 TW 時不受影響。"
               : "未勾選：YT 用上方「YT 開台／離線（秒）」自己輪詢。";
           }
         }

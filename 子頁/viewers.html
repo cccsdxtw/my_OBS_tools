@@ -560,8 +560,8 @@
 
         function parkYoutubeUntilTw() {
           ytLive = false;
-          ytCount = 0;
-          ytErrTip = "";
+          ytCount = YT_FAIL_LABEL;
+          ytErrTip = "等 Twitch 開台後再查 YouTube 人數";
         }
 
         async function refreshManualMode() {
@@ -1055,8 +1055,14 @@
           try {
             const data = await fetchYoutubeViewers();
             ytLive = !!data.live;
-            ytCount = ytLive ? data.viewers : 0;
-            ytErrTip = "";
+            if (ytLive) {
+              ytCount = data.viewers;
+              ytErrTip = "";
+            } else {
+              // 未開播／已結束：顯示「無法取得」，不要用 0 假裝有直播
+              ytCount = YT_FAIL_LABEL;
+              ytErrTip = "尚未偵測到 YouTube 直播中";
+            }
           } catch (err) {
             ytLive = false;
             ytCount = failLabel(err, "yt");

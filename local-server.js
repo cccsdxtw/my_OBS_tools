@@ -198,39 +198,74 @@ function extractVideoIdFromUrl(raw) {
   return "";
 }
 
-async function fetchYtViewers(videoId) {
-  // 1) 舊版 live_stats：回純數字＝正在看的人數
-  try {
-    const got = await httpsGetText(
-      "https://www.youtube.com/live_stats?v=" + encodeURIComponent(videoId)
-    );
-    const text = String(got.body || "").trim();
-    if (/^\d+$/.test(text)) {
-      const n = parseInt(text, 10);
-      return { live: n > 0 || text === "0", viewers: n, source: "live_stats" };
-    }
-  } catch (_) {}
+function ytPlayerIsLiveNow(playerJson) {
+  const details = (playerJson && playerJson.videoDetails) || {};
+  if (details.isLive === true) return true;
+  const liveBroadcast =
+    playerJson &&
+    playerJson.microformat &&
+    playerJson.microformat.playerMicroformatRenderer &&
+    playerJson.microformat.playerMicroformatRenderer.liveBroadcastDetails;
+  if (liveBroadcast && liveBroadcast.isLiveNow === true) return true;
+  return false;
+}
 
-  // 2) Innertube player：直播時 viewCount 常是同時觀看
+async function fetchYtViewers(videoId) {
+  // 先確認「正在直播」(isLiveNow)；已結束影片的數字常是累計觀看，不能當同時人數
+  let playerJson = null;
+  let details = null;
   try {
-    const j = await httpsPostJson(
+    playerJson = await httpsPostJson(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
       {
         context: { client: INNERTUBE_CLIENT },
         videoId,
       }
     );
-    const details = j && j.videoDetails;
-    if (details && (details.isLive || details.isLiveContent)) {
-      const n = parseInt(String(details.viewCount || "0"), 10);
-      if (Number.isFinite(n)) {
-        return { live: true, viewers: n, source: "innertube" };
-      }
-    }
-    if (details && details.videoId) {
-      return { live: false, viewers: 0, source: "innertube" };
-    }
+    details = playerJson && playerJson.videoDetails;
   } catch (_) {}
+
+  const isLiveNow = ytPlayerIsLiveNow(playerJson);
+  if (details && details.videoId && !isLiveNow) {
+    return {
+      live: false,
+      liveNow: false,
+      viewers: 0,
+      source: "innertube",
+    };
+  }
+
+  // 確認直播中：優先 live_stats（同時人數）；回傳一定帶 liveNow:true
+  if (isLiveNow) {
+    try {
+      const got = await httpsGetText(
+        "https://www.youtube.com/live_stats?v=" + encodeURIComponent(videoId)
+      );
+      const text = String(got.body || "").trim();
+      if (/^\d+$/.test(text)) {
+        const n = parseInt(text, 10);
+        if (Number.isFinite(n)) {
+          return {
+            live: true,
+            liveNow: true,
+            viewers: n,
+            source: "live_stats",
+          };
+        }
+      }
+    } catch (_) {}
+
+    // live_stats 失敗時：僅在 isLiveNow 時才用 viewCount（此時才是同時觀看）
+    const n = parseInt(String((details && details.viewCount) || "0"), 10);
+    if (Number.isFinite(n)) {
+      return {
+        live: true,
+        liveNow: true,
+        viewers: n,
+        source: "innertube",
+      };
+    }
+  }
 
   throw new Error("yt web viewers unavailable");
 }

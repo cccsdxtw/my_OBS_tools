@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS 番茄鐘</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="../material-icons.js"></script>
+    <script src="../panel-bg.js"></script>
+    <script src="../font-style.js"></script>
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.85);
+        --icon: var(--fg);
+        --muted: rgba(255, 255, 255, 0.7);
+        --size: 22px;
+        --bar-h: calc(var(--size) + 16px);
+        --pad-x: 12px;
+        --gap: 10px;
+        --radius: 0;
+        --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
+          "PingFang TC", sans-serif;
+        --font-num: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        color: var(--fg);
+        cursor: pointer;
+        user-select: none;
+      }
+
+      #bar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: var(--gap);
+        height: var(--bar-h);
+        padding: var(--panel-inset, 0 var(--pad-x));
+        background-color: var(--bg);
+        background-image: var(--panel-img, none);
+        background-size: var(--panel-fit, 100% 100%);
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: var(--radius);
+        white-space: nowrap;
+        line-height: 1;
+        overflow: hidden;
+      }
+
+      #bar.is-paused .value {
+        opacity: 0.55;
+      }
+
+      .icon-slot {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(var(--size) * 0.95);
+        height: calc(var(--size) * 0.95);
+        flex: 0 0 auto;
+      }
+
+      .icon-slot[hidden] {
+        display: none;
+      }
+
+      .icon,
+      .custom-icon {
+        width: 100%;
+        height: 100%;
+        opacity: 0.95;
+        display: block;
+        object-fit: contain;
+      }
+
+      .material-symbols-outlined.icon {
+        width: auto;
+        height: auto;
+        font-size: calc(var(--size) * 0.95);
+        line-height: 1;
+        color: var(--icon);
+        font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+        user-select: none;
+      }
+
+      .ms-svg-icon.icon,
+      .svg-icon {
+        width: 100%;
+        height: 100%;
+        color: var(--icon);
+        fill: currentColor;
+      }
+
+      .label,
+      .value,
+      .hint {
+        display: flex;
+        align-items: center;
+        height: var(--size);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        line-height: 1;
+      }
+
+      .label {
+        color: var(--muted);
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.82);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        transform: translateY(0.06em);
+      }
+
+      .value {
+        font-family: var(--font-num);
+        font-size: var(--size);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        transform: translateY(0.02em);
+      }
+
+      .hint {
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.62);
+        color: var(--muted);
+        opacity: 0.85;
+        transform: translateY(0.06em);
+      }
+
+      .hint[hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar" aria-live="polite" title="點一下暫停／繼續；連點兩下跳下一階段">
+      <span class="icon-slot" id="pomo-icon"></span>
+      <span class="label" id="phase-label">專注</span>
+      <span class="value" id="clock">25:00</span>
+      <span class="hint" id="pause-hint" hidden>暫停</span>
+    </div>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(location.search);
+        const demo = ["1", "true", "yes", "on"].includes(
+          String(params.get("demo") || "")
+            .trim()
+            .toLowerCase()
+        );
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
+        cssVar("--fg", params.get("color"));
+        cssVar("--icon", params.get("iconColor") || params.get("iconColour"));
+        const bgParam = (params.get("bg") || "").trim();
+        if (
+          !bgParam ||
+          bgParam === "0" ||
+          bgParam === "false" ||
+          bgParam === "none" ||
+          bgParam === "off"
+        ) {
+          cssVar("--bg", "transparent");
+        } else {
+          cssVar("--bg", bgParam);
+        }
+        if (window.ObsPanelBg) {
+          ObsPanelBg.applyOverlayPanelBg(params, cssVar, { defaultInset: 12 });
+        }
+        cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
+        cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+
+        function clampInt(raw, fallback, min, max) {
+          const n = Number(raw);
+          if (!Number.isFinite(n)) return fallback;
+          return Math.round(Math.min(max, Math.max(min, n)));
+        }
+
+        // demo：短秒數方便右側預覽看到跳秒
+        const workSec = demo
+          ? clampInt(params.get("workSec") || params.get("work"), 50, 5, 3600)
+          : clampInt(params.get("workMins") || params.get("work"), 25, 1, 180) * 60;
+        const breakSec = demo
+          ? clampInt(params.get("breakSec") || params.get("break"), 20, 5, 3600)
+          : clampInt(params.get("breakMins") || params.get("break"), 5, 1, 60) * 60;
+        const longBreakSec = demo
+          ? clampInt(params.get("longBreakSec") || params.get("longBreak"), 30, 5, 3600)
+          : clampInt(params.get("longBreakMins") || params.get("longBreak"), 15, 1, 60) *
+            60;
+        const longEvery = clampInt(params.get("longEvery") || params.get("cycles"), 4, 1, 12);
+        const autoStart = !["0", "false", "off", "no"].includes(
+          String(params.get("autoStart") || "1")
+            .trim()
+            .toLowerCase()
+        );
+        const showHint = !["0", "false", "off", "no"].includes(
+          String(params.get("showHint") || "1")
+            .trim()
+            .toLowerCase()
+        );
+
+        const labels = {
+          work: (params.get("workLabel") || "專注").trim() || "專注",
+          break: (params.get("breakLabel") || "休息").trim() || "休息",
+          long: (params.get("longLabel") || "長休").trim() || "長休",
+        };
+
+        const storeKey =
+          "my_obs_tools_pomodoro:" +
+          (params.get("id") ||
+            [workSec, breakSec, longBreakSec, longEvery, labels.work, labels.break, labels.long].join(
+              "|"
+            ));
+
+        const els = {
+          bar: document.getElementById("bar"),
+          label: document.getElementById("phase-label"),
+          clock: document.getElementById("clock"),
+          hint: document.getElementById("pause-hint"),
+          icon: document.getElementById("pomo-icon"),
+        };
+
+        function isUrlIcon(raw) {
+          const s = String(raw || "").trim();
+          return (
+            /^https?:\/\//i.test(s) ||
+            /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s)
+          );
+        }
+
+        const iconRaw = (params.get("pomoIcon") || params.get("icon") || "timer").trim();
+        const hideIcon =
+          !iconRaw ||
+          iconRaw === "0" ||
+          iconRaw === "none" ||
+          iconRaw === "off" ||
+          iconRaw === "false" ||
+          iconRaw === "hide";
+        if (els.icon && hideIcon) {
+          els.icon.hidden = true;
+          els.icon.innerHTML = "";
+        } else if (els.icon) {
+          els.icon.hidden = false;
+          if (isUrlIcon(iconRaw)) {
+            els.icon.innerHTML = "";
+            const img = document.createElement("img");
+            img.className = "custom-icon";
+            img.alt = "";
+            img.referrerPolicy = "no-referrer";
+            img.src = iconRaw;
+            img.onerror = () => {
+              els.icon.innerHTML = "";
+            };
+            els.icon.appendChild(img);
+          } else if (window.MyObsMaterialIcons) {
+            window.MyObsMaterialIcons.mountIcon(els.icon, iconRaw || "timer", {
+              forceSvg: true,
+            });
+          }
+        }
+
+        function pad(n) {
+          return String(Math.max(0, Math.floor(n))).padStart(2, "0");
+        }
+
+        function formatMS(totalSeconds) {
+          const s = Math.max(0, Math.ceil(totalSeconds));
+          const m = Math.floor(s / 60);
+          const sec = s % 60;
+          return `${pad(m)}:${pad(sec)}`;
+        }
+
+        function phaseDuration(phase) {
+          if (phase === "long") return longBreakSec;
+          if (phase === "break") return breakSec;
+          return workSec;
+        }
+
+        function phaseLabel(phase) {
+          if (phase === "long") return labels.long;
+          if (phase === "break") return labels.break;
+          return labels.work;
+        }
+
+        function loadState() {
+          if (demo) return null;
+          try {
+            const raw = JSON.parse(localStorage.getItem(storeKey) || "null");
+            if (!raw || typeof raw !== "object") return null;
+            if (!["work", "break", "long"].includes(raw.phase)) return null;
+            return raw;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function saveState() {
+          if (demo) return;
+          try {
+            localStorage.setItem(
+              storeKey,
+              JSON.stringify({
+                phase: state.phase,
+                workCount: state.workCount,
+                remainMs: state.remainMs,
+                running: state.running,
+                savedAt: Date.now(),
+              })
+            );
+          } catch (_) {}
+        }
+
+        const saved = loadState();
+        const state = {
+          phase: (saved && saved.phase) || "work",
+          workCount: Number(saved && saved.workCount) || 0,
+          remainMs:
+            saved && Number.isFinite(saved.remainMs)
+              ? Math.max(0, Number(saved.remainMs))
+              : phaseDuration("work") * 1000,
+          running: saved ? !!saved.running && autoStart : autoStart,
+          lastTick: Date.now(),
+        };
+
+        // 離線期間若在跑，扣掉經過時間
+        if (saved && saved.running && Number(saved.savedAt)) {
+          const elapsed = Date.now() - Number(saved.savedAt);
+          if (elapsed > 0 && state.running) {
+            state.remainMs = Math.max(0, state.remainMs - elapsed);
+          }
+        }
+
+        function nextPhase() {
+          if (state.phase === "work") {
+            state.workCount += 1;
+            if (state.workCount > 0 && state.workCount % longEvery === 0) {
+              state.phase = "long";
+            } else {
+              state.phase = "break";
+            }
+          } else {
+            state.phase = "work";
+          }
+          state.remainMs = phaseDuration(state.phase) * 1000;
+        }
+
+        function render() {
+          els.label.textContent = phaseLabel(state.phase);
+          els.clock.textContent = formatMS(state.remainMs / 1000);
+          els.bar.classList.toggle("is-paused", !state.running);
+          if (els.hint) {
+            if (showHint && !state.running) {
+              els.hint.hidden = false;
+              els.hint.textContent = "暫停";
+            } else {
+              els.hint.hidden = true;
+            }
+          }
+        }
+
+        function tick() {
+          const now = Date.now();
+          const dt = now - state.lastTick;
+          state.lastTick = now;
+          if (state.running) {
+            state.remainMs -= dt;
+            if (state.remainMs <= 0) {
+              nextPhase();
+            }
+            saveState();
+          }
+          render();
+        }
+
+        let clickTimer = 0;
+        function onActivate(ev) {
+          if (ev && ev.type === "keydown" && ev.key !== " " && ev.key !== "Enter") {
+            return;
+          }
+          if (ev) ev.preventDefault();
+          // 連點兩下：跳下一階段；單點：暫停／繼續
+          if (clickTimer) {
+            clearTimeout(clickTimer);
+            clickTimer = 0;
+            nextPhase();
+            state.running = true;
+            state.lastTick = Date.now();
+            saveState();
+            render();
+            return;
+          }
+          clickTimer = setTimeout(() => {
+            clickTimer = 0;
+            state.running = !state.running;
+            state.lastTick = Date.now();
+            saveState();
+            render();
+          }, 280);
+        }
+
+        document.addEventListener("click", onActivate);
+        document.addEventListener("keydown", onActivate);
+
+        render();
+        setInterval(tick, 200);
+      })();
+    </script>
+  </body>
+</html>

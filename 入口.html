@@ -1575,7 +1575,7 @@
         </div>
         <h1 class="brand-title">
           拉基的OBS工具箱
-          <span class="brand-version" id="brandVersion">v3.6.6</span>
+          <span class="brand-version" id="brandVersion">v3.6.7</span>
         </h1>
         <p>
           先填最上方的共用設定。上方可選「預設／切換」：預設依 A→B→C 分欄；切換後可直接拖各功能塊（A - ①、A - ②…）自訂順序。收合時點整條標題列即可展開。各橫列可分開放 OBS 來源。
@@ -4923,7 +4923,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.6.6";
+        const APP_VERSION = "v3.6.7";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -5127,47 +5127,92 @@
             .join("/");
         }
 
-        function fileUrlForTag(tag, name) {
+        function fileUrlForRef(ref, name) {
           return (
             "https://cdn.jsdelivr.net/gh/cccsdxtw/my_OBS_tools@" +
-            encodeURIComponent(tag) +
+            encodeURIComponent(ref) +
             "/" +
             encodedRepoPath(name)
           );
         }
 
-        function rawUrlForTag(tag, name) {
-          // 加 bust 避免瀏覽器／中間層把舊 404 快取住
+        function rawUrlForRef(ref, name) {
+          // 用 commit SHA 比 tag 名可靠（tag 名的 raw／CDN 常快取到舊內容）
           return (
             "https://raw.githubusercontent.com/cccsdxtw/my_OBS_tools/" +
-            encodeURIComponent(tag) +
+            encodeURIComponent(ref) +
             "/" +
             encodedRepoPath(name) +
             "?v=" +
-            encodeURIComponent(tag)
+            encodeURIComponent(ref)
           );
         }
 
-        async function fetchUpdateResponse(tag, name) {
-          // 先 raw（跟 release tag 同步快），jsDelivr 次之（tag 內容 CDN 可能快取舊 404）
-          const urls = [rawUrlForTag(tag, name), fileUrlForTag(tag, name)];
+        async function resolveTagCommitSha(tag) {
+          const t = String(tag || "").trim();
+          if (!t) return "";
+          try {
+            const res = await fetch(
+              "https://api.github.com/repos/cccsdxtw/my_OBS_tools/git/ref/tags/" +
+                encodeURIComponent(t),
+              {
+                headers: { Accept: "application/vnd.github+json" },
+                cache: "no-store",
+              }
+            );
+            if (!res.ok) throw new Error("tag ref " + res.status);
+            const data = await res.json();
+            let sha = data && data.object && data.object.sha;
+            // annotated tag → 再解一次到 commit
+            if (data && data.object && data.object.type === "tag") {
+              const tres = await fetch(
+                "https://api.github.com/repos/cccsdxtw/my_OBS_tools/git/tags/" +
+                  encodeURIComponent(sha),
+                {
+                  headers: { Accept: "application/vnd.github+json" },
+                  cache: "no-store",
+                }
+              );
+              if (tres.ok) {
+                const tobj = await tres.json();
+                sha = tobj && tobj.object && tobj.object.sha;
+              }
+            }
+            return String(sha || "").trim();
+          } catch (_) {
+            return "";
+          }
+        }
+
+        async function fetchUpdateResponse(tag, name, commitSha) {
+          // 優先 commit SHA（避免 tag 名被 CDN 快取成舊檔）；再退回 tag 名
+          const refs = [];
+          if (commitSha) refs.push(commitSha);
+          if (tag && tag !== commitSha) refs.push(tag);
           let lastErr = null;
-          for (const url of urls) {
-            try {
-              const res = await fetch(url, { cache: "no-store" });
-              if (res.ok) return res;
-              lastErr = new Error(name + " " + res.status);
-            } catch (err) {
-              lastErr = err;
+          for (const ref of refs) {
+            const urls = [rawUrlForRef(ref, name), fileUrlForRef(ref, name)];
+            for (const url of urls) {
+              try {
+                const res = await fetch(url, { cache: "no-store" });
+                if (res.ok) return res;
+                lastErr = new Error(name + " " + res.status);
+              } catch (err) {
+                lastErr = err;
+              }
             }
           }
           throw lastErr || new Error("fetch " + name);
         }
 
-        async function resolveUpdateFileList(tag) {
+        async function resolveUpdateFileList(tag, commitSha) {
           const merged = new Set(UPDATE_FILES);
           try {
-            const res = await fetchUpdateResponse(tag, "update-files.json");
+            const res = await fetchUpdateResponse(
+              tag,
+              "update-files.json",
+              commitSha
+            );
             const data = await res.json();
             if (Array.isArray(data.files)) {
               data.files.forEach((n) => {
@@ -5196,6 +5241,17 @@
             "update-files.json",
           ].forEach((n) => merged.add(n));
           return Array.from(merged);
+        }
+
+        function entryHasAppVersion(text, tag) {
+          const t = String(tag || "").trim();
+          const body = String(text || "");
+          if (!t || !body) return false;
+          return (
+            body.includes(`APP_VERSION = "${t}"`) ||
+            body.includes(`APP_VERSION="${t}"`) ||
+            body.includes(`id="brandVersion">${t}<`)
+          );
         }
 
         async function ensureDirPath(dirHandle, parts, create) {
@@ -5232,14 +5288,15 @@
               "請選對資料夾：要選「裡面直接看得到 入口.html」的那一層（不要選外層）"
             );
           }
-          const files = await resolveUpdateFileList(tag);
+          const commitSha = await resolveTagCommitSha(tag);
+          const files = await resolveUpdateFileList(tag, commitSha);
           const written = [];
           const failed = [];
           // 先全部抓完再寫，避免中途 404 造成半套升級
           const payloads = [];
           for (const name of files) {
             try {
-              const res = await fetchUpdateResponse(tag, name);
+              const res = await fetchUpdateResponse(tag, name, commitSha);
               const binary = /\.(ttf|otf|woff2?|png|jpe?g|gif|webp|zip)$/i.test(name);
               const data = binary ? await res.arrayBuffer() : await res.text();
               payloads.push({ name, data, binary });
@@ -5249,6 +5306,12 @@
           }
           if (failed.length) {
             throw new Error("覆蓋失敗：" + failed.join("、"));
+          }
+          const entry = payloads.find((p) => p.name === "入口.html");
+          if (!entry || entry.binary || !entryHasAppVersion(entry.data, tag)) {
+            throw new Error(
+              `抓到的 入口.html 不是 ${tag}（可能 CDN／標籤指到舊檔）。請改按「下載 zip」手動覆蓋`
+            );
           }
           for (const item of payloads) {
             const parts = item.name.split("/").filter(Boolean);
@@ -5265,9 +5328,21 @@
           if (missing.length) {
             throw new Error("寫入後仍缺：" + missing.join("、"));
           }
+          // 讀回確認真的寫進選到的資料夾
+          try {
+            const fh = await dirHandle.getFileHandle("入口.html");
+            const text = await (await fh.getFile()).text();
+            if (!entryHasAppVersion(text, tag)) {
+              throw new Error(
+                "寫入後 入口.html 版號仍不對：請確認選的是你正在開的那個資料夾"
+              );
+            }
+          } catch (err) {
+            if (err && /寫入後|選的是/.test(String(err.message || ""))) throw err;
+          }
           try {
             localStorage.setItem("my_obs_tools_install_ok", tag);
-            sessionStorage.setItem("my_obs_tools_files_ok", APP_VERSION);
+            sessionStorage.setItem("my_obs_tools_files_ok", tag);
           } catch (_) {}
           return written;
         }
@@ -6123,12 +6198,22 @@
               "ok"
             );
             if (isLocalPage()) {
-              setTimeout(() => location.reload(), 500);
+              // 強制避開 file:// 快取：帶版號重開
+              setTimeout(() => {
+                try {
+                  const u = new URL(location.href);
+                  u.searchParams.set("_ver", tag);
+                  u.searchParams.set("_t", String(Date.now()));
+                  location.replace(u.toString());
+                } catch (_) {
+                  location.reload();
+                }
+              }, 400);
             } else {
               installUpdateBtn.disabled = false;
               installUpdateBtn.textContent = `再覆蓋 ${tag}`;
               renderVersionStatus(
-                `已寫入本機資料夾（${tag}）· 請改開該資料夾的 index.html；OBS 來源也請重新整理`,
+                `已寫入本機資料夾（${tag}）· 請改開該資料夾的 入口.html；OBS 來源也請重新整理`,
                 "ok"
               );
             }
@@ -6840,6 +6925,17 @@
 
         // 不再開頁自動「缺檔偵測」：file:// 常誤判，逼使用者每次重選資料夾。
         // 有新版本時按「覆蓋並重開」一次寫齊（含 panel-bg／counter）；記住正確資料夾後下次直接成功。
+        try {
+          const installed = localStorage.getItem("my_obs_tools_install_ok") || "";
+          const inst = parseVer(installed);
+          const local = parseVer(APP_VERSION);
+          if (inst && local && cmpVer(inst, local) > 0) {
+            renderVersionStatus(
+              `剛才已覆蓋到 ${installed}，但你開的還是 ${APP_VERSION}：請改開剛選的那個資料夾裡的 入口.html（或關掉舊分頁）`,
+              "warn"
+            );
+          }
+        } catch (_) {}
         if (autoUpdateCheck.checked) {
           checkLatestVersion({ autoInstall: false });
         } else {

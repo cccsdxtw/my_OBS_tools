@@ -1629,12 +1629,12 @@
       </p>
 
       <div class="bands">
-        <!-- 共用帳號（人數、開台、聊天室共用） -->
-        <div class="band band-solo">
+        <!-- 共用帳號（人數、開台、聊天室共用）；右欄＝預設樣式（與各工具右邊一致） -->
+        <div class="band" data-shared="1">
           <section class="card">
             <div class="card-head">
               <h2>共用設定</h2>
-              <span class="side-title">帳號 · 本機伺服器 · 預設樣式</span>
+              <span class="side-title">帳號 · 本機伺服器</span>
             </div>
             <div class="row">
               <div>
@@ -1683,135 +1683,6 @@
               <button type="button" class="secondary" id="checkLocalServerBtn">檢查本機伺服器</button>
             </div>
 
-            <datalist id="fontFamilySuggest">
-              <option value="IBM Plex Sans TC"></option>
-              <option value="Noto Sans TC"></option>
-              <option value="Microsoft JhengHei"></option>
-              <option value="PingFang TC"></option>
-              <option value="Source Han Sans TC"></option>
-              <option value="Inter"></option>
-              <option value="Roboto"></option>
-            </datalist>
-            <div class="subfold is-collapsed" data-subfold="default-text">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">預設字級／文字色／字形</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-<div class="row">
-              <div>
-                <label for="defaultFontSize">預設字級</label>
-                <input id="defaultFontSize" type="number" min="12" max="64" value="22" />
-              </div>
-              <div>
-                <label for="defaultColor">預設文字色</label>
-                <div class="color-pair">
-                  <input id="defaultColor" type="text" value="rgba(255,255,255,0.85)" />
-                  <input type="color" data-sync="defaultColor" value="#d9d9d9" title="快速選色" />
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label for="defaultFontFamily">預設字形</label>
-                <input
-                  id="defaultFontFamily"
-                  type="text"
-                  list="fontFamilySuggest"
-                  placeholder="空白＝內建 IBM Plex 等"
-                />
-              </div>
-              <div>
-                <label for="defaultFontUploadBtn">上傳字形</label>
-                <div class="actions" style="margin-top: 0">
-                  <button type="button" class="secondary" id="defaultFontUploadBtn">選擇字型檔</button>
-                  <input
-                    type="file"
-                    id="defaultFontUploadFile"
-                    accept=".ttf,.otf,.woff,.woff2,.ttc,font/ttf,font/otf,font/woff,font/woff2"
-                    hidden
-                  />
-                </div>
-              </div>
-            </div>
-            <p class="hint" id="defaultFontHint" style="margin-top: 6px">
-              字形可填字型名稱（如 <code>Noto Sans TC</code>），或 <code>fonts/我的字.ttf</code>。上傳會寫入工具夾
-              <code>fonts/</code> 並自動填路徑（需授權資料夾）。各窗空白＝用這裡。
-            </p>
-            <div class="row">
-              <div>
-                <label for="defaultIconColor">預設圖示色</label>
-                <div class="color-pair">
-                  <input id="defaultIconColor" type="text" placeholder="空白＝跟文字色" />
-                  <input type="color" data-sync="defaultIconColor" value="#ffffff" title="快速選色" />
-                </div>
-              </div>
-              <div></div>
-            </div>
-            <p class="hint">
-              這裡是各窗共用的預設樣式：字級／字形／文字色／圖示色／底色／底圖。各橫列沒填（或底圖選「用預設」）就沿用這裡。圖示色空白＝跟文字色。
-            </p>
-              </div>
-            </div>
-            <div class="subfold is-collapsed" data-subfold="default-bg">
-              <button type="button" class="subfold-toggle" aria-expanded="false">
-                <span class="subfold-title">預設底色／底圖</span>
-                <span class="subfold-state">展開</span>
-              </button>
-              <div class="subfold-body">
-<div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="defaultShowBg" checked /> 預設顯示底色</label
-                >
-              </div>
-              <div>
-                <label for="defaultBg">預設底色</label>
-                <input id="defaultBg" type="text" value="rgba(0,0,0,0.45)" />
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                <label
-                  ><input type="checkbox" id="defaultShowPanelImg" /> 預設底圖</label
-                >
-              </div>
-              <div>
-                <label for="defaultPanelFit">預設底圖顯示</label>
-                <select id="defaultPanelFit">
-                  <option value="stretch">拉伸填滿</option>
-                  <option value="contain">完整顯示</option>
-                  <option value="cover">裁切填滿</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" id="defaultPanelImgRow">
-              <div>
-                <label for="defaultPanelImg">預設底圖網址</label>
-                <input
-                  id="defaultPanelImg"
-                  type="text"
-                  placeholder="可貼 圖片/xxx.png 或網址；各窗空白時沿用"
-                />
-              </div>
-              <div>
-                <label for="defaultPanelInset">預設外推（px）</label>
-                <input
-                  id="defaultPanelInset"
-                  type="text"
-                  inputmode="numeric"
-                  value="12"
-                  placeholder="12 或 8 12"
-                />
-              </div>
-            </div>
-            <p class="hint">
-              各窗勾了「顯示底圖」但網址空白＝用這裡的預設底圖；顯示方式／外推選「用預設」或空白也一樣。
-            </p>
-              </div>
-            </div>
-
-
             <div class="steps" id="yt-key-guide">
               <h3>YT API Key 怎麼申請（一次即可）</h3>
               <ol>
@@ -1849,6 +1720,142 @@
               <p class="hint">按上面按鈕會開新分頁。金鑰申請一次就能一直用。</p>
             </div>
           </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>預設樣式</h2>
+              <span class="side-title">各窗空白沿用</span>
+            </div>
+            <p class="hint" style="margin-top: 0">
+              各窗「字級／文字色／字形」「底色／底圖」沒填（或底圖選「用預設」）就沿用這裡。圖示色空白＝跟文字色。
+            </p>
+            <datalist id="fontFamilySuggest">
+              <option value="IBM Plex Sans TC"></option>
+              <option value="Noto Sans TC"></option>
+              <option value="Microsoft JhengHei"></option>
+              <option value="PingFang TC"></option>
+              <option value="Source Han Sans TC"></option>
+              <option value="Inter"></option>
+              <option value="Roboto"></option>
+            </datalist>
+            <div class="subfold is-collapsed" data-subfold="default-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">預設字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="defaultFontSize">預設字級</label>
+                    <input id="defaultFontSize" type="number" min="12" max="64" value="22" />
+                  </div>
+                  <div>
+                    <label for="defaultColor">預設文字色</label>
+                    <div class="color-pair">
+                      <input id="defaultColor" type="text" value="rgba(255,255,255,0.85)" />
+                      <input type="color" data-sync="defaultColor" value="#d9d9d9" title="快速選色" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="defaultFontFamily">預設字形</label>
+                    <input
+                      id="defaultFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="空白＝內建 IBM Plex 等"
+                    />
+                  </div>
+                  <div>
+                    <label for="defaultFontUploadBtn">上傳字形</label>
+                    <div class="actions" style="margin-top: 0">
+                      <button type="button" class="secondary" id="defaultFontUploadBtn">選擇字型檔</button>
+                      <input
+                        type="file"
+                        id="defaultFontUploadFile"
+                        accept=".ttf,.otf,.woff,.woff2,.ttc,font/ttf,font/otf,font/woff,font/woff2"
+                        hidden
+                      />
+                    </div>
+                  </div>
+                </div>
+                <p class="hint" id="defaultFontHint" style="margin-top: 6px">
+                  字形可填字型名稱（如 <code>Noto Sans TC</code>），或 <code>fonts/我的字.ttf</code>。上傳會寫入工具夾
+                  <code>fonts/</code> 並自動填路徑（需授權資料夾）。各窗空白＝用這裡。
+                </p>
+                <div class="row">
+                  <div>
+                    <label for="defaultIconColor">預設圖示色</label>
+                    <div class="color-pair">
+                      <input id="defaultIconColor" type="text" placeholder="空白＝跟文字色" />
+                      <input type="color" data-sync="defaultIconColor" value="#ffffff" title="快速選色" />
+                    </div>
+                  </div>
+                  <div></div>
+                </div>
+              </div>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="default-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">預設底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label
+                      ><input type="checkbox" id="defaultShowBg" checked /> 預設顯示底色</label
+                    >
+                  </div>
+                  <div>
+                    <label for="defaultBg">預設底色</label>
+                    <input id="defaultBg" type="text" value="rgba(0,0,0,0.45)" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label
+                      ><input type="checkbox" id="defaultShowPanelImg" /> 預設底圖</label
+                    >
+                  </div>
+                  <div>
+                    <label for="defaultPanelFit">預設底圖顯示</label>
+                    <select id="defaultPanelFit">
+                      <option value="stretch">拉伸填滿</option>
+                      <option value="contain">完整顯示</option>
+                      <option value="cover">裁切填滿</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row" id="defaultPanelImgRow">
+                  <div>
+                    <label for="defaultPanelImg">預設底圖網址</label>
+                    <input
+                      id="defaultPanelImg"
+                      type="text"
+                      placeholder="可貼 圖片/xxx.png 或網址；各窗空白時沿用"
+                    />
+                  </div>
+                  <div>
+                    <label for="defaultPanelInset">預設外推（px）</label>
+                    <input
+                      id="defaultPanelInset"
+                      type="text"
+                      inputmode="numeric"
+                      value="12"
+                      placeholder="12 或 8 12"
+                    />
+                  </div>
+                </div>
+                <p class="hint">
+                  各窗勾了「顯示底圖」但網址空白＝用這裡的預設底圖；顯示方式／外推選「用預設」或空白也一樣。
+                </p>
+              </div>
+            </div>
+          </aside>
         </div>
 
         <div class="band-group" id="group-account" data-group="account">
@@ -5116,7 +5123,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.6.8";
+        const APP_VERSION = "v3.6.9";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -5757,7 +5764,9 @@
           const root = getMainBandsRoot();
           if (!root) return;
           const scrollY = preserveScroll ? window.scrollY || window.pageYOffset || 0 : null;
-          const shared = root.querySelector(":scope > .band.band-solo");
+          const shared =
+            root.querySelector(":scope > .band[data-shared]") ||
+            root.querySelector(":scope > .band.band-solo");
           const groups = {
             account: root.querySelector("#group-account"),
             chat: root.querySelector("#group-chat"),

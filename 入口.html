@@ -1606,7 +1606,7 @@
           </a>
           <a href="#group-local">
             <span class="jump-label"><span class="jump-mark">C</span> 免帳號</span>
-            <span class="jump-items">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體</span>
+            <span class="jump-items">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體 C - ⑥ 番茄鐘</span>
           </a>
         </nav>
       </div>
@@ -4032,7 +4032,7 @@
           <div class="band-group-mark" aria-hidden="true">C</div>
           <div class="band-group-text">
             <h2 class="band-group-title">免帳號</h2>
-            <p class="band-group-desc">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體</p>
+            <p class="band-group-desc">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體 C - ⑥ 番茄鐘</p>
           </div>
         </div>
 
@@ -4651,6 +4651,199 @@
           </aside>
         </div>
         </div>
+<div class="tool-block" data-tool="pomodoro" data-group="local">
+<!-- C - ⑥ 番茄鐘 -->
+
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>C - ⑥ 番茄鐘</h2>
+              <span class="side-title">專注／休息循環</span>
+            </div>
+            <div class="row">
+              <div>
+                <label for="pomoWorkMins">專注（分）</label>
+                <input id="pomoWorkMins" type="number" min="1" max="180" step="1" value="25" />
+              </div>
+              <div>
+                <label for="pomoBreakMins">短休（分）</label>
+                <input id="pomoBreakMins" type="number" min="1" max="60" step="1" value="5" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="pomoLongBreakMins">長休（分）</label>
+                <input
+                  id="pomoLongBreakMins"
+                  type="number"
+                  min="1"
+                  max="60"
+                  step="1"
+                  value="15"
+                />
+              </div>
+              <div>
+                <label for="pomoLongEvery">每幾輪長休</label>
+                <input id="pomoLongEvery" type="number" min="1" max="12" step="1" value="4" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="pomoWorkLabel">專注標籤</label>
+                <input id="pomoWorkLabel" type="text" value="專注" placeholder="專注" />
+              </div>
+              <div>
+                <label for="pomoBreakLabel">短休標籤</label>
+                <input id="pomoBreakLabel" type="text" value="休息" placeholder="休息" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="pomoLongLabel">長休標籤</label>
+                <input id="pomoLongLabel" type="text" value="長休" placeholder="長休" />
+              </div>
+              <div>
+                <label><input type="checkbox" id="pomoShowIcon" checked /> 顯示圖示</label>
+              </div>
+            </div>
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label for="pomoIcon">番茄鐘圖示</label>
+              <input
+                id="pomoIcon"
+                type="text"
+                list="materialIconSuggest"
+                placeholder="空白＝預設 timer；或圖片網址"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="pomoIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="pomoIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="pomoIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              OBS 瀏覽器來源請開「互動」：點一下暫停／繼續，連點兩下跳下一階段。右側預覽用較短秒數示範。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>C - ⑥ 番茄鐘網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="pomoUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 260–420、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyPomo">複製番茄鐘網址</button>
+              <a class="btn secondary" id="openPomo" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewPomo" title="pomodoro preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="pomo-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="pomoFontSize">字級</label>
+                    <input id="pomoFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="pomoColor">文字色</label>
+                    <div class="color-pair">
+                      <input id="pomoColor" type="text" placeholder="用預設" />
+                      <input type="color" data-sync="pomoColor" value="#d9d9d9" title="快速選色" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="pomoFontFamily">字形</label>
+                    <input
+                      id="pomoFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。</p>
+              </div>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="pomo-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label><input type="checkbox" id="pomoShowBg" checked /> 顯示底色</label>
+                  </div>
+                  <div class="field" style="margin-top: 0">
+                    <label for="pomoBg">底色</label>
+                    <input id="pomoBg" type="text" value="rgba(0,0,0,0.45)" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label
+                      ><input type="checkbox" id="pomoShowPanelImg" /> 顯示底圖</label
+                    >
+                  </div>
+                  <div>
+                    <label for="pomoPanelFit">底圖顯示</label>
+                    <select id="pomoPanelFit">
+                      <option value="">用預設</option>
+                      <option value="stretch">拉伸填滿</option>
+                      <option value="contain">完整顯示</option>
+                      <option value="cover">裁切填滿</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row" id="pomoPanelImgRow">
+                  <div>
+                    <label for="pomoPanelImg">底圖網址</label>
+                    <input
+                      id="pomoPanelImg"
+                      type="text"
+                      placeholder="空白＝用上方預設底圖"
+                    />
+                  </div>
+                  <div>
+                    <label for="pomoPanelInset">外推（px）</label>
+                    <input
+                      id="pomoPanelInset"
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="用預設"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+</div>
       </div>
 
       <div class="note">
@@ -4923,7 +5116,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.6.7";
+        const APP_VERSION = "v3.6.8";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -4960,6 +5153,7 @@
           "子頁/sponsor.html",
           "子頁/counter.html",
           "子頁/media.html",
+          "子頁/pomodoro.html",
           "子頁/yt-bridge.html",
           "啟動本機伺服器.bat",
           "local-server.js",
@@ -5228,6 +5422,7 @@
             "stream-live-sync.js",
             "子頁/counter.html",
             "子頁/media.html",
+            "子頁/pomodoro.html",
             "子頁/danmaku.html",
             "子頁/chat-pop.html",
             "子頁/chat-walk.html",
@@ -5474,6 +5669,7 @@
           "days",
           "game",
           "media",
+          "pomodoro",
         ];
         const TOOL_ORDER_KEY = "laji_obs_toolbox_tool_order";
         const LAYOUT_MODE_KEY = "laji_obs_toolbox_layout_mode";
@@ -7132,6 +7328,25 @@
           mediaMute: $("mediaMute"),
           mediaVolume: $("mediaVolume"),
           mediaHud: $("mediaHud"),
+          pomoWorkMins: $("pomoWorkMins"),
+          pomoBreakMins: $("pomoBreakMins"),
+          pomoLongBreakMins: $("pomoLongBreakMins"),
+          pomoLongEvery: $("pomoLongEvery"),
+          pomoWorkLabel: $("pomoWorkLabel"),
+          pomoBreakLabel: $("pomoBreakLabel"),
+          pomoLongLabel: $("pomoLongLabel"),
+          pomoShowIcon: $("pomoShowIcon"),
+          pomoIcon: $("pomoIcon"),
+          pomoIconColor: $("pomoIconColor"),
+          pomoFontSize: $("pomoFontSize"),
+          pomoFontFamily: $("pomoFontFamily"),
+          pomoColor: $("pomoColor"),
+          pomoShowBg: $("pomoShowBg"),
+          pomoBg: $("pomoBg"),
+          pomoShowPanelImg: $("pomoShowPanelImg"),
+          pomoPanelImg: $("pomoPanelImg"),
+          pomoPanelFit: $("pomoPanelFit"),
+          pomoPanelInset: $("pomoPanelInset"),
           dmUseChatExtra: $("dmUseChatExtra"),
           dmSource: $("dmSource"),
           dmDir: $("dmDir"),
@@ -7897,6 +8112,13 @@
             fields.ctrPanelFit,
             fields.ctrPanelInset
           );
+          syncPanelImgRow(
+            fields.pomoShowPanelImg,
+            "pomoPanelImgRow",
+            fields.pomoPanelImg,
+            fields.pomoPanelFit,
+            fields.pomoPanelInset
+          );
           // chat 既有 syncChatBgRows 會處理
         }
 
@@ -7915,6 +8137,7 @@
             fields.chatFontSize,
             fields.spFontSize,
             fields.ctrFontSize,
+            fields.pomoFontSize,
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = `預設 ${fs}`;
@@ -7928,6 +8151,7 @@
             fields.chatFontFamily,
             fields.spFontFamily,
             fields.ctrFontFamily,
+            fields.pomoFontFamily,
             fields.dmFontFamily,
             fields.popFontFamily,
             fields.walkFontFamily,
@@ -7945,6 +8169,7 @@
             fields.chatColor,
             fields.spColor,
             fields.ctrColor,
+            fields.pomoColor,
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = `預設 ${col}`;
@@ -7955,6 +8180,7 @@
             fields.daysIconColor,
             fields.gameIconColor,
             fields.ctrIconColor,
+            fields.pomoIconColor,
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = fields.defaultIconColor.value.trim()
@@ -8022,6 +8248,7 @@
           syncBgField(fields.chatShowBg, fields.chatBg);
           syncBgField(fields.spShowBg, fields.spBg);
           syncBgField(fields.ctrShowBg, fields.ctrBg);
+          syncBgField(fields.pomoShowBg, fields.pomoBg);
           syncAllPanelImgRows();
         }
 
@@ -8647,7 +8874,7 @@
           return { href: url.toString(), mods, moduleOrder };
         }
 
-        function buildCountdownUrl() {
+          function buildCountdownUrl() {
           const url = pageUrl("countdown.html");
           const p = url.searchParams;
           if (fields.cdLabel.value.trim()) p.set("cdLabel", fields.cdLabel.value.trim());
@@ -8677,6 +8904,51 @@
             fields.countdownPanelFit,
             fields.countdownPanelInset
           );
+          return url.toString();
+        }
+
+        function buildPomodoroUrl(opts) {
+          const options = opts || {};
+          const url = pageUrl("pomodoro.html");
+          const p = url.searchParams;
+          const work = Number(fields.pomoWorkMins && fields.pomoWorkMins.value);
+          const brk = Number(fields.pomoBreakMins && fields.pomoBreakMins.value);
+          const longBrk = Number(fields.pomoLongBreakMins && fields.pomoLongBreakMins.value);
+          const every = Number(fields.pomoLongEvery && fields.pomoLongEvery.value);
+          p.set("workMins", String(Number.isFinite(work) && work > 0 ? Math.round(work) : 25));
+          p.set("breakMins", String(Number.isFinite(brk) && brk > 0 ? Math.round(brk) : 5));
+          p.set(
+            "longBreakMins",
+            String(Number.isFinite(longBrk) && longBrk > 0 ? Math.round(longBrk) : 15)
+          );
+          p.set("longEvery", String(Number.isFinite(every) && every > 0 ? Math.round(every) : 4));
+          if (fields.pomoWorkLabel && fields.pomoWorkLabel.value.trim()) {
+            p.set("workLabel", fields.pomoWorkLabel.value.trim());
+          }
+          if (fields.pomoBreakLabel && fields.pomoBreakLabel.value.trim()) {
+            p.set("breakLabel", fields.pomoBreakLabel.value.trim());
+          }
+          if (fields.pomoLongLabel && fields.pomoLongLabel.value.trim()) {
+            p.set("longLabel", fields.pomoLongLabel.value.trim());
+          }
+          setIconParam(p, "pomoIcon", fields.pomoShowIcon, fields.pomoIcon, "timer");
+          styleParams(
+            p,
+            fields.pomoShowBg,
+            fields.pomoBg,
+            fields.pomoFontSize,
+            fields.pomoColor,
+            fields.pomoIconColor,
+            fields.pomoFontFamily
+          );
+          applyPanelImageParams(
+            p,
+            fields.pomoShowPanelImg,
+            fields.pomoPanelImg,
+            fields.pomoPanelFit,
+            fields.pomoPanelInset
+          );
+          if (options.demo) p.set("demo", "1");
           return url.toString();
         }
 
@@ -10176,6 +10448,17 @@ function syncYtAfterTwUi() {
           if ($("mediaUrl")) $("mediaUrl").value = mediaHref;
           updateMediaPreview(mediaHref);
 
+          const pomoHref = buildPomodoroUrl();
+          const pomoDemoHref = buildPomodoroUrl({ demo: true });
+          if ($("pomoUrl")) $("pomoUrl").value = pomoHref;
+          if ($("openPomo")) $("openPomo").href = pomoHref;
+          // 網址沒變就不要重設 iframe，否則示範倒數會一直被重載重置
+          const pomoFrame = $("previewPomo");
+          if (pomoFrame && pomoFrame.dataset.href !== pomoDemoHref) {
+            pomoFrame.dataset.href = pomoDemoHref;
+            pomoFrame.src = pomoDemoHref;
+          }
+
           const dmHref = buildDanmakuUrl();
           const dmDemoHref = buildDanmakuUrl({ demo: true });
           if ($("dmUrl")) $("dmUrl").value = dmHref;
@@ -10228,6 +10511,7 @@ function syncYtAfterTwUi() {
             spHref,
             ctrHref,
             mediaHref,
+            pomoHref,
             dmHref,
             popHref,
             walkHref,
@@ -10261,6 +10545,15 @@ function syncYtAfterTwUi() {
           $("daysUrl").select();
           await copyText(daysHref, $("copyDays"), "複製倒數天數網址");
         });
+
+        const copyPomoBtn = $("copyPomo");
+        if (copyPomoBtn) {
+          copyPomoBtn.addEventListener("click", async () => {
+            const { pomoHref } = buildUrls();
+            if ($("pomoUrl")) $("pomoUrl").select();
+            await copyText(pomoHref, copyPomoBtn, "複製番茄鐘網址");
+          });
+        }
 
         $("copyVc").addEventListener("click", async () => {
           const { vcHref } = buildUrls();
@@ -10642,7 +10935,9 @@ function syncYtAfterTwUi() {
               el === fields.spShowBg ||
               el === fields.spShowPanelImg ||
               el === fields.ctrShowBg ||
-              el === fields.ctrShowPanelImg
+              el === fields.ctrShowPanelImg ||
+              el === fields.pomoShowBg ||
+              el === fields.pomoShowPanelImg
             ) {
               syncAllBgFields();
             }

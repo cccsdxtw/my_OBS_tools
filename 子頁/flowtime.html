@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OBS 心流工作法</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@600&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="../material-icons.js"></script>
+    <script src="../panel-bg.js"></script>
+    <script src="../font-style.js"></script>
+    <style>
+      :root {
+        --bg: rgba(0, 0, 0, 0.45);
+        --fg: rgba(255, 255, 255, 0.85);
+        --icon: var(--fg);
+        --muted: rgba(255, 255, 255, 0.7);
+        --size: 22px;
+        --bar-h: calc(var(--size) + 16px);
+        --pad-x: 12px;
+        --gap: 10px;
+        --radius: 0;
+        --font-zh: "IBM Plex Sans TC", "Noto Sans TC", "Microsoft JhengHei",
+          "PingFang TC", sans-serif;
+        --font-num: "JetBrains Mono", "Cascadia Mono", "Consolas", "Courier New",
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+        color: var(--fg);
+        cursor: pointer;
+        user-select: none;
+      }
+
+      #bar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: var(--gap);
+        height: var(--bar-h);
+        padding: var(--panel-inset, 0 var(--pad-x));
+        background-color: var(--bg);
+        background-image: var(--panel-img, none);
+        background-size: var(--panel-fit, 100% 100%);
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: var(--radius);
+        white-space: nowrap;
+        line-height: 1;
+        overflow: hidden;
+      }
+
+      #bar.is-paused .value {
+        opacity: 0.55;
+      }
+
+      #bar.is-warn .label {
+        color: #ffb074;
+      }
+
+      .icon-slot {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(var(--size) * 0.95);
+        height: calc(var(--size) * 0.95);
+        flex: 0 0 auto;
+      }
+
+      .icon-slot[hidden] {
+        display: none;
+      }
+
+      .icon,
+      .custom-icon {
+        width: 100%;
+        height: 100%;
+        opacity: 0.95;
+        display: block;
+        object-fit: contain;
+      }
+
+      .material-symbols-outlined.icon {
+        width: auto;
+        height: auto;
+        font-size: calc(var(--size) * 0.95);
+        line-height: 1;
+        color: var(--icon);
+        font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+        user-select: none;
+      }
+
+      .ms-svg-icon.icon,
+      .svg-icon {
+        width: 100%;
+        height: 100%;
+        color: var(--icon);
+        fill: currentColor;
+      }
+
+      .label,
+      .value,
+      .hint,
+      .suggest {
+        display: flex;
+        align-items: center;
+        height: var(--size);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        line-height: 1;
+      }
+
+      .label {
+        color: var(--muted);
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.82);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        transform: translateY(0.06em);
+      }
+
+      .value {
+        font-family: var(--font-num);
+        font-size: var(--size);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        transform: translateY(0.02em);
+      }
+
+      .hint,
+      .suggest {
+        font-family: var(--font-zh);
+        font-size: calc(var(--size) * 0.62);
+        color: var(--muted);
+        opacity: 0.85;
+        transform: translateY(0.06em);
+      }
+
+      .hint[hidden],
+      .suggest[hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="bar"
+      aria-live="polite"
+      title="點一下暫停／繼續；連點兩下：專注→依時長休息／休息完→再專注"
+    >
+      <span class="icon-slot" id="flow-icon"></span>
+      <span class="label" id="phase-label">心流</span>
+      <span class="value" id="clock">00:00</span>
+      <span class="suggest" id="suggest" hidden></span>
+      <span class="hint" id="pause-hint" hidden>暫停</span>
+    </div>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(location.search);
+        const demo = ["1", "true", "yes", "on"].includes(
+          String(params.get("demo") || "")
+            .trim()
+            .toLowerCase()
+        );
+
+        function cssVar(name, value) {
+          if (value) document.documentElement.style.setProperty(name, value);
+        }
+
+        cssVar("--size", params.get("fontSize") ? `${params.get("fontSize")}px` : "");
+        if (window.ObsFontStyle) ObsFontStyle.applyFromParams(params, { cssVar });
+        cssVar("--fg", params.get("color"));
+        cssVar("--icon", params.get("iconColor") || params.get("iconColour"));
+        const bgParam = (params.get("bg") || "").trim();
+        if (
+          !bgParam ||
+          bgParam === "0" ||
+          bgParam === "false" ||
+          bgParam === "none" ||
+          bgParam === "off"
+        ) {
+          cssVar("--bg", "transparent");
+        } else {
+          cssVar("--bg", bgParam);
+        }
+        if (window.ObsPanelBg) {
+          ObsPanelBg.applyOverlayPanelBg(params, cssVar, { defaultInset: 12 });
+        }
+        cssVar("--gap", params.get("gap") ? `${params.get("gap")}px` : "");
+        cssVar("--radius", params.get("radius") ? `${params.get("radius")}px` : "");
+
+        function clampInt(raw, fallback, min, max) {
+          if (raw == null || String(raw).trim() === "") return fallback;
+          const n = Number(raw);
+          if (!Number.isFinite(n)) return fallback;
+          return Math.round(Math.min(max, Math.max(min, n)));
+        }
+
+        // fifth=1/5、fourth=1/4、ladder=經典階梯
+        const modeRaw = String(params.get("breakMode") || params.get("mode") || "fifth")
+          .trim()
+          .toLowerCase();
+        const breakMode =
+          modeRaw === "fourth" || modeRaw === "1/4" || modeRaw === "quarter"
+            ? "fourth"
+            : modeRaw === "ladder" || modeRaw === "step" || modeRaw === "stairs"
+              ? "ladder"
+              : "fifth";
+        // 預覽：短正計時後自動進休息，方便 iframe 看到兩階段
+        const demoAutoBreakSec = clampInt(params.get("demoWorkSec"), 8, 4, 120);
+        const warnSec = demo
+          ? clampInt(params.get("warnSec"), demoAutoBreakSec + 120, 5, 3600)
+          : clampInt(params.get("warnMins") || params.get("warn"), 90, 1, 240) * 60;
+        const autoStart = !["0", "false", "off", "no"].includes(
+          String(params.get("autoStart") || "1")
+            .trim()
+            .toLowerCase()
+        );
+        const showHint = !["0", "false", "off", "no"].includes(
+          String(params.get("showHint") || "1")
+            .trim()
+            .toLowerCase()
+        );
+        const showSuggest = !["0", "false", "off", "no"].includes(
+          String(params.get("showSuggest") || "1")
+            .trim()
+            .toLowerCase()
+        );
+
+        const labels = {
+          work: (params.get("workLabel") || "心流").trim() || "心流",
+          break: (params.get("breakLabel") || "休息").trim() || "休息",
+          warn: (params.get("warnLabel") || "找斷點").trim() || "找斷點",
+        };
+
+        const storeKey =
+          "my_obs_tools_flowtime:" +
+          (params.get("id") || [breakMode, warnSec, labels.work, labels.break].join("|"));
+
+        const els = {
+          bar: document.getElementById("bar"),
+          label: document.getElementById("phase-label"),
+          clock: document.getElementById("clock"),
+          hint: document.getElementById("pause-hint"),
+          suggest: document.getElementById("suggest"),
+          icon: document.getElementById("flow-icon"),
+        };
+
+        function isUrlIcon(raw) {
+          const s = String(raw || "").trim();
+          return (
+            /^https?:\/\//i.test(s) ||
+            /\.(png|svg|webp|gif|jpe?g)(\?|#|$)/i.test(s)
+          );
+        }
+
+        const iconRaw = (
+          params.get("flowIcon") ||
+          params.get("icon") ||
+          "hourglass_top"
+        ).trim();
+        const hideIcon =
+          !iconRaw ||
+          iconRaw === "0" ||
+          iconRaw === "none" ||
+          iconRaw === "off" ||
+          iconRaw === "false" ||
+          iconRaw === "hide";
+        if (els.icon && hideIcon) {
+          els.icon.hidden = true;
+          els.icon.innerHTML = "";
+        } else if (els.icon) {
+          els.icon.hidden = false;
+          if (isUrlIcon(iconRaw)) {
+            els.icon.innerHTML = "";
+            const img = document.createElement("img");
+            img.className = "custom-icon";
+            img.alt = "";
+            img.referrerPolicy = "no-referrer";
+            img.src = iconRaw;
+            img.onerror = () => {
+              els.icon.innerHTML = "";
+            };
+            els.icon.appendChild(img);
+          } else if (window.MyObsMaterialIcons) {
+            window.MyObsMaterialIcons.mountIcon(els.icon, iconRaw || "hourglass_top", {
+              forceSvg: true,
+            });
+          }
+        }
+
+        function pad(n) {
+          return String(Math.max(0, Math.floor(n))).padStart(2, "0");
+        }
+
+        function formatMS(totalSeconds) {
+          const s = Math.max(0, Math.floor(totalSeconds));
+          const h = Math.floor(s / 3600);
+          const m = Math.floor((s % 3600) / 60);
+          const sec = s % 60;
+          if (h > 0) return `${h}:${pad(m)}:${pad(sec)}`;
+          return `${pad(m)}:${pad(sec)}`;
+        }
+
+        /** 依專注秒數算建議休息秒數 */
+        function breakSecondsForWork(workSeconds) {
+          const secs = Math.max(0, workSeconds);
+          let brk;
+          if (breakMode === "fourth") {
+            brk = Math.max(60, Math.round(secs / 4));
+          } else if (breakMode === "ladder") {
+            const mins = secs / 60;
+            if (mins < 25) brk = 5 * 60;
+            else if (mins < 50) brk = 8 * 60;
+            else if (mins < 90) brk = 10 * 60;
+            else brk = 15 * 60;
+          } else {
+            // fifth 1/5
+            brk = Math.max(60, Math.round(secs / 5));
+          }
+          // 預覽用短休息（約 12–16 秒），方便看見倒數又不會太閃
+          if (demo) return Math.max(12, Math.min(16, 10 + Math.round(secs / 3)));
+          return brk;
+        }
+
+        function formatBreakHint(breakSec) {
+          const m = Math.max(1, Math.round(breakSec / 60));
+          return `休 ${m} 分`;
+        }
+
+        function loadState() {
+          if (demo) return null;
+          try {
+            const raw = JSON.parse(localStorage.getItem(storeKey) || "null");
+            if (!raw || typeof raw !== "object") return null;
+            if (!["work", "break"].includes(raw.phase)) return null;
+            return raw;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function saveState() {
+          if (demo) return;
+          try {
+            localStorage.setItem(
+              storeKey,
+              JSON.stringify({
+                phase: state.phase,
+                elapsedMs: state.elapsedMs,
+                remainMs: state.remainMs,
+                running: state.running,
+                savedAt: Date.now(),
+              })
+            );
+          } catch (_) {}
+        }
+
+        const saved = loadState();
+        const state = {
+          phase: (saved && saved.phase) || "work",
+          // work：正計時累積；break：倒數剩餘
+          elapsedMs:
+            saved && Number.isFinite(saved.elapsedMs)
+              ? Math.max(0, Number(saved.elapsedMs))
+              : 0,
+          remainMs:
+            saved && Number.isFinite(saved.remainMs)
+              ? Math.max(0, Number(saved.remainMs))
+              : 0,
+          running: saved ? !!saved.running && autoStart : autoStart,
+          lastTick: Date.now(),
+          demoAutoDone: false,
+        };
+
+        if (saved && saved.running && Number(saved.savedAt)) {
+          const elapsed = Date.now() - Number(saved.savedAt);
+          if (elapsed > 0 && state.running) {
+            if (state.phase === "work") state.elapsedMs += elapsed;
+            else state.remainMs = Math.max(0, state.remainMs - elapsed);
+          }
+        }
+
+        function startBreakFromWork() {
+          const workSec = Math.max(1, Math.floor(state.elapsedMs / 1000));
+          const brk = breakSecondsForWork(workSec);
+          state.phase = "break";
+          state.remainMs = brk * 1000;
+          state.elapsedMs = 0;
+          state.running = true;
+          state.lastTick = Date.now();
+        }
+
+        function startWork() {
+          state.phase = "work";
+          state.elapsedMs = 0;
+          state.remainMs = 0;
+          state.running = true;
+          state.lastTick = Date.now();
+          // 預覽可多輪：每段心流都再自動進一次休息
+          if (demo) state.demoAutoDone = false;
+        }
+
+        function nextPhase() {
+          if (state.phase === "work") startBreakFromWork();
+          else startWork();
+        }
+
+        function render() {
+          const warn =
+            state.phase === "work" && state.elapsedMs / 1000 >= warnSec;
+          els.label.textContent =
+            state.phase === "break"
+              ? labels.break
+              : warn
+                ? labels.warn
+                : labels.work;
+          if (state.phase === "work") {
+            els.clock.textContent = formatMS(state.elapsedMs / 1000);
+            if (els.suggest) {
+              if (showSuggest && state.elapsedMs >= 5000) {
+                const brk = breakSecondsForWork(state.elapsedMs / 1000);
+                els.suggest.hidden = false;
+                els.suggest.textContent = formatBreakHint(brk);
+              } else {
+                els.suggest.hidden = true;
+              }
+            }
+          } else {
+            els.clock.textContent = formatMS(Math.ceil(state.remainMs / 1000));
+            if (els.suggest) els.suggest.hidden = true;
+          }
+          els.bar.classList.toggle("is-paused", !state.running);
+          els.bar.classList.toggle("is-warn", warn);
+          if (els.hint) {
+            if (showHint && !state.running) {
+              els.hint.hidden = false;
+              els.hint.textContent = "暫停";
+            } else {
+              els.hint.hidden = true;
+            }
+          }
+        }
+
+        function tick() {
+          const now = Date.now();
+          const dt = now - state.lastTick;
+          state.lastTick = now;
+          if (state.running) {
+            if (state.phase === "work") {
+              state.elapsedMs += dt;
+              if (demo && !state.demoAutoDone && state.elapsedMs >= demoAutoBreakSec * 1000) {
+                state.demoAutoDone = true;
+                startBreakFromWork();
+              }
+            } else {
+              state.remainMs -= dt;
+              if (state.remainMs <= 0) {
+                startWork();
+              }
+            }
+            saveState();
+          }
+          render();
+        }
+
+        let clickTimer = 0;
+        function onActivate(ev) {
+          if (ev && ev.type === "keydown" && ev.key !== " " && ev.key !== "Enter") {
+            return;
+          }
+          if (ev) ev.preventDefault();
+          if (clickTimer) {
+            clearTimeout(clickTimer);
+            clickTimer = 0;
+            nextPhase();
+            saveState();
+            render();
+            return;
+          }
+          clickTimer = setTimeout(() => {
+            clickTimer = 0;
+            state.running = !state.running;
+            state.lastTick = Date.now();
+            saveState();
+            render();
+          }, 280);
+        }
+
+        document.addEventListener("click", onActivate);
+        document.addEventListener("keydown", onActivate);
+
+        render();
+        setInterval(tick, 200);
+        // 預覽備援：用計時器觸發進休息（避免少數環境 interval 漂移）
+        if (demo) {
+          setTimeout(() => {
+            if (state.phase === "work" && !state.demoAutoDone) {
+              state.demoAutoDone = true;
+              if (state.elapsedMs < demoAutoBreakSec * 1000) {
+                state.elapsedMs = demoAutoBreakSec * 1000;
+              }
+              startBreakFromWork();
+              render();
+            }
+          }, demoAutoBreakSec * 1000 + 200);
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1606,7 +1606,7 @@
           </a>
           <a href="#group-local">
             <span class="jump-label"><span class="jump-mark">C</span> 免帳號</span>
-            <span class="jump-items">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體 C - ⑥ 番茄鐘</span>
+            <span class="jump-items">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體 C - ⑥ 番茄鐘 C - ⑦ 心流</span>
           </a>
         </nav>
       </div>
@@ -4039,7 +4039,7 @@
           <div class="band-group-mark" aria-hidden="true">C</div>
           <div class="band-group-text">
             <h2 class="band-group-title">免帳號</h2>
-            <p class="band-group-desc">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體 C - ⑥ 番茄鐘</p>
+            <p class="band-group-desc">C - ① 倒計時 C - ② 倒數天數 C - ③ 遊戲名稱 C - ⑤ 媒體 C - ⑥ 番茄鐘 C - ⑦ 心流</p>
           </div>
         </div>
 
@@ -4851,6 +4851,194 @@
           </aside>
         </div>
 </div>
+<div class="tool-block" data-tool="flowtime" data-group="local">
+<!-- C - ⑦ 心流工作法 -->
+
+        <div class="band">
+          <section class="card">
+            <div class="card-head">
+              <h2>C - ⑦ 心流工作法</h2>
+              <span class="side-title">正計時 · 依時長休息</span>
+            </div>
+            <p class="hint">
+              不設固定番茄：專注時<strong>正計時</strong>；你覺得該休息時連點兩下，依剛才專注長度算休息並倒數。休息結束自動再進心流。
+            </p>
+            <div class="row">
+              <div>
+                <label for="flowBreakMode">休息算法</label>
+                <select id="flowBreakMode">
+                  <option value="fifth" selected>1/5 標準（專注÷5）</option>
+                  <option value="fourth">1/4 高耗腦（專注÷4）</option>
+                  <option value="ladder">經典階梯（&lt;25→5／25–50→8／50–90→10／&gt;90→15 分）</option>
+                </select>
+              </div>
+              <div>
+                <label for="flowWarnMins">提醒找斷點（分）</label>
+                <input id="flowWarnMins" type="number" min="1" max="240" step="1" value="90" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="flowWorkLabel">心流標籤</label>
+                <input id="flowWorkLabel" type="text" value="心流" placeholder="心流" />
+              </div>
+              <div>
+                <label for="flowBreakLabel">休息標籤</label>
+                <input id="flowBreakLabel" type="text" value="休息" placeholder="休息" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="flowWarnLabel">逾時標籤</label>
+                <input id="flowWarnLabel" type="text" value="找斷點" placeholder="找斷點" />
+              </div>
+              <div>
+                <label
+                  ><input type="checkbox" id="flowShowSuggest" checked /> 顯示建議休息</label
+                >
+              </div>
+            </div>
+            <div class="actions" style="margin-top: 12px">
+              <a
+                class="btn secondary"
+                href="https://fonts.google.com/icons"
+                target="_blank"
+                rel="noopener"
+                >開啟 Google Icons 圖示庫</a
+              >
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="flowShowIcon" checked /> 顯示圖示</label>
+            </div>
+            <div class="field">
+              <label for="flowIcon">心流圖示</label>
+              <input
+                id="flowIcon"
+                type="text"
+                list="materialIconSuggest"
+                placeholder="空白＝預設 hourglass_top；或圖片網址"
+              />
+            </div>
+            <div class="row">
+              <div>
+                <label for="flowIconColor">圖示色</label>
+                <div class="color-pair">
+                  <input id="flowIconColor" type="text" placeholder="用預設／文字色" />
+                  <input type="color" data-sync="flowIconColor" value="#ffffff" title="快速選色" />
+                </div>
+              </div>
+              <div></div>
+            </div>
+            <p class="hint">
+              OBS 瀏覽器來源請開「互動」：點一下暫停／繼續；連點兩下結束本段並進下一階段。右側預覽會短正計時後自動示範休息。
+            </p>
+          </section>
+
+          <div class="band-divider" aria-hidden="true"></div>
+
+          <aside class="card">
+            <div class="card-head">
+              <h2>C - ⑦ 心流網址</h2>
+              <span class="side-title">OBS 瀏覽器來源</span>
+            </div>
+            <textarea id="flowUrl" class="url-box" readonly></textarea>
+            <p class="hint">建議寬度 280–460、高度 40–60。</p>
+            <div class="actions">
+              <button type="button" id="copyFlow">複製心流網址</button>
+              <a class="btn secondary" id="openFlow" href="#" target="_blank" rel="noopener">預覽</a>
+            </div>
+            <div class="preview-wrap">
+              <iframe id="previewFlow" title="flowtime preview"></iframe>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="flow-text">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">字級／文字色／字形</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label for="flowFontSize">字級</label>
+                    <input id="flowFontSize" type="number" min="12" max="64" placeholder="用預設" />
+                  </div>
+                  <div>
+                    <label for="flowColor">文字色</label>
+                    <div class="color-pair">
+                      <input id="flowColor" type="text" placeholder="用預設" />
+                      <input type="color" data-sync="flowColor" value="#d9d9d9" title="快速選色" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="flowFontFamily">字形</label>
+                    <input
+                      id="flowFontFamily"
+                      type="text"
+                      list="fontFamilySuggest"
+                      placeholder="用預設"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <p class="hint">空白＝用最上方預設。</p>
+              </div>
+            </div>
+            <div class="subfold is-collapsed" data-subfold="flow-bg">
+              <button type="button" class="subfold-toggle" aria-expanded="false">
+                <span class="subfold-title">底色／底圖</span>
+                <span class="subfold-state">展開</span>
+              </button>
+              <div class="subfold-body">
+                <div class="row">
+                  <div>
+                    <label><input type="checkbox" id="flowShowBg" checked /> 顯示底色</label>
+                  </div>
+                  <div class="field" style="margin-top: 0">
+                    <label for="flowBg">底色</label>
+                    <input id="flowBg" type="text" value="rgba(0,0,0,0.45)" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label
+                      ><input type="checkbox" id="flowShowPanelImg" /> 顯示底圖</label
+                    >
+                  </div>
+                  <div>
+                    <label for="flowPanelFit">底圖顯示</label>
+                    <select id="flowPanelFit">
+                      <option value="">用預設</option>
+                      <option value="stretch">拉伸填滿</option>
+                      <option value="contain">完整顯示</option>
+                      <option value="cover">裁切填滿</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row" id="flowPanelImgRow">
+                  <div>
+                    <label for="flowPanelImg">底圖網址</label>
+                    <input
+                      id="flowPanelImg"
+                      type="text"
+                      placeholder="空白＝用上方預設底圖"
+                    />
+                  </div>
+                  <div>
+                    <label for="flowPanelInset">外推（px）</label>
+                    <input
+                      id="flowPanelInset"
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="用預設"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+</div>
       </div>
 
       <div class="note">
@@ -5123,7 +5311,7 @@
           el.value = v == null ? "" : String(v);
         }
 
-        const APP_VERSION = "v3.6.9";
+        const APP_VERSION = "v3.6.10";
         // Twitch Public Client ID（Device Code；勿放 Client Secret）
         const TWITCH_FOLLOW_CLIENT_ID = "e4xrdv8q0d7ij7k7h5ce7os0u0rd5v";
         const TWITCH_FOLLOW_AUTH_KEY = "my_obs_tools_twitch_follow_auth";
@@ -5161,6 +5349,7 @@
           "子頁/counter.html",
           "子頁/media.html",
           "子頁/pomodoro.html",
+          "子頁/flowtime.html",
           "子頁/yt-bridge.html",
           "啟動本機伺服器.bat",
           "local-server.js",
@@ -5430,6 +5619,7 @@
             "子頁/counter.html",
             "子頁/media.html",
             "子頁/pomodoro.html",
+            "子頁/flowtime.html",
             "子頁/danmaku.html",
             "子頁/chat-pop.html",
             "子頁/chat-walk.html",
@@ -5677,6 +5867,7 @@
           "game",
           "media",
           "pomodoro",
+          "flowtime",
         ];
         const TOOL_ORDER_KEY = "laji_obs_toolbox_tool_order";
         const LAYOUT_MODE_KEY = "laji_obs_toolbox_layout_mode";
@@ -7356,6 +7547,24 @@
           pomoPanelImg: $("pomoPanelImg"),
           pomoPanelFit: $("pomoPanelFit"),
           pomoPanelInset: $("pomoPanelInset"),
+          flowBreakMode: $("flowBreakMode"),
+          flowWarnMins: $("flowWarnMins"),
+          flowWorkLabel: $("flowWorkLabel"),
+          flowBreakLabel: $("flowBreakLabel"),
+          flowWarnLabel: $("flowWarnLabel"),
+          flowShowSuggest: $("flowShowSuggest"),
+          flowShowIcon: $("flowShowIcon"),
+          flowIcon: $("flowIcon"),
+          flowIconColor: $("flowIconColor"),
+          flowFontSize: $("flowFontSize"),
+          flowFontFamily: $("flowFontFamily"),
+          flowColor: $("flowColor"),
+          flowShowBg: $("flowShowBg"),
+          flowBg: $("flowBg"),
+          flowShowPanelImg: $("flowShowPanelImg"),
+          flowPanelImg: $("flowPanelImg"),
+          flowPanelFit: $("flowPanelFit"),
+          flowPanelInset: $("flowPanelInset"),
           dmUseChatExtra: $("dmUseChatExtra"),
           dmSource: $("dmSource"),
           dmDir: $("dmDir"),
@@ -8128,6 +8337,13 @@
             fields.pomoPanelFit,
             fields.pomoPanelInset
           );
+          syncPanelImgRow(
+            fields.flowShowPanelImg,
+            "flowPanelImgRow",
+            fields.flowPanelImg,
+            fields.flowPanelFit,
+            fields.flowPanelInset
+          );
           // chat 既有 syncChatBgRows 會處理
         }
 
@@ -8147,6 +8363,7 @@
             fields.spFontSize,
             fields.ctrFontSize,
             fields.pomoFontSize,
+            fields.flowFontSize,
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = `預設 ${fs}`;
@@ -8161,6 +8378,7 @@
             fields.spFontFamily,
             fields.ctrFontFamily,
             fields.pomoFontFamily,
+            fields.flowFontFamily,
             fields.dmFontFamily,
             fields.popFontFamily,
             fields.walkFontFamily,
@@ -8179,6 +8397,7 @@
             fields.spColor,
             fields.ctrColor,
             fields.pomoColor,
+            fields.flowColor,
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = `預設 ${col}`;
@@ -8190,6 +8409,7 @@
             fields.gameIconColor,
             fields.ctrIconColor,
             fields.pomoIconColor,
+            fields.flowIconColor,
           ].forEach((el) => {
             if (!el) return;
             el.placeholder = fields.defaultIconColor.value.trim()
@@ -8258,6 +8478,7 @@
           syncBgField(fields.spShowBg, fields.spBg);
           syncBgField(fields.ctrShowBg, fields.ctrBg);
           syncBgField(fields.pomoShowBg, fields.pomoBg);
+          syncBgField(fields.flowShowBg, fields.flowBg);
           syncAllPanelImgRows();
         }
 
@@ -8956,6 +9177,57 @@
             fields.pomoPanelImg,
             fields.pomoPanelFit,
             fields.pomoPanelInset
+          );
+          if (options.demo) p.set("demo", "1");
+          return url.toString();
+        }
+
+        function buildFlowtimeUrl(opts) {
+          const options = opts || {};
+          const url = pageUrl("flowtime.html");
+          const p = url.searchParams;
+          const mode = (
+            fields.flowBreakMode && fields.flowBreakMode.value
+              ? fields.flowBreakMode.value
+              : "fifth"
+          ).trim();
+          p.set(
+            "breakMode",
+            mode === "fourth" || mode === "ladder" ? mode : "fifth"
+          );
+          const warn = Number(fields.flowWarnMins && fields.flowWarnMins.value);
+          p.set(
+            "warnMins",
+            String(Number.isFinite(warn) && warn > 0 ? Math.round(warn) : 90)
+          );
+          if (fields.flowWorkLabel && fields.flowWorkLabel.value.trim()) {
+            p.set("workLabel", fields.flowWorkLabel.value.trim());
+          }
+          if (fields.flowBreakLabel && fields.flowBreakLabel.value.trim()) {
+            p.set("breakLabel", fields.flowBreakLabel.value.trim());
+          }
+          if (fields.flowWarnLabel && fields.flowWarnLabel.value.trim()) {
+            p.set("warnLabel", fields.flowWarnLabel.value.trim());
+          }
+          if (fields.flowShowSuggest && !fields.flowShowSuggest.checked) {
+            p.set("showSuggest", "0");
+          }
+          setIconParam(p, "flowIcon", fields.flowShowIcon, fields.flowIcon, "hourglass_top");
+          styleParams(
+            p,
+            fields.flowShowBg,
+            fields.flowBg,
+            fields.flowFontSize,
+            fields.flowColor,
+            fields.flowIconColor,
+            fields.flowFontFamily
+          );
+          applyPanelImageParams(
+            p,
+            fields.flowShowPanelImg,
+            fields.flowPanelImg,
+            fields.flowPanelFit,
+            fields.flowPanelInset
           );
           if (options.demo) p.set("demo", "1");
           return url.toString();
@@ -10468,6 +10740,16 @@ function syncYtAfterTwUi() {
             pomoFrame.src = pomoDemoHref;
           }
 
+          const flowHref = buildFlowtimeUrl();
+          const flowDemoHref = buildFlowtimeUrl({ demo: true });
+          if ($("flowUrl")) $("flowUrl").value = flowHref;
+          if ($("openFlow")) $("openFlow").href = flowHref;
+          const flowFrame = $("previewFlow");
+          if (flowFrame && flowFrame.dataset.href !== flowDemoHref) {
+            flowFrame.dataset.href = flowDemoHref;
+            flowFrame.src = flowDemoHref;
+          }
+
           const dmHref = buildDanmakuUrl();
           const dmDemoHref = buildDanmakuUrl({ demo: true });
           if ($("dmUrl")) $("dmUrl").value = dmHref;
@@ -10521,6 +10803,7 @@ function syncYtAfterTwUi() {
             ctrHref,
             mediaHref,
             pomoHref,
+            flowHref,
             dmHref,
             popHref,
             walkHref,
@@ -10561,6 +10844,15 @@ function syncYtAfterTwUi() {
             const { pomoHref } = buildUrls();
             if ($("pomoUrl")) $("pomoUrl").select();
             await copyText(pomoHref, copyPomoBtn, "複製番茄鐘網址");
+          });
+        }
+
+        const copyFlowBtn = $("copyFlow");
+        if (copyFlowBtn) {
+          copyFlowBtn.addEventListener("click", async () => {
+            const { flowHref } = buildUrls();
+            if ($("flowUrl")) $("flowUrl").select();
+            await copyText(flowHref, copyFlowBtn, "複製心流網址");
           });
         }
 
@@ -10946,7 +11238,9 @@ function syncYtAfterTwUi() {
               el === fields.ctrShowBg ||
               el === fields.ctrShowPanelImg ||
               el === fields.pomoShowBg ||
-              el === fields.pomoShowPanelImg
+              el === fields.pomoShowPanelImg ||
+              el === fields.flowShowBg ||
+              el === fields.flowShowPanelImg
             ) {
               syncAllBgFields();
             }

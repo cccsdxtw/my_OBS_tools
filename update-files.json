@@ -26,6 +26,7 @@
     "子頁/counter.html",
     "子頁/media.html",
     "子頁/pomodoro.html",
+    "子頁/flowtime.html",
     "子頁/yt-bridge.html",
     "啟動本機伺服器.bat",
     "local-server.js",
